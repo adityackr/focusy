@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="ft-amber" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8C178"/>
+      <stop offset="1" stop-color="#CC9150"/>
+    </linearGradient>
+    <clipPath id="ft-clip">
+      <rect x="4" y="4" width="40" height="40" rx="13"/>
+    </clipPath>
+  </defs>
+  <rect x="4" y="4" width="40" height="40" rx="13" fill="url(#ft-amber)"/>
+  <g clip-path="url(#ft-clip)">
+    <ellipse cx="24" cy="11" rx="17" ry="7" fill="#fff" opacity="0.22"/>
+  </g>
+  <path d="M20.5 17.8v12.4c0 1.1 1.2 1.8 2.2 1.2l9.6-6.2c.9-.6.9-1.9 0-2.5l-9.6-6.2c-1-.6-2.2.1-2.2 1.3z" fill="#33291F" stroke="#33291F" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>
