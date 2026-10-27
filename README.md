@@ -31,7 +31,6 @@ Paste a video link and Focusy splits it into chapter-based lessons using its tim
   - [How it works](#how-it-works)
   - [Routes](#routes)
   - [Project structure](#project-structure)
-  - [State \& persistence](#state--persistence)
   - [Scripts](#scripts)
   - [Design system](#design-system)
   - [Testing](#testing)
@@ -115,20 +114,20 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 
 ## Tech stack
 
-| Technology                                                       | Version              | Role                                                                                        |
-| ---------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
-| [Next.js](https://nextjs.org/) (App Router)                      | 16                   | Framework, routing, API routes, image optimization                                          |
-| [React](https://react.dev/)                                      | 19                   | UI                                                                                          |
-| [TypeScript](https://www.typescriptlang.org/)                    | 5                    | Type safety                                                                                 |
-| [Tailwind CSS](https://tailwindcss.com/)                         | 4 (CSS-first config) | Styling + `shadcn` theme tokens in `app/globals.css`                                        |
+| Technology                                                       | Version              | Role                                                                                    |
+| ---------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------- | --- | --------------------------------------------------------------- | --- | ---------------------------------------------------------------------- |
+| [Next.js](https://nextjs.org/) (App Router)                      | 16                   | Framework, routing, API routes, image optimization                                      |
+| [React](https://react.dev/)                                      | 19                   | UI                                                                                      |
+| [TypeScript](https://www.typescriptlang.org/)                    | 5                    | Type safety                                                                             |
+| [Tailwind CSS](https://tailwindcss.com/)                         | 4 (CSS-first config) | Styling + `shadcn` theme tokens in `app/globals.css`                                    |
 | [shadcn/ui](https://ui.shadcn.com/) (New York)                   | vendored             | `button, card, dialog, alert-dialog, input, badge, skeleton, separator` in `shared/ui/` |
-| [Zustand](https://zustand.docs.pmnd.rs/) + `persist`             | 5                    | Client store (library, order, favorites, recents) persisted to `localStorage`               |
-| [dnd-kit](https://dndkit.com/) (`core`, `sortable`, `utilities`) | 6 / 10               | Drag-and-drop playlist reordering                                                           |
-| [Lucide](https://lucide.dev/)                                    | —                    | Icons (including the custom `LogoMark` SVG in `features/shell/components/logo.tsx`)                        |
-| [Sonner](https://sonner.emilkowal.ski/)                          | 1                    | Toasts                                                                                      |
-| [next-themes](https://github.com/pacocoursey/next-themes)        | 0.4                  | Dark/light mode                                                                             |
-| [Bun](https://bun.sh/)                                           | —                    | Package manager, runtime, and test runner                                                   |
-| Testing Library + jsdom                                          | dev-only             | Component/hook tests (`bun test`)                                                           || [YouTube Data API v3](https://developers.google.com/youtube/v3)  | —                    | Playlist metadata + video lists (client-side, key entered in Settings)       |
+| [Zustand](https://zustand.docs.pmnd.rs/) + `persist`             | 5                    | Client store (library, order, favorites, recents) persisted to `localStorage`           |
+| [dnd-kit](https://dndkit.com/) (`core`, `sortable`, `utilities`) | 6 / 10               | Drag-and-drop playlist reordering                                                       |
+| [Lucide](https://lucide.dev/)                                    | —                    | Icons (including the custom `LogoMark` SVG in `features/shell/components/logo.tsx`)     |
+| [Sonner](https://sonner.emilkowal.ski/)                          | 1                    | Toasts                                                                                  |
+| [next-themes](https://github.com/pacocoursey/next-themes)        | 0.4                  | Dark/light mode                                                                         |
+| [Bun](https://bun.sh/)                                           | —                    | Package manager, runtime, and test runner                                               |
+| Testing Library + jsdom                                          | dev-only             | Component/hook tests (`bun test`)                                                       |     | [YouTube Data API v3](https://developers.google.com/youtube/v3) | —   | Playlist metadata + video lists (client-side, key entered in Settings) |
 
 ---
 
@@ -311,30 +310,14 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 
 ---
 
-## State & persistence
-
-No backend, no accounts. All state lives in the browser:
-
-| Key                                   | Owner                                  | Contents                                           |
-| ------------------------------------- | -------------------------------------- | -------------------------------------------------- |
-| `focustube-library`               | Zustand `persist` (`shared/store/library.ts`) | `playlists` + `courses`, manual `order`s, `favorites`, `recent` for both types |
-| `focustube:progress:<playlistId>` | `use-watch-progress`                   | `watched[]`, `lastWatched`, `completedChapters[]`, `positions{}` per playlist |
-| `yt-course:progress:<courseId>`   | `shared/lib/storage.ts` (Chapterly port)      | `completedIds[]`, `lastChapterId`, `positions{}` per course |
-| `yt-course:api-key`               | `shared/lib/storage.ts` (Chapterly port)      | The user's YouTube Data API v3 key                  |
-| `yt-course:sidebar-open`           | course player                          | `"1"` / `"0"` lessons-sidebar preference           |
-
-Upgrading from Clean YouTube? Data stored under the old `clean-youtube-*` keys is adopted automatically on first load (and the old keys removed). Upgrading from Chapterly? Its courses under `yt-course:courses` are merged into the library store once, and its progress/key keys keep working as-is. Clearing site storage resets the app to a fresh state.
-
----
-
 ## Scripts
 
-| Command         | Purpose                                 |
-| --------------- | --------------------------------------- |
-| `bun dev`       | Development server (Turbopack)          |
-| `bun run build` | Production build                        |
-| `bun start`     | Serve the production build              |
-| `bun test`      | Unit/component tests (bun test + jsdom) |
+| Command         | Purpose                                                                            |
+| --------------- | ---------------------------------------------------------------------------------- |
+| `bun dev`       | Development server (Turbopack)                                                     |
+| `bun run build` | Production build                                                                   |
+| `bun start`     | Serve the production build                                                         |
+| `bun test`      | Unit/component tests (bun test + jsdom)                                            |
 | `bun run lint`  | Lint (note: `next lint` was removed in Next 16 — no ESLint config is wired up yet) |
 
 ---

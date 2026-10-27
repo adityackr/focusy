@@ -13,12 +13,7 @@ import { buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
 
 export function LibraryView() {
-  const [tab, setTab] = useState("videos");
-  const playlists = useLibrary(useShallow(selectPlaylistList));
-  const courses = useLibrary(useShallow(selectCourseList));
-  const hydrated = useLibrary((s) => s.hydrated);
-
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const { tab, setTab, playlists, courses, hydrated, plural } = useLibraryView();
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-8">
@@ -63,4 +58,16 @@ export function LibraryView() {
       </Tabs>
     </div>
   );
+}
+
+/** View state + data for `LibraryView` — kept out of the JSX. */
+function useLibraryView() {
+  const [tab, setTab] = useState("videos");
+  const playlists = useLibrary(useShallow(selectPlaylistList));
+  const courses = useLibrary(useShallow(selectCourseList));
+  const hydrated = useLibrary((s) => s.hydrated);
+
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+  return { tab, setTab, playlists, courses, hydrated, plural };
 }

@@ -39,20 +39,7 @@ export function AlertDialogContent({
   className?: string;
 }) {
   const { open, setOpen } = React.useContext(AlertDialogContext);
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => setMounted(true), []);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, setOpen]);
+  const mounted = useAlertDialogSurface(open, setOpen);
 
   if (!mounted || !open) return null;
 
@@ -165,4 +152,24 @@ export function AlertDialogAction({
       {children}
     </Button>
   );
+}
+
+/** Portal mount + Escape/scroll-lock behavior for `AlertDialogContent` — kept out of the JSX. */
+function useAlertDialogSurface(open: boolean, setOpen: (v: boolean) => void) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => setMounted(true), []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, setOpen]);
+
+  return mounted;
 }

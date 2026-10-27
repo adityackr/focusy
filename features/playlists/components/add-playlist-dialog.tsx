@@ -24,7 +24,7 @@ export function AddPlaylistButton({
   className?: string;
   variant?: ButtonProps["variant"];
 }) {
-  const [open, setOpen] = useState(false);
+  const { open, setOpen } = useAddPlaylistButton();
   return (
     <>
       <Button onClick={() => setOpen(true)} className={className} variant={variant}>
@@ -42,37 +42,7 @@ export function AddPlaylistDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const [value, setValue] = useState("");
-  const [busy, setBusy] = useState(false);
-  const fetchPlaylist = useLibrary((s) => s.fetchPlaylist);
-  const playlists = useLibrary((s) => s.playlists);
-  const router = useRouter();
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const id = parsePlaylistInput(value);
-    if (!id) {
-      toast.error("Paste a valid playlist ID or YouTube playlist link.");
-      return;
-    }
-    if (playlists[id]) {
-      toast.info("That playlist is already in your library.");
-      onOpenChange(false);
-      router.push(`/watch/${id}`);
-      return;
-    }
-    setBusy(true);
-    const ok = await fetchPlaylist(id);
-    setBusy(false);
-    if (ok) {
-      toast.success("Playlist added to your library.");
-      setValue("");
-      onOpenChange(false);
-      router.push(`/watch/${id}`);
-    } else {
-      toast.error(useLibrary.getState().error ?? "Could not fetch that playlist.");
-    }
-  }
+  const { value, setValue, busy, handleSubmit } = useAddPlaylistDialog(open, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,4 +78,47 @@ export function AddPlaylistDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Open state for the `AddPlaylistButton` trigger. */
+function useAddPlaylistButton() {
+  const [open, setOpen] = useState(false);
+  return { open, setOpen };
+}
+
+/** Import form state + submit handler for `AddPlaylistDialog` — kept out of the JSX. */
+function useAddPlaylistDialog(open: boolean, onOpenChange: (v: boolean) => void) {
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const fetchPlaylist = useLibrary((s) => s.fetchPlaylist);
+  const playlists = useLibrary((s) => s.playlists);
+  const router = useRouter();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const id = parsePlaylistInput(value);
+    if (!id) {
+      toast.error("Paste a valid playlist ID or YouTube playlist link.");
+      return;
+    }
+    if (playlists[id]) {
+      toast.info("That playlist is already in your library.");
+      onOpenChange(false);
+      router.push(`/watch/${id}`);
+      return;
+    }
+    setBusy(true);
+    const ok = await fetchPlaylist(id);
+    setBusy(false);
+    if (ok) {
+      toast.success("Playlist added to your library.");
+      setValue("");
+      onOpenChange(false);
+      router.push(`/watch/${id}`);
+    } else {
+      toast.error(useLibrary.getState().error ?? "Could not fetch that playlist.");
+    }
+  }
+
+  return { value, setValue, busy, handleSubmit };
 }

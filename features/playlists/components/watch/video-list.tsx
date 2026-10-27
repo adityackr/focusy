@@ -38,21 +38,7 @@ export function VideoList({
   /** Manual completed-mark toggle for one chapter. */
   onToggleChapter?: (key: string) => void;
 }) {
-  // Explicit open/closed overrides; undefined falls back to "open when active".
-  const [openState, setOpenState] = useState<Record<string, boolean>>({});
-
-  const isOpen = (videoId: string) => openState[videoId] ?? videoId === activeVideoId;
-  const toggleOpen = (videoId: string) =>
-    setOpenState((prev) => ({ ...prev, [videoId]: !isOpen(videoId) }));
-
-  const chaptersByVideo = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof chaptersForVideo>>();
-    for (const video of videos) {
-      const chapters = chaptersForVideo(video);
-      if (chapters.length > 0) map.set(video.videoId, chapters);
-    }
-    return map;
-  }, [videos]);
+  const { chaptersByVideo, isOpen, toggleOpen } = useVideoList({ videos, activeVideoId });
 
   return (
     <ul className="space-y-1.5">
@@ -226,4 +212,31 @@ export function VideoList({
       })}
     </ul>
   );
+}
+
+/** Expansion state + parsed chapter map for `VideoList` — kept out of the JSX. */
+function useVideoList({
+  videos,
+  activeVideoId,
+}: {
+  videos: PlaylistVideo[];
+  activeVideoId?: string;
+}) {
+  // Explicit open/closed overrides; undefined falls back to "open when active".
+  const [openState, setOpenState] = useState<Record<string, boolean>>({});
+
+  const isOpen = (videoId: string) => openState[videoId] ?? videoId === activeVideoId;
+  const toggleOpen = (videoId: string) =>
+    setOpenState((prev) => ({ ...prev, [videoId]: !isOpen(videoId) }));
+
+  const chaptersByVideo = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof chaptersForVideo>>();
+    for (const video of videos) {
+      const chapters = chaptersForVideo(video);
+      if (chapters.length > 0) map.set(video.videoId, chapters);
+    }
+    return map;
+  }, [videos]);
+
+  return { chaptersByVideo, isOpen, toggleOpen };
 }

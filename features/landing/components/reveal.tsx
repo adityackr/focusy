@@ -18,6 +18,21 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
+  const { ref, visible } = useReveal();
+
+  return (
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={cn("reveal", visible && "reveal-visible", className)}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Intersection-observer reveal state for `Reveal` — kept out of the JSX. */
+function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -51,13 +66,5 @@ export function Reveal({
     };
   }, []);
 
-  return (
-    <div
-      ref={ref}
-      style={{ transitionDelay: `${delay}ms` }}
-      className={cn("reveal", visible && "reveal-visible", className)}
-    >
-      {children}
-    </div>
-  );
+  return { ref, visible };
 }

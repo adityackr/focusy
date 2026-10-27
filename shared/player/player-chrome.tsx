@@ -85,207 +85,49 @@ type Menu = "speed" | "quality" | "chapters" | null;
  *   storyboards require YouTube's private signed storyboard spec, which the
  *   official API doesn't expose.
  */
-export function PlayerChrome({
-  videoId,
-  player,
-  chapters = [],
-  seekRequest,
-  onChapterChange,
-  onProgress,
-}: Props) {
+export function PlayerChrome(props: Props) {
   const {
     mountRef,
+    containerRef,
     isPlaying,
+    chromeShown,
+    openMenu,
+    setOpenMenu,
+    isFullscreen,
+    scrubbing,
+    setScrubbing,
+    setChromeVisible,
+    setHover,
+    total,
+    progressRatio,
+    bufferedRatio,
+    currentTime,
     playbackRate,
     availableRates,
-    currentTime,
-    duration,
     volume,
     muted,
-    loadedFraction,
     captionsOn,
+    chapters,
+    current,
+    hover,
+    hoverChapter,
+    previewSrc,
+    pokeChrome,
+    onWrapperKeyDown,
+    togglePlay,
+    toggleFullscreen,
     nudge,
     seekTo,
-    togglePlay,
-    setRate,
-    setVolumeLevel,
+    seekRatio,
+    ratioToTime,
+    handleSeekbarMove,
+    timeToRatio,
+    goChapter,
     toggleMute,
+    setVolumeLevel,
     toggleCaptions,
-  } = player;
-  const current = chapterAtTime(chapters, currentTime);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [chromeVisible, setChromeVisible] = useState(true);
-  const [openMenu, setOpenMenu] = useState<Menu>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [hover, setHover] = useState<{ t: number; ratio: number } | null>(null);
-  const [scrubbing, setScrubbing] = useState(false);
-
-  // Effective total: live duration preferred, chapter bounds as fallback.
-  const lastEnd = chapters.length > 0 ? (chapters[chapters.length - 1].endSeconds ?? null) : null;
-  const total = duration > 0 ? duration : (lastEnd ?? 0);
-  const progressRatio = total > 0 ? clamp01(currentTime / total) : 0;
-  const bufferedRatio = total > 0 ? clamp01(loadedFraction) : 0;
-
-  // Report the active chapter upward (sidebar highlight) when it changes.
-  const currentChapterIndex = current?.index ?? -1;
-  const onChapterChangeRef = useRef(onChapterChange);
-  useEffect(() => {
-    onChapterChangeRef.current = onChapterChange;
-  });
-  useEffect(() => {
-    onChapterChangeRef.current?.(currentChapterIndex);
-  }, [currentChapterIndex]);
-
-  // Report playback upward for resume tracking: once per 5s bucket, plus a
-  // final report when the video reaches its end (the caller then drops the
-  // resume point so the next open starts from 0).
-  const onProgressRef = useRef(onProgress);
-  useEffect(() => {
-    onProgressRef.current = onProgress;
-  });
-  const lastReportRef = useRef<{ bucket: number; ended: boolean } | null>(null);
-  useEffect(() => {
-    if (!onProgressRef.current) return;
-    const ended = duration > 0 && currentTime >= duration - 1;
-    const bucket = Math.floor(Math.max(0, currentTime) / 5);
-    const prev = lastReportRef.current;
-    if (prev && prev.bucket === bucket && prev.ended === ended) return;
-    lastReportRef.current = { bucket, ended };
-    onProgressRef.current?.(currentTime, duration);
-  }, [currentTime, duration]);
-
-  // Apply sidebar seek requests that target this video (once per request).
-  const appliedSeekRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (!seekRequest || seekRequest.videoId !== videoId) return;
-    if (appliedSeekRef.current === seekRequest.n) return;
-    appliedSeekRef.current = seekRequest.n;
-    seekTo(seekRequest.time);
-  }, [seekRequest, videoId, seekTo]);
-
-  const pokeChrome = useCallback(() => {
-    setChromeVisible(true);
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setChromeVisible(false), 3000);
-  }, []);
-
-  useEffect(() => {
-    // Initial auto-hide timer (callback setState is fine — no sync setState here).
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setChromeVisible(false), 3000);
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current);
-    };
-  }, []);
-
-  // Keep chrome visible while paused / menu open / scrubbing.
-  const chromeShown = chromeVisible || !isPlaying || openMenu !== null || scrubbing;
-
-  useEffect(() => {
-    function onFsChange() {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    }
-    document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
-  }, []);
-
-  // Close menus on Escape.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpenMenu(null);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  function toggleFullscreen() {
-    const el = containerRef.current;
-    if (!el) return;
-    try {
-      if (document.fullscreenElement) void document.exitFullscreen();
-      else void el.requestFullscreen();
-    } catch {
-      /* noop */
-    }
-  }
-
-  function timeToRatio(t: number) {
-    return total > 0 ? clamp01(t / total) : 0;
-  }
-
-  function ratioToTime(ratio: number) {
-    return clamp01(ratio) * total;
-  }
-
-  function handleSeekbarMove(clientX: number, rect: DOMRect) {
-    if (total <= 0) return;
-    const ratio = clamp01((clientX - rect.left) / rect.width);
-    setHover({ t: ratioToTime(ratio), ratio });
-  }
-
-  function seekRatio(ratio: number) {
-    if (total <= 0) return;
-    seekTo(ratioToTime(ratio));
-  }
-
-  function goChapter(dir: -1 | 1) {
-    if (!current || chapters.length === 0) {
-      nudge(dir * 10);
-      return;
-    }
-    const j = current.index + dir;
-    if (j < 0 || j >= chapters.length) return;
-    seekTo(chapters[j].startSeconds + 0.1);
-  }
-
-  function onWrapperKeyDown(e: React.KeyboardEvent) {
-    // Don't hijack keys while typing in a menu input (volume slider).
-    if ((e.target as HTMLElement)?.tagName === "INPUT") return;
-    switch (e.key) {
-      case " ":
-      case "k":
-        e.preventDefault();
-        togglePlay();
-        pokeChrome();
-        break;
-      case "ArrowLeft":
-      case "j":
-        e.preventDefault();
-        nudge(e.key === "ArrowLeft" ? -5 : -10);
-        pokeChrome();
-        break;
-      case "ArrowRight":
-      case "l":
-        e.preventDefault();
-        nudge(e.key === "ArrowRight" ? 5 : 10);
-        pokeChrome();
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setVolumeLevel((muted ? 0 : volume) + 5);
-        pokeChrome();
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        setVolumeLevel((muted ? 0 : volume) - 5);
-        pokeChrome();
-        break;
-      case "m":
-        toggleMute();
-        break;
-      case "f":
-        toggleFullscreen();
-        break;
-      case "c":
-        toggleCaptions();
-        break;
-    }
-  }
-
-  const hoverChapter = hover ? chapterAtTime(chapters, hover.t) : null;
-  const previewSrc = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    setRate,
+  } = usePlayerChrome(props);
 
   return (
     <div>
@@ -600,4 +442,255 @@ export function PlayerChrome({
       </p>
     </div>
   );
+}
+
+/**
+ * All state, effects and handlers for `PlayerChrome` — the one place the
+ * YouTube surface is wired up. Kept out of the JSX.
+ */
+function usePlayerChrome({
+  videoId,
+  player,
+  chapters = [],
+  seekRequest,
+  onChapterChange,
+  onProgress,
+}: Props) {
+  const {
+    mountRef,
+    isPlaying,
+    playbackRate,
+    availableRates,
+    currentTime,
+    duration,
+    volume,
+    muted,
+    loadedFraction,
+    captionsOn,
+    nudge,
+    seekTo,
+    togglePlay,
+    setRate,
+    setVolumeLevel,
+    toggleMute,
+    toggleCaptions,
+  } = player;
+  const current = chapterAtTime(chapters, currentTime);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const [openMenu, setOpenMenu] = useState<Menu>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hover, setHover] = useState<{ t: number; ratio: number } | null>(null);
+  const [scrubbing, setScrubbing] = useState(false);
+
+  // Effective total: live duration preferred, chapter bounds as fallback.
+  const lastEnd = chapters.length > 0 ? (chapters[chapters.length - 1].endSeconds ?? null) : null;
+  const total = duration > 0 ? duration : (lastEnd ?? 0);
+  const progressRatio = total > 0 ? clamp01(currentTime / total) : 0;
+  const bufferedRatio = total > 0 ? clamp01(loadedFraction) : 0;
+
+  // Report the active chapter upward (sidebar highlight) when it changes.
+  const currentChapterIndex = current?.index ?? -1;
+  const onChapterChangeRef = useRef(onChapterChange);
+  useEffect(() => {
+    onChapterChangeRef.current = onChapterChange;
+  });
+  useEffect(() => {
+    onChapterChangeRef.current?.(currentChapterIndex);
+  }, [currentChapterIndex]);
+
+  // Report playback upward for resume tracking: once per 5s bucket, plus a
+  // final report when the video reaches its end (the caller then drops the
+  // resume point so the next open starts from 0).
+  const onProgressRef = useRef(onProgress);
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  });
+  const lastReportRef = useRef<{ bucket: number; ended: boolean } | null>(null);
+  useEffect(() => {
+    if (!onProgressRef.current) return;
+    const ended = duration > 0 && currentTime >= duration - 1;
+    const bucket = Math.floor(Math.max(0, currentTime) / 5);
+    const prev = lastReportRef.current;
+    if (prev && prev.bucket === bucket && prev.ended === ended) return;
+    lastReportRef.current = { bucket, ended };
+    onProgressRef.current?.(currentTime, duration);
+  }, [currentTime, duration]);
+
+  // Apply sidebar seek requests that target this video (once per request).
+  const appliedSeekRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!seekRequest || seekRequest.videoId !== videoId) return;
+    if (appliedSeekRef.current === seekRequest.n) return;
+    appliedSeekRef.current = seekRequest.n;
+    seekTo(seekRequest.time);
+  }, [seekRequest, videoId, seekTo]);
+
+  const pokeChrome = useCallback(() => {
+    setChromeVisible(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setChromeVisible(false), 3000);
+  }, []);
+
+  useEffect(() => {
+    // Initial auto-hide timer (callback setState is fine — no sync setState here).
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setChromeVisible(false), 3000);
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, []);
+
+  // Keep chrome visible while paused / menu open / scrubbing.
+  const chromeShown = chromeVisible || !isPlaying || openMenu !== null || scrubbing;
+
+  useEffect(() => {
+    function onFsChange() {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  // Close menus on Escape.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpenMenu(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function toggleFullscreen() {
+    const el = containerRef.current;
+    if (!el) return;
+    try {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void el.requestFullscreen();
+    } catch {
+      /* noop */
+    }
+  }
+
+  function timeToRatio(t: number) {
+    return total > 0 ? clamp01(t / total) : 0;
+  }
+
+  function ratioToTime(ratio: number) {
+    return clamp01(ratio) * total;
+  }
+
+  function handleSeekbarMove(clientX: number, rect: DOMRect) {
+    if (total <= 0) return;
+    const ratio = clamp01((clientX - rect.left) / rect.width);
+    setHover({ t: ratioToTime(ratio), ratio });
+  }
+
+  function seekRatio(ratio: number) {
+    if (total <= 0) return;
+    seekTo(ratioToTime(ratio));
+  }
+
+  function goChapter(dir: -1 | 1) {
+    if (!current || chapters.length === 0) {
+      nudge(dir * 10);
+      return;
+    }
+    const j = current.index + dir;
+    if (j < 0 || j >= chapters.length) return;
+    seekTo(chapters[j].startSeconds + 0.1);
+  }
+
+  function onWrapperKeyDown(e: React.KeyboardEvent) {
+    // Don't hijack keys while typing in a menu input (volume slider).
+    if ((e.target as HTMLElement)?.tagName === "INPUT") return;
+    switch (e.key) {
+      case " ":
+      case "k":
+        e.preventDefault();
+        togglePlay();
+        pokeChrome();
+        break;
+      case "ArrowLeft":
+      case "j":
+        e.preventDefault();
+        nudge(e.key === "ArrowLeft" ? -5 : -10);
+        pokeChrome();
+        break;
+      case "ArrowRight":
+      case "l":
+        e.preventDefault();
+        nudge(e.key === "ArrowRight" ? 5 : 10);
+        pokeChrome();
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setVolumeLevel((muted ? 0 : volume) + 5);
+        pokeChrome();
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        setVolumeLevel((muted ? 0 : volume) - 5);
+        pokeChrome();
+        break;
+      case "m":
+        toggleMute();
+        break;
+      case "f":
+        toggleFullscreen();
+        break;
+      case "c":
+        toggleCaptions();
+        break;
+    }
+  }
+
+  const hoverChapter = hover ? chapterAtTime(chapters, hover.t) : null;
+  const previewSrc = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+
+  return {
+    mountRef,
+    containerRef,
+    isPlaying,
+    chromeShown,
+    openMenu,
+    setOpenMenu,
+    isFullscreen,
+    scrubbing,
+    setScrubbing,
+    setChromeVisible,
+    setHover,
+    total,
+    progressRatio,
+    bufferedRatio,
+    currentTime,
+    playbackRate,
+    availableRates,
+    volume,
+    muted,
+    captionsOn,
+    chapters,
+    current,
+    hover,
+    hoverChapter,
+    previewSrc,
+    pokeChrome,
+    onWrapperKeyDown,
+    togglePlay,
+    toggleFullscreen,
+    nudge,
+    seekTo,
+    seekRatio,
+    ratioToTime,
+    handleSeekbarMove,
+    timeToRatio,
+    goChapter,
+    toggleMute,
+    setVolumeLevel,
+    toggleCaptions,
+    setRate,
+  };
 }

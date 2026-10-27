@@ -8,7 +8,7 @@ import { useLibrary } from "@/shared/store/library";
 import { AddPlaylistButton } from "@/features/playlists/components/add-playlist-dialog";
 
 export function PlaylistNotFound() {
-  const error = useLibrary((s) => s.error);
+  const { error } = usePlaylistNotFound();
 
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-4 py-24 text-center">
@@ -27,4 +27,10 @@ export function PlaylistNotFound() {
       </div>
     </div>
   );
+}
+
+/** Store error surfaced on the not-found screen — kept out of the JSX. */
+function usePlaylistNotFound() {
+  const error = useLibrary((s) => s.error);
+  return { error };
 }

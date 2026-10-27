@@ -31,15 +31,7 @@ export function DeleteCourseButton({
   className?: string;
   onDeleted?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const removeCourse = useLibrary((s) => s.removeCourse);
-
-  function handleDelete() {
-    clearProgress(courseId);
-    removeCourse(courseId);
-    toast.success("Video removed.");
-    onDeleted?.();
-  }
+  const { open, setOpen, handleDelete } = useDeleteCourseDialog({ courseId, onDeleted });
 
   return (
     <>
@@ -73,4 +65,25 @@ export function DeleteCourseButton({
       </AlertDialog>
     </>
   );
+}
+
+/** Confirm state + delete handler for `DeleteCourseButton` — kept out of the JSX. */
+function useDeleteCourseDialog({
+  courseId,
+  onDeleted,
+}: {
+  courseId: string;
+  onDeleted?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const removeCourse = useLibrary((s) => s.removeCourse);
+
+  function handleDelete() {
+    clearProgress(courseId);
+    removeCourse(courseId);
+    toast.success("Video removed.");
+    onDeleted?.();
+  }
+
+  return { open, setOpen, handleDelete };
 }

@@ -38,25 +38,11 @@ export function LessonSidebar({
   /** Manual completed-mark toggle for one chapter. */
   onToggleChapter?: (key: string) => void;
 }) {
-  const [query, setQuery] = useState("");
-
-  // Playlists imported before duration support have no stored `durationSeconds`.
-  // Fetch them once per playlist so thumbnails can show a time badge.
-  useEffect(() => {
-    void useLibrary.getState().backfillDurations(playlistId);
-  }, [playlistId]);
-
-  const q = query.trim().toLowerCase();
-  const filtered = q
-    ? playlist.videos.filter(
-        (v) =>
-          v.title.toLowerCase().includes(q) ||
-          chaptersForVideo(v).some((c) => c.title.toLowerCase().includes(q))
-      )
-    : playlist.videos;
-  const progress = playlist.videos.length
-    ? Math.round((watched.length / playlist.videos.length) * 100)
-    : 0;
+  const { query, setQuery, filtered, progress } = useLessonSidebar({
+    playlist,
+    playlistId,
+    watched,
+  });
 
   if (!open) {
     return (
@@ -128,4 +114,37 @@ export function LessonSidebar({
       </div>
     </aside>
   );
+}
+
+/** Search, filtering and duration backfill for `LessonSidebar` — kept out of the JSX. */
+function useLessonSidebar({
+  playlist,
+  playlistId,
+  watched,
+}: {
+  playlist: Playlist;
+  playlistId: string;
+  watched: string[];
+}) {
+  const [query, setQuery] = useState("");
+
+  // Playlists imported before duration support have no stored `durationSeconds`.
+  // Fetch them once per playlist so thumbnails can show a time badge.
+  useEffect(() => {
+    void useLibrary.getState().backfillDurations(playlistId);
+  }, [playlistId]);
+
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? playlist.videos.filter(
+        (v) =>
+          v.title.toLowerCase().includes(q) ||
+          chaptersForVideo(v).some((c) => c.title.toLowerCase().includes(q))
+      )
+    : playlist.videos;
+  const progress = playlist.videos.length
+    ? Math.round((watched.length / playlist.videos.length) * 100)
+    : 0;
+
+  return { query, setQuery, filtered, progress };
 }

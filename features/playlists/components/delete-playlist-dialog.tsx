@@ -30,14 +30,7 @@ export function DeletePlaylistButton({
   className?: string;
   onDeleted?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const removePlaylist = useLibrary((s) => s.removePlaylist);
-
-  function handleDelete() {
-    removePlaylist(playlistId);
-    toast.success("Playlist removed.");
-    onDeleted?.();
-  }
+  const { open, setOpen, handleDelete } = useDeletePlaylistDialog({ playlistId, onDeleted });
 
   return (
     <>
@@ -71,4 +64,24 @@ export function DeletePlaylistButton({
       </AlertDialog>
     </>
   );
+}
+
+/** Confirm state + delete handler for `DeletePlaylistButton` — kept out of the JSX. */
+function useDeletePlaylistDialog({
+  playlistId,
+  onDeleted,
+}: {
+  playlistId: string;
+  onDeleted?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const removePlaylist = useLibrary((s) => s.removePlaylist);
+
+  function handleDelete() {
+    removePlaylist(playlistId);
+    toast.success("Playlist removed.");
+    onDeleted?.();
+  }
+
+  return { open, setOpen, handleDelete };
 }

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
 const URL_RE = /(https?:\/\/[^\s<>()]+|www\.[^\s<>()]+)/g;
 const TRAILING_PUNCT = /[).!?,;:]+$/;
+const COLLAPSED_LINES = 6;
 
 function linkify(text: string, keyPrefix: string) {
   const parts: React.ReactNode[] = [];
@@ -45,14 +46,9 @@ export default function VideoDescription({
   description: string;
   title?: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const cleaned = useMemo(() => stripTimestampLines(description), [description]);
+  const { cleaned, expanded, toggleExpanded, long, visible, lineCount } =
+    useVideoDescription(description);
   if (!cleaned) return null;
-
-  const lines = cleaned.split("\n");
-  const COLLAPSED_LINES = 6;
-  const long = lines.length > COLLAPSED_LINES;
-  const visible = expanded || !long ? lines : lines.slice(0, COLLAPSED_LINES);
 
   return (
     <Card className="mt-4">
@@ -72,11 +68,29 @@ export default function VideoDescription({
           )}
         </div>
         {long && (
-          <Button variant="link" size="sm" onClick={() => setExpanded((v) => !v)} className="mt-2 px-0">
-            {expanded ? "Show less" : `Show more (${lines.length - COLLAPSED_LINES} more lines)`}
+          <Button variant="link" size="sm" onClick={toggleExpanded} className="mt-2 px-0">
+            {expanded ? "Show less" : `Show more (${lineCount - COLLAPSED_LINES} more lines)`}
           </Button>
         )}
       </CardContent>
     </Card>
   );
+}
+
+/** Expand/collapse state + visible lines for `VideoDescription` — kept out of the JSX. */
+function useVideoDescription(description: string) {
+  const [expanded, setExpanded] = useState(false);
+  const cleaned = useMemo(() => stripTimestampLines(description), [description]);
+  const lines = cleaned ? cleaned.split("\n") : [];
+  const long = lines.length > COLLAPSED_LINES;
+  const visible = expanded || !long ? lines : lines.slice(0, COLLAPSED_LINES);
+
+  return {
+    cleaned,
+    expanded,
+    toggleExpanded: () => setExpanded((v) => !v),
+    long,
+    visible,
+    lineCount: lines.length,
+  };
 }

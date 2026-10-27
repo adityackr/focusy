@@ -19,10 +19,7 @@ export function WatchTopbar({
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
 }) {
-  const router = useRouter();
-  const favorites = useLibrary((s) => s.favorites);
-  const toggleFavorite = useLibrary((s) => s.toggleFavorite);
-  const fav = favorites.includes(playlistId);
+  const { fav, toggleFavorite, goLibrary } = useWatchTopbar(playlistId);
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -33,7 +30,7 @@ export function WatchTopbar({
         <ArrowLeft className="size-4" /> Library
       </Link>
       <div className="ml-auto flex items-center gap-1.5">
-        <Button variant="ghost" size="sm" onClick={() => toggleFavorite(playlistId)}>
+        <Button variant="ghost" size="sm" onClick={toggleFavorite}>
           <Heart className={cn("size-4", fav && "fill-primary text-primary")} />
           {fav ? "Favorited" : "Favorite"}
         </Button>
@@ -42,7 +39,7 @@ export function WatchTopbar({
           playlistTitle={playlistTitle}
           iconOnly={false}
           className="h-8 px-3 text-xs"
-          onDeleted={() => router.push("/library")}
+          onDeleted={goLibrary}
         />
         <Button variant="outline" size="sm" onClick={onToggleSidebar}>
           <ListVideo className="size-4" />
@@ -51,4 +48,18 @@ export function WatchTopbar({
       </div>
     </div>
   );
+}
+
+/** Favorite state + actions for `WatchTopbar` — kept out of the JSX. */
+function useWatchTopbar(playlistId: string) {
+  const router = useRouter();
+  const favorites = useLibrary((s) => s.favorites);
+  const toggleFavoriteStore = useLibrary((s) => s.toggleFavorite);
+  const fav = favorites.includes(playlistId);
+
+  return {
+    fav,
+    toggleFavorite: () => toggleFavoriteStore(playlistId),
+    goLibrary: () => router.push("/library"),
+  };
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronsLeft, Heart, History, LayoutGrid, Plus, Search, Settings, Star } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/shared/lib/utils";
@@ -32,54 +32,27 @@ export function AppSidebar({
   onToggle: () => void;
   onNavigate?: () => void;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const ordered = useLibrary(useShallow(selectPlaylistList));
-  const orderedCourses = useLibrary(useShallow(selectCourseList));
-  const hydrated = useLibrary((s) => s.hydrated);
-  const favorites = useLibrary((s) => s.favorites);
-  const courseFavorites = useLibrary((s) => s.courseFavorites);
-  const toggleFavorite = useLibrary((s) => s.toggleFavorite);
-  const pushRecent = useLibrary((s) => s.pushRecent);
-  const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
-  const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
-  const [tab, setTab] = useState("videos");
-  const [query, setQuery] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const playlistList = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return ordered;
-    return ordered.filter(
-      (p) =>
-        p.playlistTitle.toLowerCase().includes(q) ||
-        p.channelTitle.toLowerCase().includes(q)
-    );
-  }, [ordered, query]);
-
-  const courseList = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return orderedCourses;
-    return orderedCourses.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.videoId.toLowerCase().includes(q) ||
-        c.chapters.some((ch) => ch.title.toLowerCase().includes(q))
-    );
-  }, [orderedCourses, query]);
-
-  const list = tab === "videos" ? courseList : playlistList;
-  const favCount = favorites.length + courseFavorites.length;
-
-  function handleNavigate(id: string) {
-    pushRecent(id);
-    onNavigate?.();
-  }
-
-  function handleCourseNavigate(id: string) {
-    pushCourseRecent(id);
-    onNavigate?.();
-  }
+  const {
+    pathname,
+    hydrated,
+    tab,
+    setTab,
+    query,
+    setQuery,
+    dialogOpen,
+    setDialogOpen,
+    playlistList,
+    courseList,
+    list,
+    favCount,
+    favorites,
+    courseFavorites,
+    toggleFavorite,
+    toggleCourseFavorite,
+    handleNavigate,
+    handleCourseNavigate,
+    redirectIfActive,
+  } = useAppSidebar(onNavigate);
 
   return (
     <aside
@@ -241,7 +214,8 @@ export function AppSidebar({
                             {c.title}
                           </span>
                           <span className="block truncate text-[11px] text-muted-foreground">
-                            {c.chapters.length} lessons · video
+                            {c.chapters.length} lessons
+                            {c.channelTitle ? ` · ${c.channelTitle}` : ""}
                           </span>
                         </span>
                       </Link>
@@ -262,9 +236,7 @@ export function AppSidebar({
                           courseId={c.id}
                           courseTitle={c.title}
                           className="h-7 w-7 [&_svg]:size-3.5"
-                          onDeleted={() => {
-                            if (pathname.includes(c.id)) router.push("/library");
-                          }}
+                          onDeleted={() => redirectIfActive(c.id)}
                         />
                       </div>
                     </li>
@@ -319,9 +291,7 @@ export function AppSidebar({
                           playlistId={p.playlistId}
                           playlistTitle={p.playlistTitle}
                           className="h-7 w-7 [&_svg]:size-3.5"
-                          onDeleted={() => {
-                            if (pathname.includes(p.playlistId)) router.push("/library");
-                          }}
+                          onDeleted={() => redirectIfActive(p.playlistId)}
                         />
                       </div>
                     </li>
@@ -391,4 +361,92 @@ export function AppSidebar({
       <AddPlaylistDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </aside>
   );
+}
+
+/**
+ * Search, tabs, filtered lists and navigation handlers for `AppSidebar` —
+ * kept out of the JSX.
+ */
+function useAppSidebar(onNavigate?: () => void) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const ordered = useLibrary(useShallow(selectPlaylistList));
+  const orderedCourses = useLibrary(useShallow(selectCourseList));
+  const hydrated = useLibrary((s) => s.hydrated);
+  const favorites = useLibrary((s) => s.favorites);
+  const courseFavorites = useLibrary((s) => s.courseFavorites);
+  const toggleFavorite = useLibrary((s) => s.toggleFavorite);
+  const pushRecent = useLibrary((s) => s.pushRecent);
+  const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
+  const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
+  const [tab, setTab] = useState("videos");
+  const [query, setQuery] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Courses saved before creator support have no `channelTitle` — backfill the
+  // channel names (idempotent, session-guarded) so the sidebar can show them.
+  useEffect(() => {
+    void useLibrary.getState().backfillCourseChannels();
+  }, []);
+
+  const playlistList = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return ordered;
+    return ordered.filter(
+      (p) =>
+        p.playlistTitle.toLowerCase().includes(q) ||
+        p.channelTitle.toLowerCase().includes(q)
+    );
+  }, [ordered, query]);
+
+  const courseList = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return orderedCourses;
+    return orderedCourses.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.videoId.toLowerCase().includes(q) ||
+        c.chapters.some((ch) => ch.title.toLowerCase().includes(q))
+    );
+  }, [orderedCourses, query]);
+
+  const list = tab === "videos" ? courseList : playlistList;
+  const favCount = favorites.length + courseFavorites.length;
+
+  function handleNavigate(id: string) {
+    pushRecent(id);
+    onNavigate?.();
+  }
+
+  function handleCourseNavigate(id: string) {
+    pushCourseRecent(id);
+    onNavigate?.();
+  }
+
+  // Deleting the item we're currently viewing → go back to the library.
+  function redirectIfActive(id: string) {
+    if (pathname.includes(id)) router.push("/library");
+  }
+
+  return {
+    pathname,
+    hydrated,
+    tab,
+    setTab,
+    query,
+    setQuery,
+    dialogOpen,
+    setDialogOpen,
+    playlistList,
+    courseList,
+    list,
+    favCount,
+    favorites,
+    courseFavorites,
+    toggleFavorite,
+    toggleCourseFavorite,
+    handleNavigate,
+    handleCourseNavigate,
+    redirectIfActive,
+  };
 }

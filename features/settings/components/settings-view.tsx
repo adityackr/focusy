@@ -48,27 +48,7 @@ const STEPS = [
 ];
 
 export function SettingsView() {
-  const [key, setKey] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testMsg, setTestMsg] = useState("");
-
-  useEffect(() => {
-    setKey(getApiKey());
-  }, []);
-
-  function handleSave() {
-    setApiKey(key);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
-
-  async function handleTest() {
-    setTesting(true);
-    setTestMsg("");
-    setTestMsg(await fetchTest(key.trim()));
-    setTesting(false);
-  }
+  const { key, setKey, saved, testing, testMsg, handleSave, handleTest } = useSettingsKey();
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-4 pb-16">
@@ -169,4 +149,31 @@ export function SettingsView() {
       </Card>
     </main>
   );
+}
+
+/** API-key form state + save/test handlers for `SettingsView` — kept out of the JSX. */
+function useSettingsKey() {
+  const [key, setKey] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState("");
+
+  useEffect(() => {
+    setKey(getApiKey());
+  }, []);
+
+  function handleSave() {
+    setApiKey(key);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handleTest() {
+    setTesting(true);
+    setTestMsg("");
+    setTestMsg(await fetchTest(key.trim()));
+    setTesting(false);
+  }
+
+  return { key, setKey, saved, testing, testMsg, handleSave, handleTest };
 }

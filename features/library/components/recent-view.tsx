@@ -12,15 +12,7 @@ import { CourseGrid } from "@/features/videos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 export function RecentView() {
-  const [tab, setTab] = useState("videos");
-  const recent = useLibrary((s) => s.recent);
-  const playlists = useLibrary((s) => s.playlists);
-  const courseRecent = useLibrary((s) => s.courseRecent);
-  const courses = useLibrary((s) => s.courses);
-  const hydrated = useLibrary((s) => s.hydrated);
-
-  const playlistItems = recent.map((id) => playlists[id]).filter(Boolean).slice(0, 12);
-  const courseItems = courseRecent.map((id) => courses[id]).filter(Boolean).slice(0, 12);
+  const { tab, setTab, hydrated, playlistItems, courseItems } = useRecentView();
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-8">
@@ -74,4 +66,19 @@ export function RecentView() {
       </Tabs>
     </div>
   );
+}
+
+/** View state + data for `RecentView` — kept out of the JSX. */
+function useRecentView() {
+  const [tab, setTab] = useState("videos");
+  const recent = useLibrary((s) => s.recent);
+  const playlists = useLibrary((s) => s.playlists);
+  const courseRecent = useLibrary((s) => s.courseRecent);
+  const courses = useLibrary((s) => s.courses);
+  const hydrated = useLibrary((s) => s.hydrated);
+
+  const playlistItems = recent.map((id) => playlists[id]).filter(Boolean).slice(0, 12);
+  const courseItems = courseRecent.map((id) => courses[id]).filter(Boolean).slice(0, 12);
+
+  return { tab, setTab, hydrated, playlistItems, courseItems };
 }

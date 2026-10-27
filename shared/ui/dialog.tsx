@@ -33,20 +33,7 @@ export function DialogContent({
   className?: string;
 }) {
   const { open, setOpen } = React.useContext(DialogContext);
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => setMounted(true), []);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, setOpen]);
+  const mounted = useDialogSurface(open, setOpen);
 
   if (!mounted || !open) return null;
 
@@ -92,4 +79,24 @@ export function DialogDescription({ children, className }: { children: React.Rea
 
 export function DialogFooter({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={cn("mt-5 flex justify-end gap-2", className)}>{children}</div>;
+}
+
+/** Portal mount + Escape/scroll-lock behavior for `DialogContent` — kept out of the JSX. */
+function useDialogSurface(open: boolean, setOpen: (v: boolean) => void) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => setMounted(true), []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, setOpen]);
+
+  return mounted;
 }

@@ -12,15 +12,7 @@ import { CourseGrid } from "@/features/videos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 export function FavoritesView() {
-  const [tab, setTab] = useState("videos");
-  const favorites = useLibrary((s) => s.favorites);
-  const playlists = useLibrary((s) => s.playlists);
-  const courseFavorites = useLibrary((s) => s.courseFavorites);
-  const courses = useLibrary((s) => s.courses);
-  const hydrated = useLibrary((s) => s.hydrated);
-
-  const playlistItems = favorites.map((id) => playlists[id]).filter(Boolean);
-  const courseItems = courseFavorites.map((id) => courses[id]).filter(Boolean);
+  const { tab, setTab, hydrated, playlistItems, courseItems } = useFavoritesView();
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-8">
@@ -74,4 +66,19 @@ export function FavoritesView() {
       </Tabs>
     </div>
   );
+}
+
+/** View state + data for `FavoritesView` — kept out of the JSX. */
+function useFavoritesView() {
+  const [tab, setTab] = useState("videos");
+  const favorites = useLibrary((s) => s.favorites);
+  const playlists = useLibrary((s) => s.playlists);
+  const courseFavorites = useLibrary((s) => s.courseFavorites);
+  const courses = useLibrary((s) => s.courses);
+  const hydrated = useLibrary((s) => s.hydrated);
+
+  const playlistItems = favorites.map((id) => playlists[id]).filter(Boolean);
+  const courseItems = courseFavorites.map((id) => courses[id]).filter(Boolean);
+
+  return { tab, setTab, hydrated, playlistItems, courseItems };
 }

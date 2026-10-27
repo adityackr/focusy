@@ -27,21 +27,11 @@ import { PlaylistCard } from "@/features/playlists/components/playlist-card";
 import { PlaylistGrid } from "@/features/playlists/components/playlist-grid";
 
 function SortableCard({ playlist }: { playlist: Playlist }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: playlist.playlistId });
+  const { style, isDragging, attributes, listeners, setNodeRef } =
+    useSortableCard(playlist.playlistId);
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn("group relative", isDragging && "z-10")}
-    >
+    <div ref={setNodeRef} style={style} className={cn("group relative", isDragging && "z-10")}>
       <div className={cn(isDragging && "scale-[1.02] opacity-90")}>
         <PlaylistCard playlist={playlist} />
       </div>
@@ -65,23 +55,7 @@ function SortableCard({ playlist }: { playlist: Playlist }) {
 }
 
 export function SortablePlaylistGrid() {
-  const items = useLibrary(useShallow(selectPlaylistList));
-  const setOrder = useLibrary((s) => s.setOrder);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const ids = items.map((p) => p.playlistId);
-    const oldIndex = ids.indexOf(String(active.id));
-    const newIndex = ids.indexOf(String(over.id));
-    if (oldIndex === -1 || newIndex === -1) return;
-    setOrder(arrayMove(ids, oldIndex, newIndex));
-  }
+  const { items, sensors, handleDragEnd } = useSortablePlaylistGrid();
 
   if (items.length === 0) return <PlaylistGrid items={items} />;
 
@@ -103,4 +77,41 @@ export function SortablePlaylistGrid() {
       </SortableContext>
     </DndContext>
   );
+}
+
+/** Drag state for one sortable card — kept out of the JSX. */
+function useSortableCard(playlistId: string) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: playlistId });
+
+  return {
+    style: { transform: CSS.Transform.toString(transform), transition },
+    isDragging,
+    attributes,
+    listeners,
+    setNodeRef,
+  };
+}
+
+/** Items + sensors + reorder handler for `SortablePlaylistGrid` — kept out of the JSX. */
+function useSortablePlaylistGrid() {
+  const items = useLibrary(useShallow(selectPlaylistList));
+  const setOrder = useLibrary((s) => s.setOrder);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = items.map((p) => p.playlistId);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    setOrder(arrayMove(ids, oldIndex, newIndex));
+  }
+
+  return { items, sensors, handleDragEnd };
 }

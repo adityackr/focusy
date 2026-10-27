@@ -25,6 +25,114 @@ export function WatchView({
   /** Deep-linked start time from `?t=` — cued when the player mounts. */
   startAt?: number;
 }) {
+  const {
+    playlist,
+    loading,
+    hydrated,
+    sidebarOpen,
+    toggleSidebar,
+    setSidebarOpen,
+    activeChapterIndex,
+    handleChapterChange,
+    handleChapterSelect,
+    watched,
+    toggleWatched,
+    completedChapters,
+    toggleChapter,
+    seekReq,
+    handleProgress,
+    activeIndex,
+    activeVideo,
+    resumeAt,
+    startLesson,
+  } = useWatchView({ playlistId, activeVideoId });
+
+  if (!playlist) {
+    if (!hydrated || loading) return <WatchSkeleton />;
+    return <PlaylistNotFound />;
+  }
+
+  return (
+    <div className="mx-auto max-w-350 px-4 py-4 sm:px-6 lg:py-6">
+      <WatchTopbar
+        playlistId={playlistId}
+        playlistTitle={playlist.playlistTitle}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={toggleSidebar}
+      />
+
+      <div
+        className={cn(
+          "grid gap-6",
+          sidebarOpen ? "lg:grid-cols-[minmax(0,1fr)_380px]" : "lg:grid-cols-1"
+        )}
+      >
+        <div className="min-w-0">
+          {activeVideo ? (
+            <NowPlaying
+              playlist={playlist}
+              activeVideo={activeVideo}
+              activeIndex={activeIndex}
+              watched={watched}
+              startAt={startAt ?? resumeAt}
+              seekRequest={seekReq}
+              onChapterChange={handleChapterChange}
+              onProgress={handleProgress}
+            />
+          ) : (
+            <PlaylistOverview playlist={playlist} onStart={startLesson} />
+          )}
+        </div>
+
+        <LessonSidebar
+          playlist={playlist}
+          playlistId={playlistId}
+          activeVideoId={activeVideoId}
+          watched={watched}
+          onToggleWatched={toggleWatched}
+          open={sidebarOpen}
+          onOpenChange={setSidebarOpen}
+          activeChapterIndex={activeChapterIndex}
+          onChapterSelect={handleChapterSelect}
+          completedChapters={completedChapters}
+          onToggleChapter={toggleChapter}
+        />
+      </div>
+
+      <Separator className="my-8" />
+
+      {/* Mobile lesson list (always visible below on small screens) */}
+      <div className="lg:hidden">
+        <h2 className="mb-3 font-bold">All lessons</h2>
+        <VideoList
+          videos={playlist.videos}
+          playlistId={playlistId}
+          channelTitle={playlist.channelTitle}
+          activeVideoId={activeVideoId}
+          watched={watched}
+          onToggleWatched={toggleWatched}
+          activeChapterIndex={activeChapterIndex}
+          onChapterSelect={handleChapterSelect}
+          completedChapters={completedChapters}
+          onToggleChapter={toggleChapter}
+          compact
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * All orchestration for `WatchView` — library loading, watch-progress wiring,
+ * resume tracking, sidebar/seek state — kept out of the JSX.
+ */
+function useWatchView({
+  playlistId,
+  activeVideoId,
+}: {
+  playlistId: string;
+  activeVideoId?: string;
+}) {
   const router = useRouter();
   const playlists = useLibrary((s) => s.playlists);
   const fetchPlaylist = useLibrary((s) => s.fetchPlaylist);
@@ -99,84 +207,29 @@ export function WatchView({
     activeVideoId && playlist ? playlist.videos.findIndex((v) => v.videoId === activeVideoId) : -1;
   const activeVideo = playlist && activeIndex >= 0 ? playlist.videos[activeIndex] : undefined;
 
-  if (!playlist) {
-    if (!hydrated || loading) return <WatchSkeleton />;
-    return <PlaylistNotFound />;
-  }
-
   // Where to cue the player: an explicit ?t= deep link wins, otherwise the
   // stored position for this video (undefined → start from 0).
   const resumeAt = activeVideoId ? positions[activeVideoId] : undefined;
 
-  return (
-    <div className="mx-auto max-w-350 px-4 py-4 sm:px-6 lg:py-6">
-      <WatchTopbar
-        playlistId={playlistId}
-        playlistTitle={playlist.playlistTitle}
-        sidebarOpen={sidebarOpen}
-        onToggleSidebar={() => setSidebarOpen((v) => !v)}
-      />
-
-      <div
-        className={cn(
-          "grid gap-6",
-          sidebarOpen ? "lg:grid-cols-[minmax(0,1fr)_380px]" : "lg:grid-cols-1"
-        )}
-      >
-        <div className="min-w-0">
-          {activeVideo ? (
-            <NowPlaying
-              playlist={playlist}
-              activeVideo={activeVideo}
-              activeIndex={activeIndex}
-              watched={watched}
-              startAt={startAt ?? resumeAt}
-              seekRequest={seekReq}
-              onChapterChange={setActiveChapterIndex}
-              onProgress={handleProgress}
-            />
-          ) : (
-            <PlaylistOverview
-              playlist={playlist}
-              onStart={(videoId) => router.push(`/watch/${playlistId}/${videoId}`)}
-            />
-          )}
-        </div>
-
-        <LessonSidebar
-          playlist={playlist}
-          playlistId={playlistId}
-          activeVideoId={activeVideoId}
-          watched={watched}
-          onToggleWatched={toggleWatched}
-          open={sidebarOpen}
-          onOpenChange={setSidebarOpen}
-          activeChapterIndex={activeChapterIndex}
-          onChapterSelect={handleChapterSelect}
-          completedChapters={completedChapters}
-          onToggleChapter={toggleChapter}
-        />
-      </div>
-
-      <Separator className="my-8" />
-
-      {/* Mobile lesson list (always visible below on small screens) */}
-      <div className="lg:hidden">
-        <h2 className="mb-3 font-bold">All lessons</h2>
-        <VideoList
-          videos={playlist.videos}
-          playlistId={playlistId}
-          channelTitle={playlist.channelTitle}
-          activeVideoId={activeVideoId}
-          watched={watched}
-          onToggleWatched={toggleWatched}
-          activeChapterIndex={activeChapterIndex}
-          onChapterSelect={handleChapterSelect}
-          completedChapters={completedChapters}
-          onToggleChapter={toggleChapter}
-          compact
-        />
-      </div>
-    </div>
-  );
+  return {
+    playlist,
+    loading,
+    hydrated,
+    sidebarOpen,
+    toggleSidebar: () => setSidebarOpen((v) => !v),
+    setSidebarOpen,
+    activeChapterIndex,
+    handleChapterChange: setActiveChapterIndex,
+    handleChapterSelect,
+    watched,
+    toggleWatched,
+    completedChapters,
+    toggleChapter,
+    seekReq,
+    handleProgress,
+    activeIndex,
+    activeVideo,
+    resumeAt,
+    startLesson: (videoId: string) => router.push(`/watch/${playlistId}/${videoId}`),
+  };
 }

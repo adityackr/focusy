@@ -37,9 +37,11 @@ export default function ChapterEditor({ chapters, onChange }: Props) {
 		saveEdit,
 		remove,
 		move,
-	} = useChapterEditor(chapters, onChange);
-	const [deleteId, setDeleteId] = useState<string | null>(null);
-	const deleteTarget = deleteId ? chapters.find((c) => c.id === deleteId) : null;
+} = useChapterEditor(chapters, onChange);
+const { deleteId, deleteTarget, setDeleteId, confirmDelete } = useChapterDelete(
+	chapters,
+	remove
+);
 
 	return (
 		<div className="space-y-2">
@@ -125,10 +127,7 @@ export default function ChapterEditor({ chapters, onChange }: Props) {
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
-							onClick={() => {
-								if (deleteId) remove(deleteId);
-								setDeleteId(null);
-							}}
+							onClick={confirmDelete}
 							className="bg-destructive text-white hover:bg-destructive/90"
 						>
 							Delete
@@ -138,4 +137,17 @@ export default function ChapterEditor({ chapters, onChange }: Props) {
 			</AlertDialog>
 		</div>
 	);
+}
+
+/** Delete-confirm state for `ChapterEditor` — kept out of the JSX. */
+function useChapterDelete(chapters: Chapter[], remove: (id: string) => void) {
+	const [deleteId, setDeleteId] = useState<string | null>(null);
+	const deleteTarget = deleteId ? chapters.find((c) => c.id === deleteId) : null;
+
+	function confirmDelete() {
+		if (deleteId) remove(deleteId);
+		setDeleteId(null);
+	}
+
+	return { deleteId, deleteTarget, setDeleteId, confirmDelete };
 }
