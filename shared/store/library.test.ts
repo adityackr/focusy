@@ -342,3 +342,55 @@ describe("duration backfill", () => {
     }
   });
 });
+
+describe("course creator backfill", () => {
+  test("fills channel titles missing on old saves without re-fetching complete ones", async () => {
+    const origFetch = globalThis.fetch;
+    setApiKey("test-key");
+    useLibrary.getState().addCourse(makeCourse("CHB", 1));
+
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return {
+        ok: true,
+        json: async () => ({
+          items: [{ id: "abcdefghijk", snippet: { channelTitle: "Some Creator" } }],
+        }),
+      };
+    }) as unknown as typeof fetch;
+
+    try {
+      await useLibrary.getState().backfillCourseChannels();
+      expect(calls).toBe(1);
+      expect(useLibrary.getState().courses["CHB"].channelTitle).toBe("Some Creator");
+
+      // Complete now → a later card mount issues no extra request.
+      await useLibrary.getState().backfillCourseChannels();
+      expect(calls).toBe(1);
+    } finally {
+      globalThis.fetch = origFetch;
+      setApiKey("");
+    }
+  });
+
+  test("stays silent without an API key", async () => {
+    const origFetch = globalThis.fetch;
+    setApiKey("");
+    useLibrary.getState().addCourse(makeCourse("CHK", 1));
+
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return { ok: true, json: async () => ({ items: [] }) };
+    }) as unknown as typeof fetch;
+
+    try {
+      await useLibrary.getState().backfillCourseChannels();
+      expect(calls).toBe(0);
+      expect(useLibrary.getState().courses["CHK"].channelTitle).toBeUndefined();
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});

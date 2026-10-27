@@ -29,6 +29,8 @@ export interface Course {
   title: string;
   thumbnail: string;
   description: string;
+  /** Video creator (channel). Optional — older saves predate it; backfilled lazily. */
+  channelTitle?: string;
   durationSeconds: number | null;
   chapters: Chapter[];
   createdAt: number;
@@ -46,6 +48,7 @@ export interface VideoMeta {
   title: string;
   description: string;
   thumbnail: string;
+  channelTitle: string;
   durationSeconds: number | null;
 }
 

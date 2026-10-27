@@ -43,6 +43,35 @@ export function parseVideoId(input: string): string | null {
   return null;
 }
 
+interface VideoItem {
+  id?: string;
+  snippet?: { channelTitle?: string };
+  contentDetails?: { duration?: string };
+}
+
+/**
+ * Batched `videos.list` helper — 50 ids per request (1 quota unit each).
+ * Items YouTube doesn't know are simply absent from the result.
+ */
+async function fetchVideoItems(
+  videoIds: string[],
+  key: string,
+  part: string
+): Promise<VideoItem[]> {
+  const out: VideoItem[] = [];
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const chunk = videoIds.slice(i, i + 50);
+    const url =
+      `${API_BASE}/videos?part=${part}` +
+      `&id=${encodeURIComponent(chunk.join(","))}&key=${key}`;
+    const res = await fetch(url);
+    if (!res.ok) continue; // best-effort — this metadata is optional
+    const data = (await res.json()) as { items?: VideoItem[] };
+    out.push(...(data.items ?? []));
+  }
+  return out;
+}
+
 /**
  * Batch-fetch durations for a set of video IDs (50 per request — 1 quota unit
  * each). Returns a videoId → seconds map; missing/invalid entries are skipped.
@@ -52,21 +81,26 @@ export async function fetchVideoDurations(
   key: string
 ): Promise<Record<string, number>> {
   const map: Record<string, number> = {};
-  for (let i = 0; i < videoIds.length; i += 50) {
-    const chunk = videoIds.slice(i, i + 50);
-    const url =
-      `${API_BASE}/videos?part=contentDetails` +
-      `&id=${encodeURIComponent(chunk.join(","))}&key=${key}`;
-    const res = await fetch(url);
-    if (!res.ok) continue; // best-effort — badges are optional metadata
-    const data = (await res.json()) as {
-      items?: Array<{ id?: string; contentDetails?: { duration?: string } }>;
-    };
-    for (const item of data.items ?? []) {
-      if (!item.id || !item.contentDetails?.duration) continue;
-      const secs = parseIso8601Duration(item.contentDetails.duration);
-      if (secs != null) map[item.id] = secs;
-    }
+  for (const item of await fetchVideoItems(videoIds, key, "contentDetails")) {
+    if (!item.id || !item.contentDetails?.duration) continue;
+    const secs = parseIso8601Duration(item.contentDetails.duration);
+    if (secs != null) map[item.id] = secs;
+  }
+  return map;
+}
+
+/**
+ * Batch-fetch creator (channel) names for a set of video IDs — same batching
+ * as durations. Returns a videoId → channel-title map.
+ */
+export async function fetchChannelTitles(
+  videoIds: string[],
+  key: string
+): Promise<Record<string, string>> {
+  const map: Record<string, string> = {};
+  for (const item of await fetchVideoItems(videoIds, key, "snippet")) {
+    if (!item.id || !item.snippet?.channelTitle) continue;
+    map[item.id] = item.snippet.channelTitle;
   }
   return map;
 }
@@ -101,6 +135,7 @@ export async function fetchVideoMeta(videoId: string, apiKey: string): Promise<V
   return {
     title: item.snippet?.title ?? videoId,
     description: item.snippet?.description ?? "",
+    channelTitle: item.snippet?.channelTitle ?? "",
     thumbnail:
       thumbs?.maxres?.url ?? thumbs?.standard?.url ?? thumbs?.high?.url ?? thumbs?.medium?.url ?? "",
     durationSeconds: item.contentDetails?.duration

@@ -16,26 +16,13 @@ import { cn } from "@/shared/lib/utils";
 
 /** Video course card — Chapterly's card, with Focusy's favorite action. */
 export function CourseCard({ course }: { course: Course }) {
-  const [done, setDone] = useState(0);
-  const favorites = useLibrary((s) => s.courseFavorites);
-  const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
-  const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
-  const fav = favorites.includes(course.id);
-
-  // Progress lives in localStorage — read after mount to avoid hydration drift.
-  useEffect(() => {
-    setDone(getProgress(course.id).completedIds.length);
-  }, [course.id]);
-
-  const pct =
-    course.chapters.length === 0 ? 0 : Math.round((done / course.chapters.length) * 100);
-  const href = `/course/${course.id}`;
+  const { done, pct, fav, href, pushRecent, toggleFavorite } = useCourseCard(course);
 
   return (
     <Card className="h-full gap-0 overflow-hidden py-0 transition-all hover:-translate-y-1 hover:shadow-xl">
       <Link
         href={href}
-        onClick={() => pushCourseRecent(course.id)}
+        onClick={pushRecent}
         className="group relative block"
         aria-label={`Watch ${course.title}`}
       >
@@ -64,7 +51,7 @@ export function CourseCard({ course }: { course: Course }) {
       <CardHeader className="px-4 pt-3">
         <Link
           href={href}
-          onClick={() => pushCourseRecent(course.id)}
+          onClick={pushRecent}
           title={course.title}
           className="rounded outline-none select-none focus-visible:ring-2 focus-visible:ring-ring"
         >
@@ -72,6 +59,9 @@ export function CourseCard({ course }: { course: Course }) {
             {course.title}
           </CardTitle>
         </Link>
+        {course.channelTitle && (
+          <p className="truncate text-xs text-muted-foreground">{course.channelTitle}</p>
+        )}
       </CardHeader>
       <CardContent className="px-4">
         <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
@@ -90,7 +80,7 @@ export function CourseCard({ course }: { course: Course }) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => toggleCourseFavorite(course.id)}
+            onClick={toggleFavorite}
             aria-label={fav ? "Remove from favorites" : "Add to favorites"}
             className={cn(
               "h-8 w-8",
@@ -108,4 +98,33 @@ export function CourseCard({ course }: { course: Course }) {
       </CardFooter>
     </Card>
   );
+}
+
+/** Card state + actions for `CourseCard` — kept out of the JSX. */
+function useCourseCard(course: Course) {
+  const [done, setDone] = useState(0);
+  const favorites = useLibrary((s) => s.courseFavorites);
+  const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
+  const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
+  const fav = favorites.includes(course.id);
+
+  useEffect(() => {
+    // Progress lives in localStorage — read after mount to avoid hydration drift.
+    setDone(getProgress(course.id).completedIds.length);
+    // Courses saved before creator support: fetch their channel names lazily
+    // so the card can show the video creator like playlist cards do.
+    void useLibrary.getState().backfillCourseChannels();
+  }, [course.id]);
+
+  const pct =
+    course.chapters.length === 0 ? 0 : Math.round((done / course.chapters.length) * 100);
+
+  return {
+    done,
+    pct,
+    fav,
+    href: `/course/${course.id}`,
+    pushRecent: () => pushCourseRecent(course.id),
+    toggleFavorite: () => toggleCourseFavorite(course.id),
+  };
 }

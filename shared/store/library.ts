@@ -7,10 +7,18 @@ import { getApiKey } from "@/shared/lib/storage";
 import {
   fetchPlaylistFromYouTube,
   fetchVideoDurations,
+  fetchChannelTitles,
 } from "@/shared/lib/youtube";
 
 /** Playlists with a duration backfill currently in flight (avoids duplicate calls). */
 const durationBackfills = new Set<string>();
+
+/**
+ * Course ids whose creator backfill already ran this session — keeps card
+ * mounts from re-issuing the same batched request (cleared on failure so a
+ * later mount can retry).
+ */
+const channelBackfillTried = new Set<string>();
 
 export const LIBRARY_STORAGE_KEY = "focustube-library";
 const LEGACY_LIBRARY_STORAGE_KEY = "clean-youtube-library";
@@ -111,6 +119,11 @@ interface LibraryState {
    * support existed, so their thumbnails can show a time badge.
    */
   backfillDurations: (playlistId: string) => Promise<void>;
+  /**
+   * Best-effort: fetch creator (channel) names for courses saved before
+   * `channelTitle` existed, so cards can show the video creator.
+   */
+  backfillCourseChannels: () => Promise<void>;
   addCourse: (course: Course) => void;
   updateCourse: (course: Course) => void;
   removeCourse: (courseId: string) => void;
@@ -245,6 +258,34 @@ export const useLibrary = create<LibraryState>()(
           /* best-effort — retry on the next visit */
         } finally {
           durationBackfills.delete(playlistId);
+        }
+      },
+
+      backfillCourseChannels: async () => {
+        const candidates = Object.values(get().courses).filter(
+          (c) => !c.channelTitle && !channelBackfillTried.has(c.id)
+        );
+        if (candidates.length === 0) return;
+        const key = getApiKey();
+        if (!key) return; // no key → creator stays hidden, nothing else breaks
+        candidates.forEach((c) => channelBackfillTried.add(c.id));
+        try {
+          const titles = await fetchChannelTitles(
+            candidates.map((c) => c.videoId),
+            key
+          );
+          if (Object.keys(titles).length === 0) return;
+          set((s) => ({
+            courses: Object.fromEntries(
+              Object.entries(s.courses).map(([id, c]) => [
+                id,
+                { ...c, channelTitle: titles[c.videoId] ?? c.channelTitle },
+              ])
+            ),
+          }));
+        } catch {
+          // Best-effort — let a later mount retry.
+          candidates.forEach((c) => channelBackfillTried.delete(c.id));
         }
       },
 

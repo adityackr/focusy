@@ -15,26 +15,13 @@ import { DeletePlaylistButton } from "@/features/playlists/components/delete-pla
 
 /** Playlist card — same layout as the video card so the grids read as one set. */
 export function PlaylistCard({ playlist }: { playlist: Playlist }) {
-  const [done, setDone] = useState(0);
-  const favorites = useLibrary((s) => s.favorites);
-  const toggleFavorite = useLibrary((s) => s.toggleFavorite);
-  const pushRecent = useLibrary((s) => s.pushRecent);
-  const fav = favorites.includes(playlist.playlistId);
-  const href = `/watch/${playlist.playlistId}`;
-
-  // Progress lives in localStorage — read after mount to avoid hydration drift.
-  useEffect(() => {
-    setDone(readWatchedCount(playlist.playlistId));
-  }, [playlist.playlistId]);
-
-  const pct =
-    playlist.videos.length === 0 ? 0 : Math.round((done / playlist.videos.length) * 100);
+  const { done, pct, fav, href, pushRecent, toggleFavorite } = usePlaylistCard(playlist);
 
   return (
     <Card className="h-full gap-0 overflow-hidden py-0 transition-all hover:-translate-y-1 hover:shadow-xl">
       <Link
         href={href}
-        onClick={() => pushRecent(playlist.playlistId)}
+        onClick={pushRecent}
         aria-label={`Watch ${playlist.playlistTitle}`}
         className="group relative block"
       >
@@ -59,7 +46,7 @@ export function PlaylistCard({ playlist }: { playlist: Playlist }) {
       <CardHeader className="px-4 pt-3">
         <Link
           href={href}
-          onClick={() => pushRecent(playlist.playlistId)}
+          onClick={pushRecent}
           title={playlist.playlistTitle}
           className="rounded outline-none select-none focus-visible:ring-2 focus-visible:ring-ring"
         >
@@ -86,7 +73,7 @@ export function PlaylistCard({ playlist }: { playlist: Playlist }) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => toggleFavorite(playlist.playlistId)}
+            onClick={toggleFavorite}
             aria-label={fav ? "Remove from favorites" : "Add to favorites"}
             className={cn(
               "h-8 w-8",
@@ -104,4 +91,32 @@ export function PlaylistCard({ playlist }: { playlist: Playlist }) {
       </CardFooter>
     </Card>
   );
+}
+
+/** Card state + actions for `PlaylistCard` — kept out of the JSX. */
+function usePlaylistCard(playlist: Playlist) {
+  const [done, setDone] = useState(0);
+  const favorites = useLibrary((s) => s.favorites);
+  const toggleFavorite = useLibrary((s) => s.toggleFavorite);
+  const pushRecent = useLibrary((s) => s.pushRecent);
+  const fav = favorites.includes(playlist.playlistId);
+
+  useEffect(() => {
+    // Progress lives in localStorage — read after mount to avoid hydration drift.
+    setDone(readWatchedCount(playlist.playlistId));
+  }, [playlist.playlistId]);
+
+  const pct =
+    playlist.videos.length === 0
+      ? 0
+      : Math.round((done / playlist.videos.length) * 100);
+
+  return {
+    done,
+    pct,
+    fav,
+    href: `/watch/${playlist.playlistId}`,
+    pushRecent: () => pushRecent(playlist.playlistId),
+    toggleFavorite: () => toggleFavorite(playlist.playlistId),
+  };
 }

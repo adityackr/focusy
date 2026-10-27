@@ -2,18 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Chapter } from "@/shared/lib/types";
+import type { Chapter, VideoMeta } from "@/shared/lib/types";
 import { chapterWarnings, parseChapters } from "@/shared/lib/chapters";
 import { fetchVideoMeta, newId, parseVideoId } from "@/shared/lib/youtube";
 import { getApiKey } from "@/shared/lib/storage";
 import { useLibrary } from "@/shared/store/library";
 
-export interface VideoMetaState {
-  title: string;
-  thumbnail: string;
-  description: string;
-  durationSeconds: number | null;
-}
+/** The fetched-video metadata state — shared shape with `fetchVideoMeta`. */
+export type VideoMetaState = VideoMeta;
 
 export function useAddVideo() {
   const router = useRouter();
@@ -100,6 +96,7 @@ export function useAddVideo() {
       title,
       thumbnail: manualMode ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : meta?.thumbnail || "",
       description: meta?.description ?? "",
+      channelTitle: meta?.channelTitle || undefined,
       durationSeconds: meta?.durationSeconds ?? null,
       chapters,
       createdAt: Date.now(),
