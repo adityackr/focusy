@@ -4,10 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { CheckCircle2, ChevronDown, Circle, ListVideo, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { chapterKey, chaptersForVideo, formatTimestamp } from "@/lib/chapters";
-import type { PlaylistVideo } from "@/lib/types";
+import { Button } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/utils";
+import { chapterKey, chaptersForVideo, formatTimestamp } from "@/shared/lib/chapters";
+import type { PlaylistVideo } from "@/shared/lib/types";
 
 export function VideoList({
   videos,
@@ -98,6 +98,14 @@ export function VideoList({
                       {String(i + 1).padStart(2, "0")}
                     </span>
                   )}
+                  {video.durationSeconds ? (
+                    <span
+                      title="Video length"
+                      className="absolute bottom-1 right-1 rounded-md bg-black/75 px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums text-white"
+                    >
+                      {formatTimestamp(video.durationSeconds)}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span

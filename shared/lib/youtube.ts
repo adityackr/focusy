@@ -1,4 +1,4 @@
-import type { Playlist, PlaylistVideo, Thumbnail, VideoMeta } from "@/lib/types";
+import type { Playlist, PlaylistVideo, Thumbnail, VideoMeta } from "@/shared/lib/types";
 
 const API_BASE = "https://www.googleapis.com/youtube/v3";
 
@@ -41,6 +41,34 @@ export function parseVideoId(input: string): string | null {
   // to avoid false positives; prefer explicit parse above.
   if (m && (s.includes("youtube") || s.includes("youtu.be"))) return m[0];
   return null;
+}
+
+/**
+ * Batch-fetch durations for a set of video IDs (50 per request — 1 quota unit
+ * each). Returns a videoId → seconds map; missing/invalid entries are skipped.
+ */
+export async function fetchVideoDurations(
+  videoIds: string[],
+  key: string
+): Promise<Record<string, number>> {
+  const map: Record<string, number> = {};
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const chunk = videoIds.slice(i, i + 50);
+    const url =
+      `${API_BASE}/videos?part=contentDetails` +
+      `&id=${encodeURIComponent(chunk.join(","))}&key=${key}`;
+    const res = await fetch(url);
+    if (!res.ok) continue; // best-effort — badges are optional metadata
+    const data = (await res.json()) as {
+      items?: Array<{ id?: string; contentDetails?: { duration?: string } }>;
+    };
+    for (const item of data.items ?? []) {
+      if (!item.id || !item.contentDetails?.duration) continue;
+      const secs = parseIso8601Duration(item.contentDetails.duration);
+      if (secs != null) map[item.id] = secs;
+    }
+  }
+  return map;
 }
 
 function parseIso8601Duration(iso: string): number | null {
@@ -169,6 +197,19 @@ export async function fetchPlaylistFromYouTube(
   if (!entry?.snippet) throw new Error("Playlist not found. Check the ID or link.");
 
   const videos = await fetchPlaylistItems(playlistId, key);
+
+  // Attach durations (best-effort) so thumbnails can show a time badge.
+  try {
+    const durations = await fetchVideoDurations(
+      videos.map((v) => v.videoId),
+      key
+    );
+    for (const video of videos) {
+      video.durationSeconds = durations[video.videoId] ?? null;
+    }
+  } catch {
+    /* keep videos without durations */
+  }
 
   return {
     playlistId,

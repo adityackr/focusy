@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/shared/ui/alert';
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -11,13 +11,13 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import type { Chapter } from '@/lib/types';
-import { formatTimestamp } from '@/lib/chapters';
+} from '@/shared/ui/alert-dialog';
+import { Button } from '@/shared/ui/button';
+import { Input } from '@/shared/ui/input';
+import type { Chapter } from '@/shared/lib/types';
+import { formatTimestamp } from '@/shared/lib/chapters';
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
-import { useChapterEditor } from './hooks/use-chapter-editor';
+import { useChapterEditor } from '@/features/videos/hooks/use-chapter-editor';
 
 interface Props {
 	chapters: Chapter[];

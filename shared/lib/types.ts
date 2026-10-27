@@ -10,6 +10,8 @@ export interface PlaylistVideo {
   description: string;
   thumbnail: Thumbnail;
   position: number;
+  /** Video length in seconds (fetched at import). Absent on old imports. */
+  durationSeconds?: number | null;
 }
 
 export interface Chapter {

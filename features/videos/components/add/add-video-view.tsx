@@ -3,20 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CircleAlert, ListVideo } from "lucide-react";
-import { formatTimestamp } from "@/lib/chapters";
-import { useAddVideo } from "./_hooks/use-add-video";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { formatTimestamp } from "@/shared/lib/chapters";
+import { useAddVideo } from "@/features/videos/hooks/use-add-video";
+import { Button, buttonVariants } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
+import { Textarea } from "@/shared/ui/textarea";
+import { Label } from "@/shared/ui/label";
+import { Checkbox } from "@/shared/ui/checkbox";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/alert";
+import { Badge } from "@/shared/ui/badge";
+import { Separator } from "@/shared/ui/separator";
+import { cn } from "@/shared/lib/utils";
 
-export default function AddPage() {
+export function AddVideoView() {
   const {
     url,
     setUrl,

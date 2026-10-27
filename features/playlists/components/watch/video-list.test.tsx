@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { VideoList } from "./video-list";
-import type { PlaylistVideo } from "@/lib/types";
+import type { PlaylistVideo } from "@/shared/lib/types";
 
 // RTL's auto-cleanup only registers in the first file that imports it, so
 // unmount explicitly between tests (same reason the hook test clears body).
@@ -30,7 +30,10 @@ const ACTIVE = makeVideo(
   "Active lesson",
   "00:00 Intro\n01:00 Setup\n03:30 Deep dive"
 );
-const OTHER = makeVideo("vid-b", "Other lesson", "00:00 Recap\n02:00 Next steps");
+const OTHER: PlaylistVideo = {
+  ...makeVideo("vid-b", "Other lesson", "00:00 Recap\n02:00 Next steps"),
+  durationSeconds: 125, // renders as "2:05"
+};
 const PLAIN = makeVideo("vid-c", "Plain lesson", "no chapters here");
 
 function renderList(
@@ -148,5 +151,14 @@ describe("VideoList chapter completion", () => {
     expect(toggled).toEqual(["vid-a@60"]);
     // The mark button sits outside the link, so no seek/navigation fired.
     expect(calls).toEqual([]);
+  });
+});
+
+describe("Thumbnail timestamp badge", () => {
+  test("renders the video duration on the thumbnail, only when known", () => {
+    renderList();
+    const badges = screen.getAllByTitle("Video length");
+    expect(badges).toHaveLength(1); // only OTHER carries a duration
+    expect(badges[0].textContent).toBe("2:05");
   });
 });

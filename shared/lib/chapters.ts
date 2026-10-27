@@ -1,4 +1,4 @@
-import type { Chapter, PlaylistVideo } from "@/lib/types";
+import type { Chapter, PlaylistVideo } from "@/shared/lib/types";
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);

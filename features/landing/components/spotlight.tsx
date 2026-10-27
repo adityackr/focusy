@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, ListVideo, Scissors } from "lucide-react";
-import { AddPlaylistButton } from "@/components/add-playlist-dialog";
-import { buttonVariants } from "@/components/ui/button";
-import { SectionHeading } from "@/components/landing/section-heading";
-import { Reveal } from "@/components/landing/reveal";
-import { cn } from "@/lib/utils";
+import { AddPlaylistButton } from "@/features/playlists";
+import { buttonVariants } from "@/shared/ui/button";
+import { SectionHeading } from "@/features/landing/components/section-heading";
+import { Reveal } from "@/features/landing/components/reveal";
+import { cn } from "@/shared/lib/utils";
 
 const CARDS = [
   {

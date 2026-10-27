@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, mock } from "bun:test";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { Playlist, PlaylistVideo } from "@/lib/types";
+import type { Playlist, PlaylistVideo } from "@/shared/lib/types";
 
 // next/navigation needs an app-router context that doesn't exist under jsdom.
 mock.module("next/navigation", () => ({
@@ -76,6 +76,21 @@ describe("NowPlaying with the custom player", () => {
     // Plain text lines (incl. emoji) render outside the links.
     expect(screen.getByText(/👋/)).toBeTruthy();
     expect(screen.getByText(/🎉/)).toBeTruthy();
+  });
+
+  test("chapter chip sits in the control bar, not as a sticky top-left overlay", () => {
+    render(
+      <NowPlaying playlist={PLAYLIST} activeVideo={ACTIVE} activeIndex={0} watched={[]} />
+    );
+    const chip = screen.getByLabelText(/Now playing: Intro/);
+    // Shares the player chrome with the course page: part of the auto-hiding
+    // bottom bar, never an absolutely-positioned overlay on the video.
+    expect(chip.className).not.toContain("absolute");
+    expect(chip.closest("div.absolute.inset-x-0.bottom-0")).toBeTruthy();
+    const floating = screen
+      .getAllByRole("button")
+      .filter((b) => b.className.includes("top-3") && b.className.includes("left-3"));
+    expect(floating).toHaveLength(0);
   });
 
   test("reports the initial chapter through onChapterChange", () => {

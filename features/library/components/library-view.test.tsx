@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach, afterEach, beforeAll, mock } from "bun:test";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { useLibrary } from "@/store/library";
-import type { Course, Playlist } from "@/lib/types";
+import { useLibrary } from "@/shared/store/library";
+import type { Course, Playlist } from "@/shared/lib/types";
 
 // The page tree reaches `useRouter()` (Add playlist dialog) and `<Link>`s —
 // provide a minimal app-router stand-in since no Next router is mounted in jsdom.
@@ -19,7 +19,7 @@ mock.module("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const { default: LibraryPage } = await import("./page");
+const { LibraryView } = await import("./library-view");
 
 // jsdom lacks the measuring APIs dnd-kit attaches to.
 beforeAll(() => {
@@ -97,7 +97,7 @@ afterEach(() => cleanup());
 
 describe("Library page tabs", () => {
   test("opens on the Videos tab showing the video card", () => {
-    render(<LibraryPage />);
+    render(<LibraryView />);
     expect(screen.getByText(/My library/)).toBeTruthy();
     const videosTab = screen.getByRole("tab", { name: /Videos/ });
     expect(videosTab.getAttribute("aria-selected")).toBe("true");
@@ -106,7 +106,7 @@ describe("Library page tabs", () => {
   });
 
   test("switching to Playlists swaps the grid", () => {
-    render(<LibraryPage />);
+    render(<LibraryView />);
     fireEvent.click(screen.getByRole("tab", { name: /Playlists/ }));
     expect(screen.getByText("Playlist P1")).toBeTruthy();
     expect(screen.queryByText("Course C1")).toBeNull();
@@ -116,7 +116,7 @@ describe("Library page tabs", () => {
   });
 
   test("header action follows the active tab", () => {
-    render(<LibraryPage />);
+    render(<LibraryView />);
     // Videos tab → "Add video" link to /add
     const addVideo = screen.getByRole("link", { name: /Add video/ });
     expect(addVideo.getAttribute("href")).toBe("/add");

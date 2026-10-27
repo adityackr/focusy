@@ -1,13 +1,13 @@
 "use client";
 
-import { useCoursePlayer } from "./_hooks/use-course-player";
-import CourseSkeleton from "./_components/course-skeleton";
-import CourseNotFound from "./_components/course-not-found";
-import PlayerSection from "./_components/player-section";
-import LessonsSidebar from "./_components/lessons-sidebar";
-import CourseFooter from "./_components/course-footer";
+import { useCoursePlayer } from "@/features/videos/hooks/use-course-player";
+import CourseSkeleton from "@/features/videos/components/player/course-skeleton";
+import CourseNotFound from "@/features/videos/components/player/course-not-found";
+import PlayerSection from "@/features/videos/components/player/player-section";
+import LessonsSidebar from "@/features/videos/components/player/lessons-sidebar";
+import CourseFooter from "@/features/videos/components/player/course-footer";
 
-export default function CoursePage() {
+export function CoursePlayerView() {
   const {
     course,
     loaded,

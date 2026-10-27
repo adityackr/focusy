@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Chapter } from "@/lib/types";
-import { formatTimestamp } from "@/lib/chapters";
+import type { Chapter } from "@/shared/lib/types";
+import { formatTimestamp } from "@/shared/lib/chapters";
 
 function parseTimeInput(v: string): number | null {
   const parts = v.trim().split(":").map(Number);

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Chapter } from "@/lib/types";
-import { chapterWarnings, parseChapters } from "@/lib/chapters";
-import { fetchVideoMeta, newId, parseVideoId } from "@/lib/youtube";
-import { getApiKey } from "@/lib/storage";
-import { useLibrary } from "@/store/library";
+import type { Chapter } from "@/shared/lib/types";
+import { chapterWarnings, parseChapters } from "@/shared/lib/chapters";
+import { fetchVideoMeta, newId, parseVideoId } from "@/shared/lib/youtube";
+import { getApiKey } from "@/shared/lib/storage";
+import { useLibrary } from "@/shared/store/library";
 
 export interface VideoMetaState {
   title: string;

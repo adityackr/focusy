@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AppSidebar } from "@/components/app/app-sidebar";
-import { LogoMark } from "@/components/logo";
-import { cn } from "@/lib/utils";
+import { Button } from "@/shared/ui/button";
+import { AppSidebar } from "@/features/shell/components/app-sidebar";
+import { LogoMark } from "@/features/shell/components/logo";
+import { cn } from "@/shared/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);

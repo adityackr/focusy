@@ -1,10 +1,10 @@
 import Image from "next/image";
 import { Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import VideoDescription from "@/components/course/VideoDescription";
-import type { Playlist } from "@/lib/types";
+import { Button } from "@/shared/ui/button";
+import { Badge } from "@/shared/ui/badge";
+import { Card } from "@/shared/ui/card";
+import VideoDescription from "@/shared/components/video-description";
+import type { Playlist } from "@/shared/lib/types";
 
 export function PlaylistOverview({
   playlist,

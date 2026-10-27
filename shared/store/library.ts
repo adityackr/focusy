@@ -2,9 +2,15 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Course, Playlist } from "@/lib/types";
-import { getApiKey } from "@/lib/storage";
-import { fetchPlaylistFromYouTube } from "@/lib/youtube";
+import type { Course, Playlist } from "@/shared/lib/types";
+import { getApiKey } from "@/shared/lib/storage";
+import {
+  fetchPlaylistFromYouTube,
+  fetchVideoDurations,
+} from "@/shared/lib/youtube";
+
+/** Playlists with a duration backfill currently in flight (avoids duplicate calls). */
+const durationBackfills = new Set<string>();
 
 export const LIBRARY_STORAGE_KEY = "focustube-library";
 const LEGACY_LIBRARY_STORAGE_KEY = "clean-youtube-library";
@@ -100,6 +106,11 @@ interface LibraryState {
   toggleFavorite: (playlistId: string) => void;
   pushRecent: (playlistId: string) => void;
   fetchPlaylist: (playlistId: string) => Promise<boolean>;
+  /**
+   * Best-effort: fetch `durationSeconds` for videos imported before duration
+   * support existed, so their thumbnails can show a time badge.
+   */
+  backfillDurations: (playlistId: string) => Promise<void>;
   addCourse: (course: Course) => void;
   updateCourse: (course: Course) => void;
   removeCourse: (courseId: string) => void;
@@ -199,6 +210,41 @@ export const useLibrary = create<LibraryState>()(
           set((s) => ({
             loadingIds: s.loadingIds.filter((id) => id !== playlistId),
           }));
+        }
+      },
+
+      backfillDurations: async (playlistId) => {
+        const playlist = get().playlists[playlistId];
+        if (!playlist || durationBackfills.has(playlistId)) return;
+        const missing = playlist.videos.filter((v) => v.durationSeconds == null);
+        if (missing.length === 0) return;
+        const key = getApiKey();
+        if (!key) return; // no key → badges stay hidden, nothing else breaks
+        durationBackfills.add(playlistId);
+        try {
+          const durations = await fetchVideoDurations(
+            missing.map((v) => v.videoId),
+            key
+          );
+          const current = get().playlists[playlistId];
+          if (!current) return;
+          set((s) => ({
+            playlists: {
+              ...s.playlists,
+              [playlistId]: {
+                ...current,
+                videos: current.videos.map((v) =>
+                  v.durationSeconds == null
+                    ? { ...v, durationSeconds: durations[v.videoId] ?? null }
+                    : v
+                ),
+              },
+            },
+          }));
+        } catch {
+          /* best-effort — retry on the next visit */
+        } finally {
+          durationBackfills.delete(playlistId);
         }
       },
 

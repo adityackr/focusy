@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { WatchView } from "@/components/watch/watch-view";
+import { WatchView } from "@/features/playlists";
 
 export async function generateMetadata({
   params,

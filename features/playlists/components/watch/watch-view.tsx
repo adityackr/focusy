@@ -1,19 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { SeekRequest } from "@/components/watch/video-player";
+import type { SeekRequest } from "@/features/playlists/components/watch/video-player";
 import { useRouter } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import { useLibrary } from "@/store/library";
-import { useWatchProgress } from "@/hooks/use-watch-progress";
-import { VideoList } from "@/components/watch/video-list";
-import { WatchSkeleton } from "@/components/watch/watch-skeleton";
-import { WatchTopbar } from "@/components/watch/watch-topbar";
-import { NowPlaying } from "@/components/watch/now-playing";
-import { PlaylistOverview } from "@/components/watch/playlist-overview";
-import { LessonSidebar } from "@/components/watch/lesson-sidebar";
-import { PlaylistNotFound } from "@/components/watch/playlist-not-found";
+import { Separator } from "@/shared/ui/separator";
+import { cn } from "@/shared/lib/utils";
+import { useLibrary } from "@/shared/store/library";
+import { useWatchProgress } from "@/features/playlists/hooks/use-watch-progress";
+import { VideoList } from "@/features/playlists/components/watch/video-list";
+import { WatchSkeleton } from "@/features/playlists/components/watch/watch-skeleton";
+import { WatchTopbar } from "@/features/playlists/components/watch/watch-topbar";
+import { NowPlaying } from "@/features/playlists/components/watch/now-playing";
+import { PlaylistOverview } from "@/features/playlists/components/watch/playlist-overview";
+import { LessonSidebar } from "@/features/playlists/components/watch/lesson-sidebar";
+import { PlaylistNotFound } from "@/features/playlists/components/watch/playlist-not-found";
 
 export function WatchView({
   playlistId,

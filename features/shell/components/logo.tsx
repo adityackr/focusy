@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 /**
  * Focusy logo mark — a rounded play button in tide blue,

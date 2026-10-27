@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { LogoMark } from "@/components/logo";
-import { cn } from "@/lib/utils";
+import { Button, buttonVariants } from "@/shared/ui/button";
+import { LogoMark } from "@/features/shell/components/logo";
+import { cn } from "@/shared/lib/utils";
 
 const LINKS = [
   { href: "/library", label: "Library", match: (p: string) => p === "/library" },

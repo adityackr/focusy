@@ -8,6 +8,7 @@ import {
   LIBRARY_STORAGE_KEY,
 } from "./library";
 import type { Course, Playlist } from "../lib/types";
+import { setApiKey } from "../lib/storage";
 
 function makePlaylist(id: string, addedAt: string): Playlist {
   return {
@@ -260,5 +261,84 @@ describe("Chapterly migration", () => {
     localStorage.setItem("yt-course:courses", "not json");
     expect(() => migrateChapterlyCourses()).not.toThrow();
     expect(localStorage.getItem("yt-course:courses")).toBeNull();
+  });
+});
+
+describe("duration backfill", () => {
+  test("fills durations missing on old imports without re-fetching complete playlists", async () => {
+    const origFetch = globalThis.fetch;
+    setApiKey("test-key");
+    const p = makePlaylist("A", "2024-01-01");
+    p.videos = [
+      {
+        videoId: "v1",
+        title: "One",
+        description: "",
+        thumbnail: { url: "", width: 320, height: 180 },
+        position: 0,
+        durationSeconds: 12,
+      },
+      {
+        videoId: "v2",
+        title: "Two",
+        description: "",
+        thumbnail: { url: "", width: 320, height: 180 },
+        position: 1,
+      },
+    ];
+    useLibrary.getState().addPlaylist(p);
+
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return {
+        ok: true,
+        json: async () => ({ items: [{ id: "v2", contentDetails: { duration: "PT2M5S" } }] }),
+      };
+    }) as unknown as typeof fetch;
+
+    try {
+      await useLibrary.getState().backfillDurations("A");
+      expect(calls).toBe(1);
+      const videos = useLibrary.getState().playlists["A"].videos;
+      expect(videos[0].durationSeconds).toBe(12); // already known → untouched
+      expect(videos[1].durationSeconds).toBe(125); // backfilled from PT2M5S
+
+      await useLibrary.getState().backfillDurations("A");
+      expect(calls).toBe(1); // nothing missing → no extra network traffic
+    } finally {
+      globalThis.fetch = origFetch;
+      setApiKey("");
+    }
+  });
+
+  test("stays silent without an API key", async () => {
+    const origFetch = globalThis.fetch;
+    setApiKey("");
+    const p = makePlaylist("A", "2024-01-01");
+    p.videos = [
+      {
+        videoId: "v1",
+        title: "One",
+        description: "",
+        thumbnail: { url: "", width: 320, height: 180 },
+        position: 0,
+      },
+    ];
+    useLibrary.getState().addPlaylist(p);
+
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return { ok: true, json: async () => ({ items: [] }) };
+    }) as unknown as typeof fetch;
+
+    try {
+      await useLibrary.getState().backfillDurations("A");
+      expect(calls).toBe(0);
+      expect(useLibrary.getState().playlists["A"].videos[0].durationSeconds).toBeUndefined();
+    } finally {
+      globalThis.fetch = origFetch;
+    }
   });
 });

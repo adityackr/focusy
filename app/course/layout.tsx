@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TopBar } from "@/components/app/top-bar";
+import { TopBar } from "@/features/shell";
 
 // Courses live in the visitor's localStorage — private per-browser pages
 // that should never be indexed.

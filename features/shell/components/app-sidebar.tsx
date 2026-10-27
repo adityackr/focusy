@@ -3,28 +3,18 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  ChevronsLeft,
-  Heart,
-  History,
-  LayoutGrid,
-  Plus,
-  Search,
-  Settings,
-  Star,
-} from "lucide-react";
+import { ChevronsLeft, Heart, History, LayoutGrid, Plus, Search, Settings, Star } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLibrary, selectPlaylistList, selectCourseList } from "@/store/library";
-import { AddPlaylistDialog } from "@/components/add-playlist-dialog";
-import { DeletePlaylistButton } from "@/components/playlists/delete-playlist-dialog";
-import { DeleteCourseButton } from "@/components/videos/delete-course-dialog";
-import { LogoMark } from "@/components/logo";
+import { cn } from "@/shared/lib/utils";
+import { Button, buttonVariants } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Separator } from "@/shared/ui/separator";
+import { Skeleton } from "@/shared/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { useLibrary, selectPlaylistList, selectCourseList } from "@/shared/store/library";
+import { AddPlaylistDialog, DeletePlaylistButton } from "@/features/playlists";
+import { DeleteCourseButton } from "@/features/videos";
+import { LogoMark } from "@/features/shell/components/logo";
 
 const NAV = [
   { href: "/library", label: "Library", icon: LayoutGrid },

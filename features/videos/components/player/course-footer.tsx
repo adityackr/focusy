@@ -1,10 +1,10 @@
 import Link from "next/link";
-import type { Course } from "@/lib/types";
-import VideoDescription from "@/components/course/VideoDescription";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
+import type { Course } from "@/shared/lib/types";
+import VideoDescription from "@/shared/components/video-description";
+import { Button } from "@/shared/ui/button";
+import { Checkbox } from "@/shared/ui/checkbox";
+import { Label } from "@/shared/ui/label";
+import { Progress } from "@/shared/ui/progress";
 
 interface Props {
   course: Course;

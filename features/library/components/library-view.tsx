@@ -4,17 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { useLibrary, selectPlaylistList, selectCourseList } from "@/store/library";
-import { PageHeader } from "@/components/playlists/playlist-grid";
-import { SortablePlaylistGrid } from "@/components/playlists/sortable-playlist-grid";
-import { SortableCourseGrid } from "@/components/videos/sortable-course-grid";
-import { PlaylistGridSkeleton } from "@/components/playlists/playlist-grid-skeleton";
-import { AddPlaylistButton } from "@/components/add-playlist-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useLibrary, selectPlaylistList, selectCourseList } from "@/shared/store/library";
+import { PageHeader } from "@/shared/ui/page-header";
+import { SortablePlaylistGrid, PlaylistGridSkeleton, AddPlaylistButton } from "@/features/playlists";
+import { SortableCourseGrid } from "@/features/videos";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { buttonVariants } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/utils";
 
-export default function LibraryPage() {
+export function LibraryView() {
   const [tab, setTab] = useState("videos");
   const playlists = useLibrary(useShallow(selectPlaylistList));
   const courses = useLibrary(useShallow(selectCourseList));

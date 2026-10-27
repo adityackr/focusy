@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Heart, ListVideo } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useLibrary } from "@/store/library";
-import { DeletePlaylistButton } from "@/components/playlists/delete-playlist-dialog";
+import { Button, buttonVariants } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/utils";
+import { useLibrary } from "@/shared/store/library";
+import { DeletePlaylistButton } from "@/features/playlists/components/delete-playlist-dialog";
 
 export function WatchTopbar({
   playlistId,

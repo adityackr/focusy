@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { AddPlaylistButton } from "@/components/add-playlist-dialog";
-import { buttonVariants } from "@/components/ui/button";
-import { Reveal } from "@/components/landing/reveal";
-import { cn } from "@/lib/utils";
+import { AddPlaylistButton } from "@/features/playlists";
+import { buttonVariants } from "@/shared/ui/button";
+import { Reveal } from "@/features/landing/components/reveal";
+import { cn } from "@/shared/lib/utils";
 
 export function CtaSection() {
   return (

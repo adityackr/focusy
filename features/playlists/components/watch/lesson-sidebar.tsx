@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronsRight, ListVideo, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import type { Playlist } from "@/lib/types";
-import { chaptersForVideo } from "@/lib/chapters";
-import { VideoList } from "@/components/watch/video-list";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import type { Playlist } from "@/shared/lib/types";
+import { chaptersForVideo } from "@/shared/lib/chapters";
+import { useLibrary } from "@/shared/store/library";
+import { VideoList } from "@/features/playlists/components/watch/video-list";
 
 export function LessonSidebar({
   playlist,
@@ -38,6 +39,13 @@ export function LessonSidebar({
   onToggleChapter?: (key: string) => void;
 }) {
   const [query, setQuery] = useState("");
+
+  // Playlists imported before duration support have no stored `durationSeconds`.
+  // Fetch them once per playlist so thumbnails can show a time badge.
+  useEffect(() => {
+    void useLibrary.getState().backfillDurations(playlistId);
+  }, [playlistId]);
+
   const q = query.trim().toLowerCase();
   const filtered = q
     ? playlist.videos.filter(

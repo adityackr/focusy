@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/shared/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { parsePlaylistInput } from "@/lib/utils";
-import { useLibrary } from "@/store/library";
+} from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
+import { parsePlaylistInput } from "@/shared/lib/utils";
+import { useLibrary } from "@/shared/store/library";
 
 export function AddPlaylistButton({
   className,

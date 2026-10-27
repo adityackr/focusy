@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { ListVideo } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useLibrary } from "@/store/library";
-import { AddPlaylistButton } from "@/components/add-playlist-dialog";
+import { buttonVariants } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/utils";
+import { useLibrary } from "@/shared/store/library";
+import { AddPlaylistButton } from "@/features/playlists/components/add-playlist-dialog";
 
 export function PlaylistNotFound() {
   const error = useLibrary((s) => s.error);

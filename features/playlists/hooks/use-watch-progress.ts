@@ -85,6 +85,24 @@ function readStored(playlistId: string): Progress {
   return { ...EMPTY };
 }
 
+/**
+ * Read-only watched-count lookup for cards/grids — no migration, no writes,
+ * safe to call for any number of cards after mount.
+ */
+export function readWatchedCount(playlistId: string): number {
+  try {
+    let raw = localStorage.getItem(keyFor(playlistId));
+    if (!raw) raw = localStorage.getItem(legacyKeyFor(playlistId));
+    if (raw) {
+      const watched = (JSON.parse(raw) as Partial<Progress>).watched;
+      if (Array.isArray(watched)) return watched.length;
+    }
+  } catch {
+    /* corrupted JSON or storage unavailable */
+  }
+  return 0;
+}
+
 export function useWatchProgress(playlistId: string) {
   const [watched, setWatched] = useState<string[]>([]);
   const [lastWatched, setLastWatched] = useState<string | null>(null);

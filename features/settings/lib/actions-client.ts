@@ -1,4 +1,4 @@
-import { fetchVideoMeta } from "@/lib/youtube";
+import { fetchVideoMeta } from "@/shared/lib/youtube";
 
 /** Test an API key with a known video. Returns a human message. */
 export async function fetchTest(key: string): Promise<string> {
@@ -12,4 +12,4 @@ export async function fetchTest(key: string): Promise<string> {
   }
 }
 
-export { getApiKey, setApiKey } from "@/lib/storage";
+export { getApiKey, setApiKey } from "@/shared/lib/storage";

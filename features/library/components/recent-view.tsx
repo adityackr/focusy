@@ -3,15 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Clapperboard, History } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useLibrary } from "@/store/library";
-import { PageHeader, PlaylistGrid } from "@/components/playlists/playlist-grid";
-import { CourseGrid } from "@/components/videos/course-grid";
-import { PlaylistGridSkeleton } from "@/components/playlists/playlist-grid-skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { buttonVariants } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/utils";
+import { useLibrary } from "@/shared/store/library";
+import { PlaylistGrid, PlaylistGridSkeleton } from "@/features/playlists";
+import { PageHeader } from "@/shared/ui/page-header";
+import { CourseGrid } from "@/features/videos";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-export default function RecentPage() {
+export function RecentView() {
   const [tab, setTab] = useState("videos");
   const recent = useLibrary((s) => s.recent);
   const playlists = useLibrary((s) => s.playlists);

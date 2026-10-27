@@ -3,12 +3,12 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { VideoPlayer, type SeekRequest } from "@/components/watch/video-player";
-import { chaptersForVideo } from "@/lib/chapters";
-import VideoDescription from "@/components/course/VideoDescription";
-import type { Playlist, PlaylistVideo } from "@/lib/types";
+import { Button } from "@/shared/ui/button";
+import { Badge } from "@/shared/ui/badge";
+import { VideoPlayer, type SeekRequest } from "@/features/playlists/components/watch/video-player";
+import { chaptersForVideo } from "@/shared/lib/chapters";
+import VideoDescription from "@/shared/components/video-description";
+import type { Playlist, PlaylistVideo } from "@/shared/lib/types";
 
 export function NowPlaying({
   playlist,

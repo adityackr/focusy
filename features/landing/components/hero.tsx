@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, Clapperboard } from "lucide-react";
-import { AddPlaylistButton } from "@/components/add-playlist-dialog";
-import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Reveal } from "@/components/landing/reveal";
-import { cn } from "@/lib/utils";
+import { AddPlaylistButton } from "@/features/playlists";
+import { buttonVariants } from "@/shared/ui/button";
+import { Badge } from "@/shared/ui/badge";
+import { Reveal } from "@/features/landing/components/reveal";
+import { cn } from "@/shared/lib/utils";
 
 const stats: Array<[string, string]> = [
   ["100%", "distraction-free"],

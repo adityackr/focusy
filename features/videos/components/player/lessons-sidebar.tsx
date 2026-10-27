@@ -1,7 +1,7 @@
 import { ListVideo, PanelLeftClose } from "lucide-react";
-import type { Course } from "@/lib/types";
-import ChapterSidebar from "@/components/course/ChapterSidebar";
-import { Button } from "@/components/ui/button";
+import type { Course } from "@/shared/lib/types";
+import ChapterSidebar from "@/features/videos/components/player/chapter-sidebar";
+import { Button } from "@/shared/ui/button";
 
 interface Props {
   course: Course;

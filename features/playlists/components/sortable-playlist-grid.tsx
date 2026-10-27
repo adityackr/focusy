@@ -19,12 +19,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { Playlist } from "@/lib/types";
-import { useLibrary, selectPlaylistList } from "@/store/library";
-import { PlaylistCard } from "@/components/playlists/playlist-card";
-import { PlaylistGrid } from "@/components/playlists/playlist-grid";
+import { Button } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/utils";
+import type { Playlist } from "@/shared/lib/types";
+import { useLibrary, selectPlaylistList } from "@/shared/store/library";
+import { PlaylistCard } from "@/features/playlists/components/playlist-card";
+import { PlaylistGrid } from "@/features/playlists/components/playlist-grid";
 
 function SortableCard({ playlist }: { playlist: Playlist }) {
   const {

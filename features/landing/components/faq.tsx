@@ -1,5 +1,5 @@
-import { SectionHeading } from "@/components/landing/section-heading";
-import { Reveal } from "@/components/landing/reveal";
+import { SectionHeading } from "@/features/landing/components/section-heading";
+import { Reveal } from "@/features/landing/components/reveal";
 
 const FAQS = [
   {

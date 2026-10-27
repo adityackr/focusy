@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { stripTimestampLines } from "@/lib/chapters";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { stripTimestampLines } from "@/shared/lib/chapters";
+import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
 const URL_RE = /(https?:\/\/[^\s<>()]+|www\.[^\s<>()]+)/g;
 const TRAILING_PUNCT = /[).!?,;:]+$/;

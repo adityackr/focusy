@@ -3,9 +3,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import type { Course } from "@/lib/types";
-import { getProgress, setProgress } from "@/lib/storage";
-import { useLibrary } from "@/store/library";
+import type { Course } from "@/shared/lib/types";
+import { getProgress, setProgress } from "@/shared/lib/storage";
+import { useLibrary } from "@/shared/store/library";
 
 const SIDEBAR_KEY = "yt-course:sidebar-open";
 

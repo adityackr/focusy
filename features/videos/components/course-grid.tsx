@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Clapperboard } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { CourseCard } from "@/components/videos/course-card";
-import { cn } from "@/lib/utils";
-import type { Course } from "@/lib/types";
+import { buttonVariants } from "@/shared/ui/button";
+import { CourseCard } from "@/features/videos/components/course-card";
+import { cn } from "@/shared/lib/utils";
+import type { Course } from "@/shared/lib/types";
 
 export function CourseGrid({
   items,

@@ -6,9 +6,9 @@ import {
   Timer,
   Zap,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { SectionHeading } from "@/components/landing/section-heading";
-import { Reveal } from "@/components/landing/reveal";
+import { Card, CardContent } from "@/shared/ui/card";
+import { SectionHeading } from "@/features/landing/components/section-heading";
+import { Reveal } from "@/features/landing/components/reveal";
 
 const features = [
   {

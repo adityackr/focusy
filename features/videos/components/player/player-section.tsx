@@ -1,9 +1,9 @@
 import { PanelLeftOpen } from "lucide-react";
-import type { Course } from "@/lib/types";
-import { formatTimestamp } from "@/lib/chapters";
-import VideoPlayer from "@/components/course/VideoPlayer";
-import ChapterEditor from "@/components/course/ChapterEditor";
-import { Button } from "@/components/ui/button";
+import type { Course } from "@/shared/lib/types";
+import { formatTimestamp } from "@/shared/lib/chapters";
+import VideoPlayer from "@/features/videos/components/player/video-player";
+import ChapterEditor from "@/features/videos/components/player/chapter-editor";
+import { Button } from "@/shared/ui/button";
 
 interface Props {
   course: Course;

@@ -1,7 +1,7 @@
 import { ListVideo, type LucideIcon } from "lucide-react";
-import { PlaylistCard } from "@/components/playlists/playlist-card";
-import { AddPlaylistButton } from "@/components/add-playlist-dialog";
-import type { Playlist } from "@/lib/types";
+import { PlaylistCard } from "@/features/playlists/components/playlist-card";
+import { AddPlaylistButton } from "@/features/playlists/components/add-playlist-dialog";
+import type { Playlist } from "@/shared/lib/types";
 
 export function PlaylistGrid({
   items,
@@ -35,26 +35,6 @@ export function PlaylistGrid({
       {items.map((p) => (
         <PlaylistCard key={p.playlistId} playlist={p} />
       ))}
-    </div>
-  );
-}
-
-export function PageHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string;
-  subtitle: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-      </div>
-      {action}
     </div>
   );
 }

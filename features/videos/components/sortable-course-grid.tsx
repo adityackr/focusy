@@ -19,12 +19,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { Course } from "@/lib/types";
-import { useLibrary, selectCourseList } from "@/store/library";
-import { CourseCard } from "@/components/videos/course-card";
-import { CourseGrid } from "@/components/videos/course-grid";
+import { Button } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/utils";
+import type { Course } from "@/shared/lib/types";
+import { useLibrary, selectCourseList } from "@/shared/store/library";
+import { CourseCard } from "@/features/videos/components/course-card";
+import { CourseGrid } from "@/features/videos/components/course-grid";
 
 function SortableCard({ course }: { course: Course }) {
   const {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,10 +13,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useLibrary } from "@/store/library";
-import { clearProgress } from "@/lib/storage";
-import { cn } from "@/lib/utils";
+} from "@/shared/ui/alert-dialog";
+import { useLibrary } from "@/shared/store/library";
+import { clearProgress } from "@/shared/lib/storage";
+import { cn } from "@/shared/lib/utils";
 
 export function DeleteCourseButton({
   courseId,

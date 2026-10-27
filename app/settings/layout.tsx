@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TopBar } from "@/components/app/top-bar";
+import { TopBar } from "@/features/shell";
 
 export const metadata: Metadata = {
   title: "Settings",

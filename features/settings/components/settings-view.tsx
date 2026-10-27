@@ -3,19 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookOpenText, Check, ExternalLink, KeyRound, ShieldCheck } from "lucide-react";
-import { getApiKey, setApiKey, fetchTest } from "./actions-client";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { getApiKey, setApiKey, fetchTest } from "@/features/settings/lib/actions-client";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+} from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
+import { Badge } from "@/shared/ui/badge";
+import { Separator } from "@/shared/ui/separator";
+import { cn } from "@/shared/lib/utils";
 
 const CONSOLE = "https://console.cloud.google.com";
 const API_LIBRARY = "https://console.cloud.google.com/apis/library/youtube.googleapis.com";
@@ -47,7 +47,7 @@ const STEPS = [
   },
 ];
 
-export default function SettingsPage() {
+export function SettingsView() {
   const [key, setKey] = useState("");
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);

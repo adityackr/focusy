@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ListVideo, Play } from "lucide-react";
-import type { Course } from "@/lib/types";
-import { getProgress } from "@/lib/storage";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { useLibrary } from "@/store/library";
-import { DeleteCourseButton } from "@/components/videos/delete-course-dialog";
-import { cn } from "@/lib/utils";
+import type { Course } from "@/shared/lib/types";
+import { getProgress } from "@/shared/lib/storage";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Badge } from "@/shared/ui/badge";
+import { Progress } from "@/shared/ui/progress";
+import { Button } from "@/shared/ui/button";
+import { useLibrary } from "@/shared/store/library";
+import { DeleteCourseButton } from "@/features/videos/components/delete-course-dialog";
+import { cn } from "@/shared/lib/utils";
 
 /** Video course card — Chapterly's card, with Focusy's favorite action. */
 export function CourseCard({ course }: { course: Course }) {
@@ -102,8 +102,7 @@ export function CourseCard({ course }: { course: Course }) {
           <DeleteCourseButton
             courseId={course.id}
             courseTitle={course.title}
-            iconOnly={false}
-            className="h-7 gap-1 rounded-lg bg-red-500/10 px-2.5 text-xs font-medium hover:bg-red-500/20"
+            className="h-8 w-8"
           />
         </div>
       </CardFooter>

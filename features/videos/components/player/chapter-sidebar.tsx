@@ -1,9 +1,9 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { Chapter } from '@/lib/types';
-import { formatDuration, formatTimestamp } from '@/lib/chapters';
+import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
+import type { Chapter } from '@/shared/lib/types';
+import { formatDuration, formatTimestamp } from '@/shared/lib/chapters';
 import { Check, Clock, Flag, Play } from 'lucide-react';
 
 /** Short, clearly-a-duration label (e.g. "45s", "5m 30s", "1h 2m") so it can't be mistaken for a timestamp. */
