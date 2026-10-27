@@ -20,6 +20,15 @@ export function formatTimestamp(totalSeconds: number): string {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+/** Always HH:MM:SS (e.g. lesson durations). Rounds to nearest second, min 00:00:01 for positive spans. */
+export function formatDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
 /** True if a line looks like a chapter/timestamp entry (e.g. "00:00 Intro"). */
 export function isChapterLine(raw: string): boolean {
   const line = raw.trim().replace(/^[(<[]+/, "");
@@ -111,4 +120,15 @@ export function chaptersForVideo(video: PlaylistVideo): Chapter[] {
   const parsed = parseChapters(video.description ?? "");
   chaptersCache.set(video, parsed);
   return parsed;
+}
+
+/** YouTube chapter guidelines: >=3 chapters, first starts at 0. We warn but still allow fewer. */
+export function chapterWarnings(chapters: Chapter[]): string[] {
+  const warnings: string[] = [];
+  if (chapters.length === 0) return ["No timestamps found."];
+  if (chapters.length < 3)
+    warnings.push("YouTube recommends at least 3 chapters — fewer still work in this player.");
+  if (chapters[0].startSeconds !== 0)
+    warnings.push("First chapter doesn't start at 00:00 — consider adding a 00:00 intro chapter.");
+  return warnings;
 }

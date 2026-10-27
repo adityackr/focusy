@@ -398,7 +398,7 @@ export function VideoPlayer({
                 style={{ width: `${bufferedRatio * 100}%` }}
               />
               {/* Played */}
-              <div className="absolute inset-y-0 left-0 rounded-full bg-red-500" style={{ width: `${progressRatio * 100}%` }} />
+              <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${progressRatio * 100}%` }} />
               {/* Chapter dividers */}
               {total > 0 &&
                 chapters.slice(1).map((c) => (
@@ -410,7 +410,7 @@ export function VideoPlayer({
                 ))}
               {/* Playhead */}
               <span
-                className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500 opacity-0 shadow ring-2 ring-white/80 transition-opacity group-hover:opacity-100 [.group:hover_&]:opacity-100"
+                className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow ring-2 ring-white/80 transition-opacity group-hover:opacity-100 [.group:hover_&]:opacity-100"
                 style={{ left: `${progressRatio * 100}%` }}
               />
             </div>

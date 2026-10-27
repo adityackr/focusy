@@ -12,7 +12,8 @@ const { NowPlaying } = await import("./now-playing");
 const ACTIVE: PlaylistVideo = {
   videoId: "vid-a",
   title: "Active lesson",
-  description: "Welcome to the lesson!\n00:00 Intro\n01:00 Setup\n03:30 Deep dive\nThanks for watching",
+  description:
+    "Welcome to the lesson! 👋\n00:00 Intro\n01:00 Setup\n03:30 Deep dive\nResources: https://example.com/resources\nThanks for watching 🎉",
   thumbnail: { url: "https://i.ytimg.com/vi/vid-a/mqdefault.jpg", width: 320, height: 180 },
   position: 0,
 };
@@ -63,6 +64,18 @@ describe("NowPlaying with the custom player", () => {
     );
     expect(screen.getByText(/Welcome to the lesson!/)).toBeTruthy();
     expect(screen.queryByText(/00:00 Intro/)).toBeNull();
+  });
+
+  test("description links are clickable and emojis survive", () => {
+    render(
+      <NowPlaying playlist={PLAYLIST} activeVideo={ACTIVE} activeIndex={0} watched={[]} />
+    );
+    const link = screen.getByRole("link", { name: "https://example.com/resources" });
+    expect(link.getAttribute("href")).toBe("https://example.com/resources");
+    expect(link.getAttribute("target")).toBe("_blank");
+    // Plain text lines (incl. emoji) render outside the links.
+    expect(screen.getByText(/👋/)).toBeTruthy();
+    expect(screen.getByText(/🎉/)).toBeTruthy();
   });
 
   test("reports the initial chapter through onChapterChange", () => {

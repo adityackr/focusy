@@ -8,11 +8,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: {
-    default: "FocusTube — distraction-free YouTube playlists",
-    template: "%s · FocusTube",
+    default: "Focusy — distraction-free YouTube learning",
+    template: "%s · Focusy",
   },
   description:
-    "Paste a YouTube playlist link and watch it like a course — no recommendations, no shorts, no rabbit holes.",
+    "Turn any YouTube video or playlist into a focused, course-style classroom — no recommendations, no shorts, no rabbit holes.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

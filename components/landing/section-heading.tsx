@@ -3,10 +3,12 @@ import { cn } from "@/lib/utils";
 export function SectionHeading({
   kicker,
   title,
+  subtitle,
   className,
 }: {
   kicker: string;
   title: string;
+  subtitle?: string;
   className?: string;
 }) {
   return (
@@ -19,6 +21,11 @@ export function SectionHeading({
       >
         {title}
       </h2>
+      {subtitle && (
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }

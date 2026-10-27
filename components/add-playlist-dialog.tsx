@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,11 +17,17 @@ import { Input } from "@/components/ui/input";
 import { parsePlaylistInput } from "@/lib/utils";
 import { useLibrary } from "@/store/library";
 
-export function AddPlaylistButton({ className }: { className?: string }) {
+export function AddPlaylistButton({
+  className,
+  variant = "default",
+}: {
+  className?: string;
+  variant?: ButtonProps["variant"];
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button onClick={() => setOpen(true)} className={className}>
+      <Button onClick={() => setOpen(true)} className={className} variant={variant}>
         <Plus className="size-4" /> Add playlist
       </Button>
       <AddPlaylistDialog open={open} onOpenChange={setOpen} />

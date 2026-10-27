@@ -10,23 +10,27 @@ import {
   LayoutGrid,
   Plus,
   Search,
+  Settings,
   Star,
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLibrary, selectPlaylistList } from "@/store/library";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLibrary, selectPlaylistList, selectCourseList } from "@/store/library";
 import { AddPlaylistDialog } from "@/components/add-playlist-dialog";
 import { DeletePlaylistButton } from "@/components/playlists/delete-playlist-dialog";
+import { DeleteCourseButton } from "@/components/videos/delete-course-dialog";
 import { LogoMark } from "@/components/logo";
 
 const NAV = [
   { href: "/library", label: "Library", icon: LayoutGrid },
   { href: "/recent", label: "Recent", icon: History },
   { href: "/favorites", label: "Favorites", icon: Heart },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppSidebar({
@@ -41,14 +45,19 @@ export function AppSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const ordered = useLibrary(useShallow(selectPlaylistList));
+  const orderedCourses = useLibrary(useShallow(selectCourseList));
   const hydrated = useLibrary((s) => s.hydrated);
   const favorites = useLibrary((s) => s.favorites);
+  const courseFavorites = useLibrary((s) => s.courseFavorites);
   const toggleFavorite = useLibrary((s) => s.toggleFavorite);
   const pushRecent = useLibrary((s) => s.pushRecent);
+  const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
+  const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
+  const [tab, setTab] = useState("videos");
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const list = useMemo(() => {
+  const playlistList = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return ordered;
     return ordered.filter(
@@ -58,8 +67,27 @@ export function AppSidebar({
     );
   }, [ordered, query]);
 
+  const courseList = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return orderedCourses;
+    return orderedCourses.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.videoId.toLowerCase().includes(q) ||
+        c.chapters.some((ch) => ch.title.toLowerCase().includes(q))
+    );
+  }, [orderedCourses, query]);
+
+  const list = tab === "videos" ? courseList : playlistList;
+  const favCount = favorites.length + courseFavorites.length;
+
   function handleNavigate(id: string) {
     pushRecent(id);
+    onNavigate?.();
+  }
+
+  function handleCourseNavigate(id: string) {
+    pushCourseRecent(id);
     onNavigate?.();
   }
 
@@ -79,7 +107,7 @@ export function AppSidebar({
           {!collapsed && (
             <span className="truncate leading-tight">
               <span className="block truncate text-sm font-extrabold">
-                Focus<span className="text-primary">Tube</span>
+                Focus<span className="text-primary">y</span>
               </span>
               <span className="block text-[11px] text-muted-foreground">focus mode</span>
             </span>
@@ -109,9 +137,9 @@ export function AppSidebar({
             >
               <n.icon className="size-4 shrink-0" />
               {!collapsed && <span>{n.label}</span>}
-              {!collapsed && n.href === "/favorites" && favorites.length > 0 && (
+              {!collapsed && n.href === "/favorites" && favCount > 0 && (
                 <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
-                  {favorites.length}
+                  {favCount}
                 </span>
               )}
             </Link>
@@ -128,15 +156,24 @@ export function AppSidebar({
           </Button>
         ) : (
           <>
-            <Button onClick={() => setDialogOpen(true)} className="w-full">
-              <Plus className="size-4" /> Add playlist
-            </Button>
+            <div className="flex gap-2">
+              <Link
+                href="/add"
+                onClick={onNavigate}
+                className={cn(buttonVariants({ variant: "outline" }), "h-9 flex-1 px-3")}
+              >
+                <Plus className="size-4" /> Add video
+              </Link>
+              <Button onClick={() => setDialogOpen(true)} className="h-9 flex-1 px-3">
+                <Plus className="size-4" /> Playlist
+              </Button>
+            </div>
             <div className="relative mt-3">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search playlists…"
+                placeholder="Search…"
                 className="h-9 bg-background pl-9"
               />
             </div>
@@ -146,14 +183,20 @@ export function AppSidebar({
 
       {!collapsed && (
         <div className="mt-3 flex-1 overflow-y-auto px-3 pb-3">
-          <p className="px-1 pb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            Playlists · {hydrated ? list.length : "…"}
+          <Tabs value={tab} onValueChange={setTab} className="gap-2">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="videos">Videos</TabsTrigger>
+              <TabsTrigger value="playlists">Playlists</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <p className="px-1 pt-3 pb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            {tab === "videos" ? "Videos" : "Playlists"} · {hydrated ? list.length : "…"}
           </p>
           {!hydrated ? (
             <ul
               className="space-y-1.5"
               aria-busy="true"
-              aria-label="Loading playlists"
+              aria-label="Loading library"
             >
               {Array.from({ length: 4 }).map((_, i) => (
                 <li key={i} className="rounded-xl border p-2">
@@ -171,67 +214,129 @@ export function AppSidebar({
           <>
           {list.length === 0 && (
             <p className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
-              {query ? "No matches. Try another search." : "No playlists yet. Add your first one above."}
+              {query
+                ? "No matches. Try another search."
+                : tab === "videos"
+                  ? "No videos yet. Add your first one above."
+                  : "No playlists yet. Add your first one above."}
             </p>
           )}
           <ul className="space-y-1.5">
-            {list.map((p) => {
-              const active = pathname.includes(p.playlistId);
-              const fav = favorites.includes(p.playlistId);
-              return (
-                <li
-                  key={p.playlistId}
-                  className={cn(
-                    "group relative rounded-xl border p-2 transition-all hover:shadow-md",
-                    active ? "border-primary/60 bg-primary/5" : "hover:border-primary/30"
-                  )}
-                >
-                  <Link
-                    href={`/watch/${p.playlistId}`}
-                    onClick={() => handleNavigate(p.playlistId)}
-                    className="flex w-full items-center gap-2.5 text-left"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.playlistThumbnail.url}
-                      alt=""
-                      className="h-11 w-20 shrink-0 rounded-lg object-cover"
-                      loading="lazy"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-semibold leading-snug">
-                        {p.playlistTitle}
-                      </span>
-                      <span className="block truncate text-[11px] text-muted-foreground">
-                        {p.videos.length} videos · {p.channelTitle}
-                      </span>
-                    </span>
-                  </Link>
-                  <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded-lg border bg-card/95 p-0.5 shadow-md backdrop-blur opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleFavorite(p.playlistId)}
-                      aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+            {tab === "videos"
+              ? courseList.map((c) => {
+                  const active = pathname.includes(c.id);
+                  const fav = courseFavorites.includes(c.id);
+                  return (
+                    <li
+                      key={c.id}
                       className={cn(
-                        "h-7 w-7 hover:bg-accent",
-                        fav ? "text-primary opacity-100" : "text-muted-foreground"
+                        "group relative rounded-xl border p-2 transition-all hover:shadow-md",
+                        active ? "border-primary/60 bg-primary/5" : "hover:border-primary/30"
                       )}
                     >
-                      <Star className={cn("size-3.5", fav && "fill-current")} />
-                    </Button>
-                    <DeletePlaylistButton
-                      playlistId={p.playlistId}
-                      playlistTitle={p.playlistTitle}
-                      className="h-7 w-7 [&_svg]:size-3.5"
-                      onDeleted={() => {
-                        if (pathname.includes(p.playlistId)) router.push("/library");
-                      }}
-                    />
-                  </div>
-                </li>
-              );
-            })}
+                      <Link
+                        href={`/course/${c.id}`}
+                        onClick={() => handleCourseNavigate(c.id)}
+                        className="flex w-full items-center gap-2.5 text-left"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`https://i.ytimg.com/vi/${c.videoId}/default.jpg`}
+                          alt=""
+                          className="h-11 w-20 shrink-0 rounded-lg object-cover"
+                          loading="lazy"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-semibold leading-snug">
+                            {c.title}
+                          </span>
+                          <span className="block truncate text-[11px] text-muted-foreground">
+                            {c.chapters.length} lessons · video
+                          </span>
+                        </span>
+                      </Link>
+                      <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded-lg border bg-card/95 p-0.5 shadow-md backdrop-blur opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleCourseFavorite(c.id)}
+                          aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+                          className={cn(
+                            "h-7 w-7 hover:bg-accent",
+                            fav ? "text-primary opacity-100" : "text-muted-foreground"
+                          )}
+                        >
+                          <Star className={cn("size-3.5", fav && "fill-current")} />
+                        </Button>
+                        <DeleteCourseButton
+                          courseId={c.id}
+                          courseTitle={c.title}
+                          className="h-7 w-7 [&_svg]:size-3.5"
+                          onDeleted={() => {
+                            if (pathname.includes(c.id)) router.push("/library");
+                          }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })
+              : playlistList.map((p) => {
+                  const active = pathname.includes(p.playlistId);
+                  const fav = favorites.includes(p.playlistId);
+                  return (
+                    <li
+                      key={p.playlistId}
+                      className={cn(
+                        "group relative rounded-xl border p-2 transition-all hover:shadow-md",
+                        active ? "border-primary/60 bg-primary/5" : "hover:border-primary/30"
+                      )}
+                    >
+                      <Link
+                        href={`/watch/${p.playlistId}`}
+                        onClick={() => handleNavigate(p.playlistId)}
+                        className="flex w-full items-center gap-2.5 text-left"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={p.playlistThumbnail.url}
+                          alt=""
+                          className="h-11 w-20 shrink-0 rounded-lg object-cover"
+                          loading="lazy"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-semibold leading-snug">
+                            {p.playlistTitle}
+                          </span>
+                          <span className="block truncate text-[11px] text-muted-foreground">
+                            {p.videos.length} videos · {p.channelTitle}
+                          </span>
+                        </span>
+                      </Link>
+                      <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 rounded-lg border bg-card/95 p-0.5 shadow-md backdrop-blur opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleFavorite(p.playlistId)}
+                          aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+                          className={cn(
+                            "h-7 w-7 hover:bg-accent",
+                            fav ? "text-primary opacity-100" : "text-muted-foreground"
+                          )}
+                        >
+                          <Star className={cn("size-3.5", fav && "fill-current")} />
+                        </Button>
+                        <DeletePlaylistButton
+                          playlistId={p.playlistId}
+                          playlistTitle={p.playlistTitle}
+                          className="h-7 w-7 [&_svg]:size-3.5"
+                          onDeleted={() => {
+                            if (pathname.includes(p.playlistId)) router.push("/library");
+                          }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
           </ul>
           </>
           )}
@@ -242,7 +347,7 @@ export function AppSidebar({
         <div
           className="flex flex-1 flex-col items-center gap-2 overflow-y-auto px-2 py-3"
           aria-busy="true"
-          aria-label="Loading playlists"
+          aria-label="Loading library"
         >
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="size-11 rounded-xl" />
@@ -252,22 +357,44 @@ export function AppSidebar({
 
       {collapsed && hydrated && list.length > 0 && (
         <div className="flex flex-1 flex-col items-center gap-2 overflow-y-auto px-2 py-3">
-          {list.slice(0, 12).map((p) => (
-            <Link
-              key={p.playlistId}
-              href={`/watch/${p.playlistId}`}
-              onClick={() => handleNavigate(p.playlistId)}
-              title={p.playlistTitle}
-              aria-label={`Watch ${p.playlistTitle}`}
-              className={cn(
-                "overflow-hidden rounded-xl border-2 transition-all hover:scale-105",
-                pathname.includes(p.playlistId) ? "border-primary" : "border-transparent"
-              )}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.playlistThumbnail.url} alt="" className="size-11 object-cover" loading="lazy" />
-            </Link>
-          ))}
+          {tab === "videos"
+            ? courseList.slice(0, 12).map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/course/${c.id}`}
+                  onClick={() => handleCourseNavigate(c.id)}
+                  title={c.title}
+                  aria-label={`Watch ${c.title}`}
+                  className={cn(
+                    "overflow-hidden rounded-xl border-2 transition-all hover:scale-105",
+                    pathname.includes(c.id) ? "border-primary" : "border-transparent"
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://i.ytimg.com/vi/${c.videoId}/default.jpg`}
+                    alt=""
+                    className="size-11 object-cover"
+                    loading="lazy"
+                  />
+                </Link>
+              ))
+            : playlistList.slice(0, 12).map((p) => (
+                <Link
+                  key={p.playlistId}
+                  href={`/watch/${p.playlistId}`}
+                  onClick={() => handleNavigate(p.playlistId)}
+                  title={p.playlistTitle}
+                  aria-label={`Watch ${p.playlistTitle}`}
+                  className={cn(
+                    "overflow-hidden rounded-xl border-2 transition-all hover:scale-105",
+                    pathname.includes(p.playlistId) ? "border-primary" : "border-transparent"
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.playlistThumbnail.url} alt="" className="size-11 object-cover" loading="lazy" />
+                </Link>
+              ))}
         </div>
       )}
 

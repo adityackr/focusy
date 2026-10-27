@@ -2,7 +2,8 @@ import Image from "next/image";
 import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import VideoDescription from "@/components/course/VideoDescription";
 import type { Playlist } from "@/lib/types";
 
 export function PlaylistOverview({
@@ -43,10 +44,10 @@ export function PlaylistOverview({
         </div>
       </div>
       {playlist.playlistDescription && (
-        <CardContent className="whitespace-pre-wrap p-5 text-sm leading-relaxed text-muted-foreground">
-          {playlist.playlistDescription.slice(0, 600)}
-          {playlist.playlistDescription.length > 600 ? "…" : ""}
-        </CardContent>
+        <VideoDescription
+          description={playlist.playlistDescription}
+          title="ABOUT THIS PLAYLIST"
+        />
       )}
     </Card>
   );

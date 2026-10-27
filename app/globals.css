@@ -3,56 +3,58 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.68 0.13 64);
-  --primary-foreground: oklch(0.25 0.02 60);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
+  /* Tide — light: foam-white surfaces with a deep-blue ocean primary (#3E5CEB) */
+  --background: oklch(0.984 0.007 243);
+  --foreground: oklch(0.22 0.04 258);
+  --card: oklch(0.999 0.002 243);
+  --card-foreground: oklch(0.22 0.04 258);
+  --popover: oklch(0.999 0.002 243);
+  --popover-foreground: oklch(0.22 0.04 258);
+  --primary: oklch(0.55 0.2 262);
+  --primary-foreground: oklch(0.985 0.005 240);
+  --secondary: oklch(0.955 0.012 250);
+  --secondary-foreground: oklch(0.24 0.045 258);
+  --muted: oklch(0.955 0.012 250);
+  --muted-foreground: oklch(0.5 0.032 253);
+  --accent: oklch(0.945 0.016 250);
+  --accent-foreground: oklch(0.24 0.045 258);
   --destructive: oklch(0.58 0.19 32);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.68 0.13 64);
+  --border: oklch(0.9 0.018 250);
+  --input: oklch(0.9 0.018 250);
+  --ring: oklch(0.55 0.2 262);
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar: oklch(0.968 0.011 248);
+  --sidebar-foreground: oklch(0.22 0.04 258);
+  --sidebar-border: oklch(0.9 0.018 248);
+  --sidebar-accent: oklch(0.93 0.017 250);
 }
 
 .dark {
-  --background: oklch(0.12 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.17 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.17 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.68 0.13 64);
-  --primary-foreground: oklch(0.25 0.02 60);
-  --secondary: oklch(0.24 0.006 285.885);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.24 0.006 285.885);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.24 0.006 285.885);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Tide — dark: deep-navy ocean surfaces, brighter blue primary */
+  --background: oklch(0.17 0.032 256);
+  --foreground: oklch(0.97 0.01 240);
+  --card: oklch(0.21 0.034 256);
+  --card-foreground: oklch(0.97 0.01 240);
+  --popover: oklch(0.21 0.034 256);
+  --popover-foreground: oklch(0.97 0.01 240);
+  --primary: oklch(0.63 0.165 258);
+  --primary-foreground: oklch(0.985 0.005 240);
+  --secondary: oklch(0.27 0.034 256);
+  --secondary-foreground: oklch(0.97 0.01 240);
+  --muted: oklch(0.27 0.034 256);
+  --muted-foreground: oklch(0.68 0.028 253);
+  --accent: oklch(0.28 0.036 256);
+  --accent-foreground: oklch(0.97 0.01 240);
   --destructive: oklch(0.58 0.19 32);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.27 0.006 285.885);
-  --input: oklch(0.27 0.006 285.885);
-  --ring: oklch(0.68 0.13 64);
-  --sidebar: oklch(0.15 0.005 285.823);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.24 0.006 285.885);
-  --sidebar-accent: oklch(0.22 0.006 285.885);
+  --border: oklch(0.31 0.034 256);
+  --input: oklch(0.31 0.034 256);
+  --ring: oklch(0.63 0.165 258);
+  --sidebar: oklch(0.19 0.032 256);
+  --sidebar-foreground: oklch(0.97 0.01 240);
+  --sidebar-border: oklch(0.29 0.034 256);
+  --sidebar-accent: oklch(0.245 0.034 256);
 }
 
 @theme inline {
@@ -116,5 +118,40 @@
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-14px); }
+  }
+
+  /* Landing scroll-reveal (driven by components/landing/reveal.tsx) */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 0.6s ease,
+      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+  .reveal-visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .animate-float,
+    .animate-gradient-text {
+      animation: none;
+    }
+  }
+
+  /* Slowly flowing gradient for the hero headline */
+  .animate-gradient-text {
+    background-size: 200% auto;
+    animation: gradient-shift 6s ease-in-out infinite;
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% center; }
+    50% { background-position: 100% center; }
   }
 }

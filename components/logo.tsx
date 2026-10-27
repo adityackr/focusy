@@ -4,8 +4,8 @@ import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * FocusTube logo mark — a rounded play button in honey-amber,
- * echoing the app theme (primary) with warm-charcoal foreground.
+ * Focusy logo mark — a rounded play button in tide blue,
+ * echoing the app theme (primary) with a white foreground.
  */
 export function LogoMark({ size = 36, className }: { size?: number; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
@@ -30,8 +30,8 @@ export function LogoMark({ size = 36, className }: { size?: number; className?: 
           y2="44"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E8C178" />
-          <stop offset="1" stopColor="#CC9150" />
+          <stop stopColor="#8FA8FF" />
+          <stop offset="1" stopColor="#3E5CEB" />
         </linearGradient>
         <clipPath id={clipId}>
           <rect x="4" y="4" width="40" height="40" rx="13" />
@@ -43,8 +43,8 @@ export function LogoMark({ size = 36, className }: { size?: number; className?: 
       </g>
       <path
         d="M20.5 17.8v12.4c0 1.1 1.2 1.8 2.2 1.2l9.6-6.2c.9-.6.9-1.9 0-2.5l-9.6-6.2c-1-.6-2.2.1-2.2 1.3z"
-        fill="#33291F"
-        stroke="#33291F"
+        fill="#FFFFFF"
+        stroke="#FFFFFF"
         strokeWidth="2.5"
         strokeLinejoin="round"
       />

@@ -3,12 +3,13 @@ import { ArrowRight, Clapperboard } from "lucide-react";
 import { AddPlaylistButton } from "@/components/add-playlist-dialog";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Reveal } from "@/components/landing/reveal";
 import { cn } from "@/lib/utils";
 
 const stats: Array<[string, string]> = [
   ["100%", "distraction-free"],
   ["0", "accounts needed"],
-  ["1-click", "playlist import"],
+  ["1-click", "video & playlist import"],
 ];
 
 const mockLessons = ["01 · Getting started", "02 · Core concepts", "03 · Build & ship"];
@@ -17,20 +18,26 @@ function HeroCopy() {
   return (
     <div>
       <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-        Watch YouTube playlists{" "}
-        <span className="bg-linear-to-r from-primary via-[#d09a5e] to-[#e2b96f] bg-clip-text text-transparent">
+        Learn from YouTube{" "}
+        <span className="animate-gradient-text bg-linear-to-r from-primary via-[#5B78F0] to-[#8AA5FF] bg-clip-text text-transparent">
           without the rabbit&nbsp;hole.
         </span>
       </h1>
       <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-        Paste a playlist link and get a calm, course-style classroom: the videos you chose,
-        a collapsible lesson sidebar, and nothing else competing for your attention.
+        Paste a video or a playlist link and get a calm, course-style classroom: chapter-by-chapter
+        lessons, a collapsible sidebar, and nothing else competing for your attention.
       </p>
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <AddPlaylistButton className="h-12 px-7 text-base" />
-        <Link href="/library" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
-          Explore library <ArrowRight className="size-4" />
+        <Link
+          href="/add"
+          className={cn(buttonVariants({ size: "lg" }), "h-12 px-7 text-base")}
+        >
+          Add a video <ArrowRight className="size-4" />
         </Link>
+        <AddPlaylistButton
+          variant="outline"
+          className="h-12 px-7 text-base"
+        />
       </div>
       <dl className="mt-10 flex flex-wrap gap-8">
         {stats.map(([v, l]) => (
@@ -53,7 +60,7 @@ function HeroVisual() {
             <span className="flex size-16 items-center justify-center rounded-full bg-primary shadow-xl shadow-primary/40">
               <Clapperboard className="size-7" />
             </span>
-            <p className="text-sm font-medium text-zinc-300">Your playlist, as a classroom</p>
+            <p className="text-sm font-medium text-zinc-300">Your YouTube, as a classroom</p>
           </div>
         </div>
         <div className="space-y-2 p-2">
@@ -75,7 +82,7 @@ function HeroVisual() {
         </div>
       </div>
       <div aria-hidden className="absolute -right-6 -top-6 -z-10 size-40 rounded-full bg-primary/20 blur-3xl" />
-      <div aria-hidden className="absolute -bottom-8 -left-8 -z-10 size-48 rounded-full bg-[#d3a15f]/20 blur-3xl" />
+      <div aria-hidden className="absolute -bottom-8 -left-8 -z-10 size-48 rounded-full bg-[#5B78F0]/25 blur-3xl" />
     </div>
   );
 }
@@ -85,11 +92,15 @@ export function HeroSection() {
     <section className="relative overflow-hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_30rem_at_50%_-8rem,oklch(0.68_0.13_64/0.22),transparent)] dark:bg-[radial-gradient(60rem_30rem_at_50%_-8rem,oklch(0.68_0.13_64/0.32),transparent)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_30rem_at_50%_-8rem,oklch(0.55_0.2_262/0.18),transparent)] dark:bg-[radial-gradient(60rem_30rem_at_50%_-8rem,oklch(0.63_0.165_258/0.3),transparent)]"
       />
       <div className="relative mx-auto grid max-w-7xl gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pt-24">
-        <HeroCopy />
-        <HeroVisual />
+        <Reveal>
+          <HeroCopy />
+        </Reveal>
+        <Reveal delay={150}>
+          <HeroVisual />
+        </Reveal>
       </div>
     </section>
   );

@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { VideoPlayer, type SeekRequest } from "@/components/watch/video-player";
-import { chaptersForVideo, stripTimestampLines } from "@/lib/chapters";
+import { chaptersForVideo } from "@/lib/chapters";
+import VideoDescription from "@/components/course/VideoDescription";
 import type { Playlist, PlaylistVideo } from "@/lib/types";
 
 export function NowPlaying({
@@ -35,10 +35,6 @@ export function NowPlaying({
 }) {
   const router = useRouter();
   const chapters = useMemo(() => chaptersForVideo(activeVideo), [activeVideo]);
-  const description = useMemo(
-    () => stripTimestampLines(activeVideo.description ?? ""),
-    [activeVideo.description]
-  );
   const nextVideo =
     activeIndex + 1 < playlist.videos.length ? playlist.videos[activeIndex + 1] : undefined;
   const progress = playlist.videos.length
@@ -79,14 +75,7 @@ export function NowPlaying({
       <p className="mt-1 text-sm font-medium text-muted-foreground">
         {playlist.channelTitle}
       </p>
-      {description && (
-        <Card className="mt-4">
-          <CardContent className="whitespace-pre-wrap p-4 text-sm leading-relaxed text-muted-foreground">
-            {description.slice(0, 900)}
-            {description.length > 900 ? "…" : ""}
-          </CardContent>
-        </Card>
-      )}
+      <VideoDescription description={activeVideo.description ?? ""} />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { WatchView } from "@/components/watch/watch-view";
 
-/** Title comes from the layout template: "Watch · FocusTube". */
+/** Title comes from the layout template: "Watch · Focusy". */
 export function generateMetadata(): Metadata {
   return { title: "Watch" };
 }

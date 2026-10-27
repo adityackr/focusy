@@ -2,10 +2,12 @@ import { describe, expect, test, beforeEach } from "bun:test";
 import {
   useLibrary,
   selectPlaylistList,
+  selectCourseList,
   migrateLegacyLibraryStorage,
+  migrateChapterlyCourses,
   LIBRARY_STORAGE_KEY,
 } from "./library";
-import type { Playlist } from "../lib/types";
+import type { Course, Playlist } from "../lib/types";
 
 function makePlaylist(id: string, addedAt: string): Playlist {
   return {
@@ -21,8 +23,28 @@ function makePlaylist(id: string, addedAt: string): Playlist {
   };
 }
 
+function makeCourse(id: string, createdAt: number): Course {
+  return {
+    id,
+    videoId: "abcdefghijk",
+    title: `Course ${id}`,
+    thumbnail: "",
+    description: "",
+    durationSeconds: null,
+    chapters: [
+      { id: `${id}-c1`, title: "Intro", startSeconds: 0, endSeconds: 60 },
+      { id: `${id}-c2`, title: "Body", startSeconds: 60, endSeconds: null },
+    ],
+    createdAt,
+  };
+}
+
 function ids() {
   return selectPlaylistList(useLibrary.getState()).map((p) => p.playlistId);
+}
+
+function courseIds() {
+  return selectCourseList(useLibrary.getState()).map((c) => c.id);
 }
 
 beforeEach(() => {
@@ -32,6 +54,10 @@ beforeEach(() => {
     order: [],
     favorites: [],
     recent: [],
+    courses: {},
+    courseOrder: [],
+    courseFavorites: [],
+    courseRecent: [],
     loadingIds: [],
     error: null,
   });
@@ -132,5 +158,107 @@ describe("playlist ordering", () => {
       order: [],
     });
     expect(ids()).toEqual(["B", "A"]);
+  });
+});
+
+describe("course (video) slice", () => {
+  test("new courses go first and push a recent", () => {
+    const { addCourse } = useLibrary.getState();
+    addCourse(makeCourse("A", 1));
+    addCourse(makeCourse("B", 2));
+    expect(courseIds()).toEqual(["B", "A"]);
+    expect(useLibrary.getState().courseRecent).toEqual(["B", "A"]);
+  });
+
+  test("setCourseOrder persists a manual arrangement", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    api.addCourse(makeCourse("B", 2));
+    api.addCourse(makeCourse("C", 3));
+    useLibrary.getState().setCourseOrder(["A", "C", "B"]);
+    expect(courseIds()).toEqual(["A", "C", "B"]);
+    const raw = JSON.parse(localStorage.getItem(LIBRARY_STORAGE_KEY)!);
+    expect(raw.state.courseOrder).toEqual(["A", "C", "B"]);
+  });
+
+  test("toggleCourseFavorite adds then removes", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    api.toggleCourseFavorite("A");
+    expect(useLibrary.getState().courseFavorites).toEqual(["A"]);
+    api.toggleCourseFavorite("A");
+    expect(useLibrary.getState().courseFavorites).toEqual([]);
+  });
+
+  test("removeCourse cleans order, favorites and recents", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    api.addCourse(makeCourse("B", 2));
+    api.toggleCourseFavorite("B");
+    useLibrary.getState().removeCourse("B");
+    expect(courseIds()).toEqual(["A"]);
+    expect(useLibrary.getState().courseFavorites).toEqual([]);
+    expect(useLibrary.getState().courseRecent).toEqual(["A"]);
+  });
+
+  test("updateCourse replaces chapters in place", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    const updated = {
+      ...useLibrary.getState().courses.A,
+      chapters: [{ id: "x", title: "Only", startSeconds: 0, endSeconds: null }],
+    };
+    useLibrary.getState().updateCourse(updated);
+    expect(useLibrary.getState().courses.A.chapters).toHaveLength(1);
+    expect(courseIds()).toEqual(["A"]);
+  });
+
+  test("updateCourse ignores unknown ids", () => {
+    useLibrary.getState().updateCourse(makeCourse("NOPE", 1));
+    expect(useLibrary.getState().courses.NOPE).toBeUndefined();
+  });
+});
+
+describe("Chapterly migration", () => {
+  test("adopts Chapterly's course array into the library store", () => {
+    localStorage.setItem(
+      "yt-course:courses",
+      JSON.stringify([makeCourse("legacy-1", 5), makeCourse("legacy-2", 6)])
+    );
+    migrateChapterlyCourses();
+    expect(localStorage.getItem("yt-course:courses")).toBeNull();
+    const raw = JSON.parse(localStorage.getItem(LIBRARY_STORAGE_KEY)!);
+    expect(raw.state.courseOrder).toEqual(["legacy-1", "legacy-2"]);
+    expect(Object.keys(raw.state.courses)).toEqual(["legacy-1", "legacy-2"]);
+  });
+
+  test("merges into an existing playlist library without touching playlists", () => {
+    localStorage.setItem(
+      LIBRARY_STORAGE_KEY,
+      JSON.stringify({
+        state: {
+          playlists: { P: makePlaylist("P", "2024-01-01") },
+          order: ["P"],
+          favorites: ["P"],
+          recent: ["P"],
+          courses: { mine: makeCourse("mine", 1) },
+          courseOrder: ["mine"],
+          courseFavorites: [],
+          courseRecent: [],
+        },
+        version: 0,
+      })
+    );
+    localStorage.setItem("yt-course:courses", JSON.stringify([makeCourse("legacy-1", 5)]));
+    migrateChapterlyCourses();
+    const raw = JSON.parse(localStorage.getItem(LIBRARY_STORAGE_KEY)!);
+    expect(raw.state.order).toEqual(["P"]);
+    expect(raw.state.courseOrder).toEqual(["mine", "legacy-1"]);
+  });
+
+  test("malformed legacy data is dropped, not crashed on", () => {
+    localStorage.setItem("yt-course:courses", "not json");
+    expect(() => migrateChapterlyCourses()).not.toThrow();
+    expect(localStorage.getItem("yt-course:courses")).toBeNull();
   });
 });

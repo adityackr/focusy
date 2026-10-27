@@ -9,7 +9,7 @@ export default function WatchLayout({ children }: { children: React.ReactNode })
           <Link href="/" className="flex items-center gap-2">
             <LogoMark size={32} />
             <span className="text-sm font-extrabold tracking-tight">
-              Focus<span className="text-primary">Tube</span>
+              Focus<span className="text-primary">y</span>
             </span>
           </Link>
           <Link href="/library" className="ml-auto text-sm font-medium text-muted-foreground hover:text-foreground">

@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Button>
           <LogoMark size={28} />
           <span className="text-sm font-extrabold tracking-tight">
-            Focus<span className="text-primary">Tube</span>
+            Focus<span className="text-primary">y</span>
           </span>
         </div>
         <main className={cn("min-h-0 flex-1 overflow-y-auto")}>{children}</main>
