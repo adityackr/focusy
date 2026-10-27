@@ -47,9 +47,9 @@ export function SpotlightSection() {
         {CARDS.map((c, i) => (
           <Reveal key={c.title} delay={i * 120}>
           <div
-            className="group relative flex h-full flex-col overflow-hidden rounded-3xl border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+            className="group card-sweep relative flex h-full flex-col overflow-hidden rounded-3xl border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
           >
-            <div className="bg-linear-to-r from-primary/90 via-primary to-[#5B78F0] px-6 py-5 text-primary-foreground">
+            <div className="sheen bg-linear-to-r from-primary/90 via-primary to-[#5B78F0] px-6 py-5 text-primary-foreground">
               <div className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase opacity-90">
                 <c.icon className="size-4" /> {c.kicker}
               </div>
@@ -82,7 +82,10 @@ export function SpotlightSection() {
                     </span>
                     <span className="truncate">{m}</span>
                     {i === 0 && (
-                      <span className="ml-auto text-[11px] font-semibold text-primary">
+                      <span className="ml-auto flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                        <span className="relative flex size-1.5 rounded-full bg-primary">
+                          <span aria-hidden className="ping-ring text-primary" />
+                        </span>
                         Now playing
                       </span>
                     )}

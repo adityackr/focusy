@@ -47,7 +47,7 @@ export function FaqSection() {
                   +
                 </span>
               </summary>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
+              <p className="faq-answer mt-3 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
             </details>
           </Reveal>
         ))}

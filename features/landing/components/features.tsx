@@ -53,9 +53,9 @@ export function FeaturesSection() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((f, i) => (
           <Reveal key={f.title} delay={(i % 3) * 80}>
-            <Card className="h-full transition-all hover:-translate-y-1 hover:shadow-xl">
+            <Card className="group card-sweep h-full transition-all hover:-translate-y-1 hover:shadow-xl">
               <CardContent className="p-6">
-                <span className="mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <span className="icon-wiggle mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <f.icon className="size-5" />
                 </span>
                 <h3 className="font-bold">{f.title}</h3>

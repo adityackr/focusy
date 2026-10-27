@@ -33,10 +33,14 @@ export function HowItWorksSection() {
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {steps.map((s, i) => (
             <Reveal key={s.title} delay={i * 100}>
-              <Card className="h-full">
+              <Card className="group card-sweep relative h-full transition-all hover:-translate-y-1 hover:shadow-lg">
+                <span
+                  aria-hidden
+                  className="bar-in absolute inset-x-0 top-0 h-1 bg-linear-to-r from-primary via-[#5B78F0] to-transparent"
+                />
                 <CardContent className="p-6">
                   <div className="mb-4 flex items-center justify-between">
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
+                    <span className="icon-wiggle relative flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
                       <s.icon className="size-5" />
                     </span>
                     <span className="text-4xl font-extrabold text-muted-foreground/30">

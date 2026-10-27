@@ -18,7 +18,7 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
-  const { ref, visible } = useReveal();
+  const { ref, visible } = useInView();
 
   return (
     <div
@@ -31,18 +31,28 @@ export function Reveal({
   );
 }
 
-/** Intersection-observer reveal state for `Reveal` — kept out of the JSX. */
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
+/** Matches the reduced-motion preference the CSS animations honor too. */
+export function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/**
+ * Intersection-observer visibility for a single element — shared by `Reveal`
+ * and the hero's count-up stats. Force-reveals after a timeout so content can
+ * never stay hidden if the observer never fires.
+ */
+export function useInView<T extends HTMLElement = HTMLDivElement>() {
+  const ref = useRef<T>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
+    if (prefersReducedMotion()) {
       setVisible(true);
       return;
     }

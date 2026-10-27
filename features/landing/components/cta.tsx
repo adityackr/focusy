@@ -8,10 +8,10 @@ export function CtaSection() {
   return (
 		<section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
 			<Reveal>
-			<div className="relative overflow-hidden rounded-3xl bg-[#0B1226] p-8 text-white sm:p-12">
+			<div className="sheen relative overflow-hidden rounded-3xl bg-[#0B1226] p-8 text-white sm:p-12">
 				<div
 					aria-hidden
-					className="pointer-events-none absolute inset-0 bg-[radial-gradient(40rem_20rem_at_80%_0%,oklch(0.63_0.165_258/0.55),transparent)]"
+					className="animate-orb pointer-events-none absolute inset-0 bg-[radial-gradient(40rem_20rem_at_80%_0%,oklch(0.63_0.165_258/0.55),transparent)]"
 				/>
 				<div className="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
 					<div>
