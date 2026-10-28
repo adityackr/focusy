@@ -1,5 +1,5 @@
-import { describe, expect, test, beforeEach } from "bun:test";
-import { cleanup, render, screen } from "@testing-library/react";
+import { describe, expect, test, beforeEach, afterEach } from "bun:test";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import VideoPlayer from "./video-player";
 import type { Chapter } from "@/shared/lib/types";
 
@@ -42,5 +42,69 @@ describe("Course player chapter chip", () => {
     // Player surface itself still renders (seekbar + chrome present).
     expect(screen.getByLabelText("Seek")).toBeTruthy();
     expect(screen.getByLabelText("Next chapter")).toBeTruthy();
+  });
+});
+
+/** Stub ResizeObserver so the player reports the given container width. */
+const originalResizeObserver: typeof ResizeObserver | undefined = globalThis.ResizeObserver;
+function stubContainerWidth(width: number) {
+  globalThis.ResizeObserver = class {
+    private cb: (entries: { contentRect: { width: number } }[]) => void;
+    constructor(cb: (entries: { contentRect: { width: number } }[]) => void) {
+      this.cb = cb;
+    }
+    observe() {
+      this.cb([{ contentRect: { width } }]);
+    }
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}
+
+describe("Small-screen control bar", () => {
+  beforeEach(() => stubContainerWidth(360));
+  afterEach(() => {
+    delete (document as { fullscreenElement?: unknown }).fullscreenElement;
+    globalThis.ResizeObserver = originalResizeObserver as typeof ResizeObserver;
+  });
+
+  test("narrow player keeps only play, time and fullscreen — nothing is clipped", () => {
+    renderPlayer();
+    // Essentials stay reachable (label flips between Play/Pause).
+    expect(screen.getByLabelText(/\(k\)$/)).toBeTruthy();
+    expect(screen.getByLabelText("Fullscreen (f)")).toBeTruthy();
+    // Time readout (direct-text matcher can't see it — query the node).
+    expect(document.querySelector("div.ml-1.font-mono")?.textContent).toContain("--:--");
+    expect(screen.getByLabelText("Seek")).toBeTruthy();
+    // Secondary controls drop out instead of overflowing the container.
+    expect(screen.queryByLabelText("Next chapter")).toBeNull();
+    expect(screen.queryByLabelText("Back 10 seconds (j)")).toBeNull();
+    expect(screen.queryByLabelText(/subtitles/)).toBeNull();
+    expect(screen.queryByLabelText("Playback speed")).toBeNull();
+    expect(screen.queryByLabelText("Chapters")).toBeNull();
+  });
+
+  test("entering fullscreen on a narrow screen restores the full control set, wrapped", () => {
+    renderPlayer();
+    expect(screen.queryByLabelText("Next chapter")).toBeNull();
+
+    act(() => {
+      Object.defineProperty(document, "fullscreenElement", {
+        configurable: true,
+        get: () => document.body,
+      });
+      const evt = document.createEvent("Event");
+      evt.initEvent("fullscreenchange", false, false);
+      document.dispatchEvent(evt);
+    });
+
+    expect(screen.getByLabelText("Next chapter")).toBeTruthy();
+    expect(screen.getByLabelText("Back 10 seconds (j)")).toBeTruthy();
+    expect(screen.getByLabelText(/subtitles/)).toBeTruthy();
+    expect(screen.getByLabelText("Playback speed")).toBeTruthy();
+    expect(screen.getByLabelText("Chapters")).toBeTruthy();
+    // The row wraps rather than overflowing the overflow-hidden container.
+    const row = screen.getByLabelText(/\(k\)$/).parentElement;
+    expect(row?.className).toContain("flex-wrap");
   });
 });

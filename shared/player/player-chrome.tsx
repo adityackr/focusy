@@ -94,6 +94,8 @@ export function PlayerChrome(props: Props) {
     openMenu,
     setOpenMenu,
     isFullscreen,
+    compact,
+    minimal,
     scrubbing,
     setScrubbing,
     setChromeVisible,
@@ -278,39 +280,46 @@ export function PlayerChrome(props: Props) {
             )}
           </div>
 
-          {/* Controls row */}
-          <div className="flex items-center gap-1 text-white">
-            <ChromeButton label="Previous chapter" onClick={() => goChapter(-1)}>
-              <SkipBack className="fill-current" />
-            </ChromeButton>
-            <ChromeButton label={isPlaying ? "Pause (k)" : "Play (k)"} onClick={togglePlay} primary>
+          {/* Controls row — wraps when narrow (e.g. fullscreen on a phone) so
+              nothing is clipped by the overflow-hidden container. */}
+          <div className={cn("flex items-center gap-1 text-white", compact && "flex-wrap gap-y-1.5")}>
+            {!minimal && (
+              <ChromeButton label="Previous chapter" onClick={() => goChapter(-1)}>
+                <SkipBack className="fill-current" />
+              </ChromeButton>
+            )}
+            <ChromeButton label={isPlaying ? "Pause (k)" : "Play (k)"} onClick={togglePlay}>
               {isPlaying ? <Pause className="fill-current" /> : <Play className="fill-current" />}
             </ChromeButton>
-            <ChromeButton label="Next chapter" onClick={() => goChapter(1)}>
-              <SkipForward className="fill-current" />
-            </ChromeButton>
-            <ChromeButton label="Back 10 seconds (j)" onClick={() => nudge(-10)}>
-              <RotateCcw />
-            </ChromeButton>
-            <ChromeButton label="Forward 10 seconds (l)" onClick={() => nudge(10)}>
-              <RotateCw />
-            </ChromeButton>
+            {!minimal && (
+              <>
+                <ChromeButton label="Next chapter" onClick={() => goChapter(1)}>
+                  <SkipForward className="fill-current" />
+                </ChromeButton>
+                <ChromeButton label="Back 10 seconds (j)" onClick={() => nudge(-10)}>
+                  <RotateCcw />
+                </ChromeButton>
+                <ChromeButton label="Forward 10 seconds (l)" onClick={() => nudge(10)}>
+                  <RotateCw />
+                </ChromeButton>
 
-            {/* Volume */}
-            <div className="flex items-center gap-1">
-              <ChromeButton label={muted || volume === 0 ? "Unmute (m)" : "Mute (m)"} onClick={toggleMute}>
-                {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
-              </ChromeButton>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={muted ? 0 : volume}
-                onChange={(e) => setVolumeLevel(Number(e.target.value))}
-                aria-label="Volume"
-                className="hidden h-1 w-20 cursor-pointer accent-white sm:block"
-              />
-            </div>
+                {/* Volume */}
+                <div className="flex items-center gap-1">
+                  <ChromeButton label={muted || volume === 0 ? "Unmute (m)" : "Mute (m)"} onClick={toggleMute}>
+                    {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
+                  </ChromeButton>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={muted ? 0 : volume}
+                    onChange={(e) => setVolumeLevel(Number(e.target.value))}
+                    aria-label="Volume"
+                    className="h-1 w-20 cursor-pointer accent-white"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="ml-1 font-mono text-xs whitespace-nowrap text-white/90 tabular-nums">
               {formatTimestamp(currentTime)}
@@ -324,7 +333,10 @@ export function PlayerChrome(props: Props) {
                 onClick={() => seekTo(current.chapter.startSeconds)}
                 title={`Restart chapter "${current.chapter.title}"`}
                 aria-label={`Now playing: ${current.chapter.title}. Activate to restart the chapter.`}
-                className="ml-2 hidden min-w-0 max-w-56 items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-white/20 md:flex"
+                className={cn(
+                  "ml-2 min-w-0 max-w-56 items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-white/20",
+                  isFullscreen ? "flex" : "hidden md:flex"
+                )}
               >
                 <ListVideo className="size-3.5 shrink-0" aria-hidden />
                 <span className="truncate">
@@ -339,55 +351,61 @@ export function PlayerChrome(props: Props) {
             <div className="flex-1" />
 
             {/* Captions */}
-            <ChromeButton label={captionsOn ? "Turn subtitles off (c)" : "Turn subtitles on (c)"} onClick={toggleCaptions} active={captionsOn}>
-              <Captions />
-            </ChromeButton>
+            {!minimal && (
+              <ChromeButton label={captionsOn ? "Turn subtitles off (c)" : "Turn subtitles on (c)"} onClick={toggleCaptions} active={captionsOn}>
+                <Captions />
+              </ChromeButton>
+            )}
 
             {/* Speed */}
-            <div className="relative">
-              <ChromeButton
-                label="Playback speed"
-                onClick={() => setOpenMenu(openMenu === "speed" ? null : "speed")}
-                active={openMenu === "speed"}
-              >
-                <span className="px-0.5 font-mono text-xs font-semibold tabular-nums">{playbackRate}x</span>
-              </ChromeButton>
-              {openMenu === "speed" && (
-                <MenuCard title="Speed">
-                  {availableRates.map((r) => (
-                    <MenuItem key={r} selected={r === playbackRate} onClick={() => { setRate(r); setOpenMenu(null); }}>
-                      {r}x
-                    </MenuItem>
-                  ))}
-                </MenuCard>
-              )}
-            </div>
+            {!minimal && (
+              <div className="relative">
+                <ChromeButton
+                  label="Playback speed"
+                  onClick={() => setOpenMenu(openMenu === "speed" ? null : "speed")}
+                  active={openMenu === "speed"}
+                >
+                  <span className="px-0.5 font-mono text-xs font-semibold tabular-nums">{playbackRate}x</span>
+                </ChromeButton>
+                {openMenu === "speed" && (
+                  <MenuCard title="Speed">
+                    {availableRates.map((r) => (
+                      <MenuItem key={r} selected={r === playbackRate} onClick={() => { setRate(r); setOpenMenu(null); }}>
+                        {r}x
+                      </MenuItem>
+                    ))}
+                  </MenuCard>
+                )}
+              </div>
+            )}
 
             {/* Quality (Auto-only — YouTube deprecated manual selection) */}
-            <div className="relative">
-              <ChromeButton
-                label="Quality — YouTube manages this automatically"
-                onClick={() => setOpenMenu(openMenu === "quality" ? null : "quality")}
-                active={openMenu === "quality"}
-              >
-                <Settings />
-              </ChromeButton>
-              {openMenu === "quality" && (
-                <MenuCard title="Quality" wide>
-                  <MenuItem selected onClick={() => setOpenMenu(null)}>
-                    Auto
-                  </MenuItem>
-                  <p className="px-3 py-2 text-[11px] leading-snug text-white/60">
-                    YouTube removed manual resolution control from the embed API, so quality stays on
-                    Auto. Exact-frame hover previews aren&apos;t exposed either — hovering shows the
-                    video thumbnail plus time and chapter.
-                  </p>
-                </MenuCard>
-              )}
-            </div>
+            {!minimal && (
+              <div className="relative">
+                <ChromeButton
+                  label="Quality — YouTube manages this automatically"
+                  onClick={() => setOpenMenu(openMenu === "quality" ? null : "quality")}
+                  active={openMenu === "quality"}
+                >
+                  <Settings />
+                </ChromeButton>
+                {openMenu === "quality" && (
+                  <MenuCard title="Quality" wide>
+                    <MenuItem selected onClick={() => setOpenMenu(null)}>
+                      Auto
+                    </MenuItem>
+                    <p className="px-3 py-2 text-[11px] leading-snug text-white/60">
+                      YouTube removed manual resolution control from the embed API, so quality stays on
+                      Auto. Exact-frame hover previews aren&apos;t exposed either — hovering shows the
+                      video thumbnail plus time and chapter.
+                    </p>
+                  </MenuCard>
+                )}
+              </div>
+            )}
 
             {/* Chapters */}
-            {chapters.length > 0 && (
+            {!minimal && chapters.length > 0 && (
               <div className="relative">
                 <ChromeButton
                   label="Chapters"
@@ -484,6 +502,27 @@ function usePlayerChrome({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hover, setHover] = useState<{ t: number; ratio: number } | null>(null);
   const [scrubbing, setScrubbing] = useState(false);
+
+  // Container width drives the small-screen strategy: below `sm` the bar
+  // collapses to a minimal set (play / time / fullscreen) so nothing is
+  // clipped. In fullscreen the full control set comes back and wraps onto
+  // extra rows instead of overflowing. Seeded from the viewport so the first
+  // client render already matches narrow screens (no flash of the full bar).
+  const [containerWidth, setContainerWidth] = useState<number>(() =>
+    typeof window === "undefined" ? 1280 : window.innerWidth
+  );
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) setContainerWidth(width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const compact = containerWidth > 0 && containerWidth < 640;
+  const minimal = compact && !isFullscreen;
 
   // Effective total: live duration preferred, chapter bounds as fallback.
   const lastEnd = chapters.length > 0 ? (chapters[chapters.length - 1].endSeconds ?? null) : null;
@@ -659,6 +698,8 @@ function usePlayerChrome({
     openMenu,
     setOpenMenu,
     isFullscreen,
+    compact,
+    minimal,
     scrubbing,
     setScrubbing,
     setChromeVisible,
