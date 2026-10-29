@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { CheckCircle2, ChevronDown, Circle, ListVideo, Play } from "lucide-react";
 import { Button } from "@/shared/ui/button";
+import { NoteButton } from "@/shared/components/note-dialog";
 import { cn } from "@/shared/lib/utils";
 import { chapterKey, chaptersForVideo, formatTimestamp } from "@/shared/lib/chapters";
 import type { PlaylistVideo } from "@/shared/lib/types";
@@ -107,19 +108,22 @@ export function VideoList({
                   </span>
                 </span>
               </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onToggleWatched(video.videoId)}
-                title={done ? "Mark as unwatched" : "Mark as watched"}
-                aria-label={done ? "Mark as unwatched" : "Mark as watched"}
-                className={cn(
-                  "h-7 w-7 shrink-0 self-start",
-                  done ? "text-green-500" : "text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                )}
-              >
-                {done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
-              </Button>
+              <div className="flex shrink-0 flex-col items-center gap-0.5 self-start">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onToggleWatched(video.videoId)}
+                  title={done ? "Mark as unwatched" : "Mark as watched"}
+                  aria-label={done ? "Mark as unwatched" : "Mark as watched"}
+                  className={cn(
+                    "h-7 w-7",
+                    done ? "text-green-500" : "text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                  )}
+                >
+                  {done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
+                </Button>
+                <NoteButton videoId={video.videoId} title={video.title} reveal />
+              </div>
             </div>
 
             {/* Chapters nested under the video */}

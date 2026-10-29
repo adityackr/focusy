@@ -4,6 +4,7 @@ import { formatTimestamp } from "@/shared/lib/chapters";
 import VideoPlayer from "@/features/videos/components/player/video-player";
 import ChapterEditor from "@/features/videos/components/player/chapter-editor";
 import { Button } from "@/shared/ui/button";
+import { NoteButton } from "@/shared/components/note-dialog";
 
 interface Props {
   course: Course;
@@ -89,18 +90,21 @@ export default function PlayerSection({
               </div>
               <h2 className="truncate text-base font-semibold">{active.title}</h2>
             </div>
-            <Button
-              size="sm"
-              variant={completedIds.includes(active.id) ? "secondary" : "default"}
-              onClick={() => toggleComplete(active.id)}
-              className={
-                completedIds.includes(active.id)
-                  ? "shrink-0 border-green-600 bg-green-600 text-white hover:bg-green-600 hover:text-white dark:border-green-600 dark:bg-green-600 dark:text-white dark:hover:bg-green-600 dark:hover:text-white"
-                  : "shrink-0"
-              }
-            >
-              {completedIds.includes(active.id) ? "✓ Done" : "Mark done"}
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <NoteButton videoId={course.videoId} title={course.title} as="labeled" />
+              <Button
+                size="sm"
+                variant={completedIds.includes(active.id) ? "secondary" : "default"}
+                onClick={() => toggleComplete(active.id)}
+                className={
+                  completedIds.includes(active.id)
+                    ? "border-green-600 bg-green-600 text-white hover:bg-green-600 hover:text-white dark:border-green-600 dark:bg-green-600 dark:text-white dark:hover:bg-green-600 dark:hover:text-white"
+                    : undefined
+                }
+              >
+                {completedIds.includes(active.id) ? "✓ Done" : "Mark done"}
+              </Button>
+            </div>
           </div>
           <div className="mt-3 flex gap-2">
             <Button

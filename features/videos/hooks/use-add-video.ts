@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { Chapter, VideoMeta } from "@/shared/lib/types";
 import { chapterWarnings, parseChapters } from "@/shared/lib/chapters";
 import { fetchVideoMeta, newId, parseVideoId } from "@/shared/lib/youtube";
@@ -83,6 +84,16 @@ export function useAddVideo() {
 
   function handleSave() {
     if (!videoId) return;
+    // Same guard as the playlist import: never save a video twice — open the
+    // course that's already in the library instead.
+    const existing = Object.values(useLibrary.getState().courses).find(
+      (c) => c.videoId === videoId
+    );
+    if (existing) {
+      toast.info("That video is already in your library.");
+      router.push(`/course/${existing.id}`);
+      return;
+    }
     if (chapters.length === 0) {
       setError("Add at least one chapter before saving.");
       return;

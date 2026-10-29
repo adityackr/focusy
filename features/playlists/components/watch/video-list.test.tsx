@@ -72,7 +72,7 @@ describe("VideoList nested chapters", () => {
 
     // A video without chapters gets no chapter block at all.
     expect(screen.getAllByText(/chapters$/)).toHaveLength(2);
-    expect(screen.queryByLabelText(/Plain lesson/)).toBeNull();
+    expect(screen.queryByLabelText(/chapters of Plain lesson/i)).toBeNull();
   });
 
   test("expanding a collapsed video reveals its chapters", () => {
