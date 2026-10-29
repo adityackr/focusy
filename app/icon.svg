@@ -12,5 +12,9 @@
   <g clip-path="url(#ft-clip)">
     <ellipse cx="24" cy="11" rx="17" ry="7" fill="#fff" opacity="0.22"/>
   </g>
-  <path d="M20.5 17.8v12.4c0 1.1 1.2 1.8 2.2 1.2l9.6-6.2c.9-.6.9-1.9 0-2.5l-9.6-6.2c-1-.6-2.2.1-2.2 1.3z" fill="#fff" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+  <g fill="#FFFFFF" id="ft-glyph">
+    <rect x="16.5" y="14" width="6.5" height="20" rx="2.5"/>
+    <rect x="16.5" y="14" width="15.5" height="6" rx="2.5"/>
+    <rect x="16.5" y="24" width="13.5" height="5.5" rx="2.5"/>
+  </g>
 </svg>

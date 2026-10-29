@@ -12,7 +12,7 @@ export const OG_ALT = `${SITE.name} — ${SITE.tagline}`;
 
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 
-/** The Focusy mark: gradient squircle with a white play triangle. */
+/** The Focusy mark: gradient squircle with a white stylized "F". */
 function LogoTile() {
 	return (
 		<div
@@ -25,16 +25,13 @@ function LogoTile() {
 				alignItems: "center",
 				justifyContent: "center",
 			}}
-		>
-			<svg width="52" height="52" viewBox="0 0 48 48" fill="none">
-				<path
-					d="M20.5 17.8v12.4c0 1.1 1.2 1.8 2.2 1.2l9.6-6.2c.9-.6.9-1.9 0-2.5l-9.6-6.2c-1-.6-2.2.1-2.2 1.3z"
-					fill="#FFFFFF"
-					stroke="#FFFFFF"
-					strokeWidth="2.5"
-					strokeLinejoin="round"
-				/>
-			</svg>
+		>				<svg width="52" height="52" viewBox="0 0 48 48" fill="none">
+					<g fill="#FFFFFF">
+						<rect x="16.5" y="14" width="6.5" height="20" rx="2.5" />
+						<rect x="16.5" y="14" width="15.5" height="6" rx="2.5" />
+						<rect x="16.5" y="24" width="13.5" height="5.5" rx="2.5" />
+					</g>
+				</svg>
 		</div>
 	);
 }

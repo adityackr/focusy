@@ -4,8 +4,10 @@ import { useId } from "react";
 import { cn } from "@/shared/lib/utils";
 
 /**
- * Focusy logo mark — a rounded play button in tide blue,
- * echoing the app theme (primary) with a white foreground.
+ * Focusy logo mark — a rounded-square tile in tide blue (matching the app
+ * theme) carrying a white stylized "F". Geometry lives in the 48×48 viewBox;
+ * keep it in sync with app/icon.svg (favicon + PWA master artwork),
+ * scripts/generate-pwa-icons.mjs and shared/lib/og-image.tsx.
  */
 export function LogoMark({ size = 36, className }: { size?: number; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
@@ -41,13 +43,14 @@ export function LogoMark({ size = 36, className }: { size?: number; className?: 
       <g clipPath={`url(#${clipId})`}>
         <ellipse cx="24" cy="11" rx="17" ry="7" fill="#fff" opacity="0.22" />
       </g>
-      <path
-        d="M20.5 17.8v12.4c0 1.1 1.2 1.8 2.2 1.2l9.6-6.2c.9-.6.9-1.9 0-2.5l-9.6-6.2c-1-.6-2.2.1-2.2 1.3z"
-        fill="#FFFFFF"
-        stroke="#FFFFFF"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-      />
+      <g fill="#FFFFFF">
+        {/* stem */}
+        <rect x="16.5" y="14" width="6.5" height="20" rx="2.5" />
+        {/* top arm */}
+        <rect x="16.5" y="14" width="15.5" height="6" rx="2.5" />
+        {/* middle arm */}
+        <rect x="16.5" y="24" width="13.5" height="5.5" rx="2.5" />
+      </g>
     </svg>
   );
 }

@@ -28,8 +28,9 @@ const base = master.replace(
   'width="48" height="48" viewBox="0 0 48 48"'
 );
 
-const PLAY_PATH =
-  'M20.5 17.8v12.4c0 1.1 1.2 1.8 2.2 1.2l9.6-6.2c.9-.6.9-1.9 0-2.5l-9.6-6.2c-1-.6-2.2.1-2.2 1.3z';
+// The white "F" glyph group in app/icon.svg — re-emitted at a larger scale for
+// the full-bleed variants.
+const GLYPH_OPEN = '<g fill="#FFFFFF" id="ft-glyph">';
 
 // Full-bleed variant: same gradient, edge-to-edge background, logo nudged up
 // in scale so it survives the ~20% shrink Android applies inside adaptive
@@ -40,8 +41,8 @@ const fullBleed = base
     '<rect width="48" height="48" fill="url(#ft-tide)"/>'
   )
   .replace(
-    `d="${PLAY_PATH}"`,
-    `transform="translate(24 24.5) scale(1.15) translate(-24 -24.5)" d="${PLAY_PATH}"`
+    GLYPH_OPEN,
+    `<g transform="translate(24 24) scale(1.15) translate(-24 -24)" fill="#FFFFFF" id="ft-glyph">`
   );
 
 async function png(svg, size, file) {
