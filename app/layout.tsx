@@ -1,5 +1,6 @@
 import { ThemeProvider } from '@/shared/providers';
 import { ServiceWorkerRegister } from '@/shared/components/sw-register';
+import { KEYWORDS, SITE, SITE_URL } from '@/shared/lib/site';
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
@@ -9,13 +10,14 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
+	metadataBase: new URL(SITE_URL),
 	title: {
-		default: 'Focusy — distraction-free YouTube learning',
-		template: '%s · Focusy',
+		default: SITE.title,
+		template: `%s · ${SITE.name}`,
 	},
-	description:
-		'Turn any YouTube video or playlist into a focused, course-style classroom — no recommendations, no shorts, no rabbit holes.',
-	applicationName: 'Focusy',
+	description: SITE.description,
+	keywords: [...KEYWORDS],
+	applicationName: SITE.name,
 	manifest: '/manifest.webmanifest',
 	icons: {
 		icon: [
@@ -27,8 +29,36 @@ export const metadata: Metadata = {
 	},
 	appleWebApp: {
 		capable: true,
-		title: 'Focusy',
+		title: SITE.name,
 		statusBarStyle: 'default',
+	},
+	authors: [{ name: SITE.author.name, url: SITE.author.url }],
+	creator: SITE.author.name,
+	publisher: SITE.author.name,
+	category: 'education',
+	// `title` / `description` are intentionally omitted from openGraph: they
+	// inherit each route's own resolved values, so every page ships matching
+	// og:title / og:description without repeating them. `url` lives on the
+	// pages themselves so shares point at the right route.
+	openGraph: {
+		type: 'website',
+		locale: SITE.locale,
+		siteName: SITE.name,
+	},
+	twitter: {
+		// Title, description and image are auto-filled from the OpenGraph tags.
+		card: 'summary_large_image',
+	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: {
+			index: true,
+			follow: true,
+			'max-image-preview': 'large',
+			'max-snippet': -1,
+			'max-video-preview': -1,
+		},
 	},
 };
 
@@ -46,8 +76,12 @@ export default function RootLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang={SITE.lang} suppressHydrationWarning>
 			<body className={`${inter.variable} font-sans antialiased`}>
+				{/* Hoisted to <head> by React: warm up the YouTube origins used by
+				    thumbnails and the player (a page-speed win for media-heavy routes). */}
+				<link rel="preconnect" href="https://i.ytimg.com" />
+				<link rel="preconnect" href="https://www.youtube.com" />
 				<ThemeProvider>
 					{children}
 					<Toaster richColors position="top-center" />

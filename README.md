@@ -147,7 +147,10 @@ cd focustube
 
 ### 2. Configure environment
 
-None required — there are no environment variables. The YouTube Data API v3 key is entered by the user in the app under **Settings** (`/settings`) and stored only in that browser's `localStorage`.
+None required — the app runs out of the box. Two optional values:
+
+- **`NEXT_PUBLIC_SITE_URL`** — the production origin used for SEO ( `metadataBase`, canonical URLs, `sitemap.xml`, `robots.txt`, OpenGraph links). Defaults to the deployed Vercel domain; set it when you attach a custom domain.
+- The YouTube Data API v3 key is entered by the user in the app under **Settings** (`/settings`) and stored only in that browser's `localStorage` — never in env vars.
 
 ### 3. Install & run
 
@@ -204,6 +207,9 @@ Add a playlist (dialog)
 | Route                           | Type            | Description                                      |
 | ------------------------------- | --------------- | ------------------------------------------------ |
 | `/`                             | Static          | Landing page (hero, features, how-it-works, CTA) |
+| `/robots.txt`                   | Static          | Crawler rules (`app/robots.ts`) — app-local routes are disallowed |
+| `/sitemap.xml`                  | Static          | Indexable routes only (`app/sitemap.ts`)         |
+| `/opengraph-image`, `/twitter-image` | Static      | Generated 1200×630 social cards (`next/og`)      |
 | `/library`                      | Static + client | Videos + Playlists tabs, drag-to-reorder grids   |
 | `/recent`                       | Static + client | Last opened videos & playlists (up to 12 each)   |
 | `/favorites`                    | Static + client | Pinned videos & playlists                        |
@@ -349,7 +355,7 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 The app deploys as a standard Next.js app (e.g. Vercel):
 
 1. Import the repository.
-2. No environment variables required — each user adds their own YouTube API key in the app under Settings.
+2. No required environment variables — each user adds their own YouTube API key in the app under Settings. Set `NEXT_PUBLIC_SITE_URL` to your custom domain so canonical URLs, `sitemap.xml` and social cards point at it.
 3. Build command `bun run build` (or `next build`), output served with `bun start`.
 
 No database or additional services required.

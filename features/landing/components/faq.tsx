@@ -1,7 +1,8 @@
 import { SectionHeading } from "@/features/landing/components/section-heading";
 import { Reveal } from "@/features/landing/components/reveal";
+import { JsonLd } from "@/shared/components/json-ld";
 
-const FAQS = [
+export const FAQS = [
   {
     q: "Do I need a YouTube API key?",
     a: "Only for auto-importing. A free YouTube Data API v3 key (≈2 minutes to create — the in-app Settings page walks you through it) lets Focusy fetch playlist details and video chapters instantly. Without a key you can still add videos in manual mode by pasting the chapter list yourself.",
@@ -28,9 +29,21 @@ const FAQS = [
   },
 ];
 
+/** FAQPage structured data mirroring the questions rendered below. */
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
 export function FaqSection() {
   return (
     <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-4 py-14 sm:px-6">
+      <JsonLd data={FAQ_JSON_LD} />
       <SectionHeading kicker="FAQ" title="Questions, answered" />
       <div className="mt-8 space-y-3">
         {FAQS.map((f, i) => (

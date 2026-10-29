@@ -1,6 +1,7 @@
 import { Reveal } from '@/features/landing/components/reveal';
 import { SectionHeading } from '@/features/landing/components/section-heading';
 import { AddPlaylistButton } from '@/features/playlists';
+import { JsonLd } from '@/shared/components/json-ld';
 import { cn } from '@/shared/lib/utils';
 import { buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
@@ -31,9 +32,26 @@ const steps = [
 	},
 ];
 
+/** HowTo structured data mirroring the three steps rendered below. */
+const HOW_TO_JSON_LD = {
+	"@context": "https://schema.org",
+	"@type": "HowTo",
+	name: "How to watch YouTube playlists and videos as a focused course",
+	description:
+		"Paste a YouTube link into Focusy, import it as a classroom, and watch lesson by lesson without recommendations or distractions.",
+	totalTime: "PT2M",
+	step: steps.map((s, i) => ({
+		"@type": "HowToStep",
+		position: i + 1,
+		name: s.title,
+		text: s.text,
+	})),
+};
+
 export function HowItWorksSection() {
 	return (
 		<section id="how" className="border-y bg-muted/40">
+			<JsonLd data={HOW_TO_JSON_LD} />
 			<div className="mx-auto max-w-7xl scroll-mt-20 px-4 py-14 sm:px-6">
 				<SectionHeading
 					kicker="How it works"

@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { TopBar } from "@/features/shell";
 
 // Courses live in the visitor's localStorage — private per-browser pages
-// that should never be indexed.
+// that should never be indexed (crawlers would only see an empty shell),
+// but links from them may still be followed.
 export const metadata: Metadata = {
-  robots: { index: false, follow: false },
+  title: "Course player",
+  robots: { index: false, follow: true },
 };
 
 export default function CourseLayout({ children }: { children: React.ReactNode }) {

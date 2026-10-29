@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import { WatchView } from "@/features/playlists";
 
-/** Title comes from the layout template: "Watch · Focusy". */
+/**
+ * The active lesson is picked from the visitor's own library client-side, so
+ * this route is `noindex` like the rest of the app pages.
+ */
+const DESCRIPTION =
+  "Play one lesson of a YouTube playlist in a distraction-free player with chapters, a lesson sidebar and resume-where-you-left-off progress.";
+
+/** Title comes from the layout template: "Watch lesson · Focusy". */
 export function generateMetadata(): Metadata {
-  return { title: "Watch" };
+  return {
+    title: "Watch lesson",
+    description: DESCRIPTION,
+    robots: { index: false, follow: true },
+  };
 }
 
 /** `?t=` start time in seconds (chapter deep links), or undefined. */
