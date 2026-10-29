@@ -109,6 +109,7 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 - **Loading skeletons** on Library, Recent, Favorites, sidebar, and watch pages — no flashing empty states.
 - **Delete confirmations** everywhere via a shared alert dialog (no native `confirm()`).
 - Fully **TypeScript**, fully **responsive**.
+- **Installable PWA**: web app manifest (`app/manifest.ts`) with generated icon set, plus a hand-rolled service worker (`public/sw.js`) that cache-firsts the hashed `/_next/static` bundles, network-firsts navigations (offline fallback to the cached shell) and stale-while-revalidates thumbnails. Registered in production only via `ServiceWorkerRegister`. Playback/imports still need the network — that's YouTube, not the app.
 
 ---
 
@@ -318,6 +319,7 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 | `bun run build` | Production build                                                                   |
 | `bun start`     | Serve the production build                                                         |
 | `bun test`      | Unit/component tests (bun test + jsdom)                                            |
+| `bun scripts/generate-pwa-icons.mjs` | Regenerate `public/icons/*.png` from `app/icon.svg` (needs `sharp`) |
 | `bun run lint`  | Lint (note: `next lint` was removed in Next 16 — no ESLint config is wired up yet) |
 
 ---
@@ -325,7 +327,7 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 ## Design system
 
 - **Brand**: Focusy — **Tide** theme: deep-blue primary (`oklch(0.55 0.2 262)`, ≈ `#3E5CEB`) over cool foam-white surfaces in light mode and deep-navy ocean surfaces in dark mode. All brand color flows from `--primary` / `--ring` in `app/globals.css`.
-- **Logo**: custom inline-SVG `LogoMark` (tide-blue gradient squircle + white play triangle), also served as the favicon via `app/icon.svg`. Two-tone wordmark: _Focus_ in foreground, _y_ in primary.
+- **Logo**: custom inline-SVG `LogoMark` (tide-blue gradient squircle + white play triangle), also served as the favicon via `app/icon.svg` and as the master artwork for the PWA icon set (`scripts/generate-pwa-icons.mjs`). Two-tone wordmark: _Focus_ in foreground, _y_ in primary.
 - **Primitives**: dependency-free shadcn-style components (New York, `zinc` base, CSS variables, `rounded-xl` radius). Icon-only buttons use `ghost` + `size="icon"`; destructive actions use the shared `DeletePlaylistButton` / `DeleteCourseButton` alert dialogs.
 
 ---
