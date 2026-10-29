@@ -38,11 +38,11 @@ export function FaqSection() {
             <details
               className="group rounded-2xl border bg-card px-5 py-4 transition-colors open:border-primary/40 open:shadow-sm"
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold">
                 {f.q}
                 <span
                   aria-hidden
-                  className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all group-open:rotate-45 group-open:bg-primary group-open:text-primary-foreground"
+                  className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all group-open:rotate-45"
                 >
                   +
                 </span>

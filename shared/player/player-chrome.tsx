@@ -149,10 +149,7 @@ export function PlayerChrome(props: Props) {
 				)}
 			>
 				{/* YouTube surface — native controls hidden, we render our own chrome. */}
-				<div
-					ref={mountRef}
-					className="pointer-events-none h-full w-full [&>iframe]:h-full [&>iframe]:w-full"
-				/>
+				<div ref={mountRef} className="pointer-events-none h-full w-full" />
 
 				{/* Click-to-toggle layer (kept above iframe since iframe swallows clicks). */}
 				<button
@@ -177,7 +174,7 @@ export function PlayerChrome(props: Props) {
 				{/* Bottom chrome */}
 				<div
 					className={cn(
-						'absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pt-8 pb-2.5 transition-opacity duration-200',
+						'absolute inset-x-0 bottom-0 z-20 bg-linear-to-t from-black/90 via-black/50 to-transparent px-3 pt-8 pb-2.5 transition-opacity duration-200',
 						chromeShown ? 'opacity-100' : 'pointer-events-none opacity-0',
 					)}
 					onClick={(e) => e.stopPropagation()}
@@ -252,13 +249,13 @@ export function PlayerChrome(props: Props) {
 									.map((c) => (
 										<span
 											key={c.id}
-											className="absolute top-1/2 h-3 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/80"
+											className="absolute top-1/2 h-3 w-0.75 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/80"
 											style={{ left: `${timeToRatio(c.startSeconds) * 100}%` }}
 										/>
 									))}
 							{/* Playhead */}
 							<span
-								className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow ring-2 ring-white/80 transition-opacity group-hover:opacity-100 [.group:hover_&]:opacity-100"
+								className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow ring-2 ring-white/80 transition-opacity group-hover:opacity-100"
 								style={{ left: `${progressRatio * 100}%` }}
 							/>
 						</div>
