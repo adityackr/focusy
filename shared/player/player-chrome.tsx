@@ -407,7 +407,9 @@ export function PlayerChrome(props: Props) {
 								}
 								onClick={toggleCaptions}
 							>
-								<Captions className={captionsOn ? 'fill-white/30' : ''} />
+								<Captions
+									className={captionsOn ? 'stroke-white' : 'stroke-white/60'}
+								/>
 							</ChromeButton>
 						)}
 
