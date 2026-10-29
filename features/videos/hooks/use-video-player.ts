@@ -6,6 +6,12 @@ import {
   loadYouTubeAPI,
   type YTPlayer,
 } from "@/shared/player/iframe-api";
+import {
+  applyCaptions,
+  loadPlayerSettings,
+  savePlayerSettings,
+  type PlayerSettings,
+} from "@/shared/player/player-settings";
 
 const PLAYING = 1;
 const SEEK_JUMP = 2; // seconds — bigger deltas between polls mean the user scrubbed
@@ -77,6 +83,12 @@ export function useVideoPlayer({
   const [muted, setMuted] = useState(false);
   const [loadedFraction, setLoadedFraction] = useState(0);
   const [captionsOn, setCaptionsOn] = useState(false);
+  // Captions truth lives in a ref: the state mirrors the button, while the
+  // poll/cue effects re-apply the ref because the (undocumented) captions
+  // module resets itself on every video load and even on resume.
+  const captionsRef = useRef(captionsOn);
+  const captionsRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasPlayingRef = useRef(false);
 
   function resolveCueAt(): number {
     const s = boundsRef.current.startSeconds;
@@ -89,6 +101,19 @@ export function useVideoPlayer({
     return r;
   }
 
+  /**
+   * Force the player back to the wanted captions state. The module can reset
+   * a beat after a load/resume, so apply now and once again shortly after —
+   * cheap and idempotent, and the only reliable way to keep subtitles from
+   * popping back on (and the button's state from drifting out of sync).
+   */
+  const syncCaptions = useCallback(() => {
+    const apply = () => applyCaptions(playerRef.current, captionsRef.current);
+    apply();
+    if (captionsRetryRef.current) clearTimeout(captionsRetryRef.current);
+    captionsRetryRef.current = setTimeout(apply, 700);
+  }, []);
+
   const cueChapter = useCallback(() => {
     const p = playerRef.current;
     if (!p || !readyRef.current) return;
@@ -99,7 +124,9 @@ export function useVideoPlayer({
     if (autoPlay) p.loadVideoById({ videoId, startSeconds: cueAt });
     else p.cueVideoById({ videoId, startSeconds: cueAt });
     setIsPlaying(autoPlay);
-  }, [videoId, autoPlay]);
+    // Loading a video resets the captions module — restore the preference.
+    syncCaptions();
+  }, [videoId, autoPlay, syncCaptions]);
 
   // Init player once with our own chrome (native controls hidden — we enforce
   // chapter ends ourselves so scrubbing stays free)
@@ -125,25 +152,33 @@ export function useVideoPlayer({
         events: {
           onReady: () => {
             readyRef.current = true;
+            const saved = loadPlayerSettings();
             try {
+              // Restore the viewer's saved controls before anything plays.
+              player?.setVolume(saved.volume);
+              if (saved.muted) player?.mute();
+              setVolumeState(saved.volume);
+              setMuted(saved.muted);
+
               player?.setPlaybackRate(1);
-              setPlaybackRateState(1);
               const rates = player?.getAvailablePlaybackRates?.();
+              let rate = saved.playbackRate;
               if (Array.isArray(rates) && rates.length > 0) {
                 const sorted = [...rates].sort((a, b) => a - b);
                 setAvailableRates(sorted);
-                const i = sorted.indexOf(1);
-                setRateIdx(i >= 0 ? i : 0);
+                // Fall back to 1x (or the lowest) when the saved speed isn't offered.
+                if (!sorted.includes(rate)) rate = sorted.includes(1) ? 1 : sorted[0];
+                setRateIdx(Math.max(0, sorted.indexOf(rate)));
               }
-              setVolumeState(player?.getVolume?.() ?? 100);
-              setMuted(player?.isMuted?.() ?? false);
-              // Captions off by default (best-effort: module API is undocumented).
-              try {
-                player?.unloadModule("captions");
-                player?.unloadModule("cc");
-              } catch {
-                /* noop */
-              }
+              player?.setPlaybackRate(rate);
+              setPlaybackRateState(rate);
+
+              // Captions follow the saved preference and keep being re-applied:
+              // the undocumented module API resets on every load/resume, which
+              // used to make subtitles pop back on against the user's choice.
+              captionsRef.current = saved.captions;
+              setCaptionsOn(saved.captions);
+              syncCaptions();
             } catch {
               /* noop */
             }
@@ -163,6 +198,10 @@ export function useVideoPlayer({
       playerRef.current = null;
       readyRef.current = false;
       lastTimeRef.current = null;
+      if (captionsRetryRef.current) {
+        clearTimeout(captionsRetryRef.current);
+        captionsRetryRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -204,7 +243,15 @@ export function useVideoPlayer({
       } catch {
         return;
       }
-      setIsPlaying(state === PLAYING);
+      const playing = state === PLAYING;
+      setIsPlaying(playing);
+      if (playing && !wasPlayingRef.current) {
+        // (Re)starting playback (fresh load, resume after pause) resets the
+        // captions module — re-assert the user's choice so subtitles can't
+        // resurrect on their own.
+        syncCaptions();
+      }
+      wasPlayingRef.current = playing;
       setCurrentTime(t);
       try {
         const d = p.getDuration?.() ?? 0;
@@ -266,7 +313,7 @@ export function useVideoPlayer({
       }
     }, 250);
     return () => clearInterval(id);
-  }, [chapterKey]);
+  }, [chapterKey, syncCaptions]);
 
   // Flush the latest position when the tab closes so resume survives
   // a browser quit. The callback writes to localStorage synchronously.
@@ -346,6 +393,7 @@ export function useVideoPlayer({
 
   function setRate(rate: number) {
     setPlaybackRateState(rate);
+    savePlayerSettings({ playbackRate: rate });
     const rates = availableRates.length > 0 ? availableRates : PLAYBACK_RATES;
     const i = rates.indexOf(rate);
     if (i >= 0) setRateIdx(i);
@@ -359,17 +407,21 @@ export function useVideoPlayer({
   function setVolumeLevel(v: number) {
     const clamped = Math.max(0, Math.min(100, Math.round(v)));
     setVolumeState(clamped);
+    const patch: Partial<PlayerSettings> = { volume: clamped };
     try {
       const p = playerRef.current;
-      if (!p) return;
-      p.setVolume(clamped);
-      if (clamped > 0 && p.isMuted?.()) {
-        p.unMute();
-        setMuted(false);
+      if (p) {
+        p.setVolume(clamped);
+        if (clamped > 0 && p.isMuted?.()) {
+          p.unMute();
+          setMuted(false);
+          patch.muted = false;
+        }
       }
     } catch {
       /* noop */
     }
+    savePlayerSettings(patch);
   }
 
   function toggleMute() {
@@ -379,32 +431,28 @@ export function useVideoPlayer({
       if (p.isMuted?.()) {
         p.unMute();
         setMuted(false);
+        savePlayerSettings({ muted: false });
       } else {
         p.mute();
         setMuted(true);
+        savePlayerSettings({ muted: true });
       }
     } catch {
       /* noop */
     }
   }
 
-  /** Best-effort captions toggle (undocumented module API — may no-op). */
+  /**
+   * Toggle captions. The wanted state is persisted and re-asserted after
+   * loads/resumes, so one press always flips what's actually on screen (the
+   * module used to drift out of sync with the button, needing two presses).
+   */
   function toggleCaptions() {
-    try {
-      const p = playerRef.current;
-      if (!p) return;
-      if (captionsOn) {
-        p.unloadModule("captions");
-        p.unloadModule("cc");
-        setCaptionsOn(false);
-      } else {
-        p.loadModule("captions");
-        p.loadModule("cc");
-        setCaptionsOn(true);
-      }
-    } catch {
-      /* noop */
-    }
+    const next = !captionsRef.current;
+    captionsRef.current = next;
+    setCaptionsOn(next);
+    savePlayerSettings({ captions: next });
+    syncCaptions();
   }
 
   return {
