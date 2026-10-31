@@ -256,4 +256,21 @@ describe("useWatchProgress", () => {
     render(<Probe />);
     expect(seen[0]).toEqual({ V: 123 });
   });
+
+  test("the last open lesson is readable during the very first render", () => {
+    // Re-entry decides where to resume from the first render, so a lesson
+    // that only lands in an effect would flash the overview first.
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({ watched: ["A"], lastWatched: "A", positions: { A: 123 } })
+    );
+    const seen: (string | null)[] = [];
+    function Probe() {
+      const { lastWatched } = useWatchProgress("P1");
+      seen.push(lastWatched);
+      return null;
+    }
+    render(<Probe />);
+    expect(seen[0]).toBe("A");
+  });
 });

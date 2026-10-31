@@ -56,6 +56,23 @@ function readPositions(playlistId: string): Record<string, number> {
   return {};
 }
 
+/**
+ * The lesson that was open last, read synchronously like `readPositions` so a
+ * resume decision can be made during the first render instead of a frame later.
+ */
+function readLastWatched(playlistId: string): string | null {
+  try {
+    const raw = localStorage.getItem(keyFor(playlistId));
+    if (raw) {
+      const value = (JSON.parse(raw) as Partial<Progress>).lastWatched;
+      if (typeof value === "string" && value) return value;
+    }
+  } catch {
+    /* corrupted JSON or storage unavailable */
+  }
+  return null;
+}
+
 function readStored(playlistId: string): Progress {
   try {
     // One-time upgrade: adopt progress saved under the old Clean YouTube key.
@@ -105,7 +122,9 @@ export function readWatchedCount(playlistId: string): number {
 
 export function useWatchProgress(playlistId: string) {
   const [watched, setWatched] = useState<string[]>([]);
-  const [lastWatched, setLastWatched] = useState<string | null>(null);
+  const [lastWatched, setLastWatched] = useState<string | null>(() =>
+    readLastWatched(playlistId)
+  );
   const [completedChapters, setCompletedChapters] = useState<string[]>([]);
   const [positions, setPositions] = useState<Record<string, number>>(() =>
     readPositions(playlistId)
@@ -116,6 +135,7 @@ export function useWatchProgress(playlistId: string) {
   if (positionsFor !== playlistId) {
     setPositionsFor(playlistId);
     setPositions(readPositions(playlistId));
+    setLastWatched(readLastWatched(playlistId));
   }
   // Ref mirror of the progress. State updates are async, so a `markWatched`
   // call in a mount effect would otherwise close over the initial empty

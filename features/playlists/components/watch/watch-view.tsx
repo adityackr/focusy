@@ -44,6 +44,7 @@ export function WatchView({
     activeIndex,
     activeVideo,
     resumeAt,
+    resumeVideoId,
     startLesson,
   } = useWatchView({ playlistId, activeVideoId });
 
@@ -51,6 +52,10 @@ export function WatchView({
     if (!hydrated || loading) return <WatchSkeleton />;
     return <PlaylistNotFound />;
   }
+
+  // Re-entering without a lesson deep link → we're about to jump to the lesson
+  // that was open last; hold the skeleton so the overview never flashes first.
+  if (!activeVideoId && resumeVideoId) return <WatchSkeleton />;
 
   return (
     <div className="mx-auto max-w-350 px-4 py-4 sm:px-6 lg:py-6">
@@ -149,6 +154,7 @@ function useWatchView({
   const [activeChapterIndex, setActiveChapterIndex] = useState(-1);
   const {
     watched,
+    lastWatched,
     completedChapters,
     positions,
     markWatched,
@@ -211,6 +217,21 @@ function useWatchView({
   // stored position for this video (undefined → start from 0).
   const resumeAt = activeVideoId ? positions[activeVideoId] : undefined;
 
+  // Opening a playlist without a lesson deep link (card, sidebar, recent)
+  // resumes the lesson that was open last instead of the overview — which
+  // would otherwise send people back to lesson 1 every time. Falls back to the
+  // overview when there is no history or the lesson left the playlist.
+  const resumeVideoId =
+    !activeVideoId && lastWatched && playlist?.videos.some((v) => v.videoId === lastWatched)
+      ? lastWatched
+      : undefined;
+
+  useEffect(() => {
+    if (!resumeVideoId) return;
+    // replace, not push: the video-less URL shouldn't sit in history.
+    router.replace(`/watch/${playlistId}/${resumeVideoId}`);
+  }, [playlistId, resumeVideoId, router]);
+
   return {
     playlist,
     loading,
@@ -230,6 +251,7 @@ function useWatchView({
     activeIndex,
     activeVideo,
     resumeAt,
+    resumeVideoId,
     startLesson: (videoId: string) => router.push(`/watch/${playlistId}/${videoId}`),
   };
 }
