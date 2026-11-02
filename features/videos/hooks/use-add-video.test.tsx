@@ -52,6 +52,8 @@ beforeEach(() => {
     courseOrder: [],
     courseFavorites: [],
     courseRecent: [],
+    categories: {},
+    categoryOrder: [],
     loadingIds: [],
     error: null,
   });
@@ -109,20 +111,50 @@ describe("useAddVideo duplicate guard", () => {
     expect(courseCount()).toBe(1);
   });
 
-  test("saves a brand-new video and routes to its fresh course", () => {
+  test("asks where to save before adding a brand-new video", () => {
     const result = renderHook(() => useAddVideo()).result;
     pasteAndParse(result);
 
     act(() => {
       result.current.handleSave();
     });
+    // The category dialog is open and nothing is saved yet.
+    expect(result.current.saveOpen).toBe(true);
+    expect(courseCount()).toBe(0);
+    expect(push).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.handleConfirmSave();
+    });
 
     expect(courseCount()).toBe(1);
     const courses = Object.values(useLibrary.getState().courses);
     expect(courses[0].videoId).toBe(VIDEO);
+    expect(courses[0].categoryId).toBeUndefined();
+    expect(result.current.saveOpen).toBe(false);
     expect(push).toHaveBeenCalledWith(`/course/${courses[0].id}`);
     // Exactly one save: the library is untouched beyond that single course.
     expect(useLibrary.getState().courseOrder).toEqual([courses[0].id]);
+  });
+
+  test("saves the video into the category picked in the dialog", () => {
+    const result = renderHook(() => useAddVideo()).result;
+    pasteAndParse(result);
+    let categoryId: string | null = null;
+    act(() => {
+      categoryId = useLibrary.getState().addCategory("JavaScript");
+    });
+
+    act(() => {
+      result.current.handleSave();
+    });
+    act(() => {
+      result.current.handleConfirmSave(categoryId!);
+    });
+
+    const courses = Object.values(useLibrary.getState().courses);
+    expect(courses).toHaveLength(1);
+    expect(courses[0].categoryId).toBe(categoryId);
   });
 
   test("keeps saving duplicates out when several copies already exist", () => {

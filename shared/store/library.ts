@@ -2,12 +2,13 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Course, Playlist } from "@/shared/lib/types";
+import type { Category, Course, Playlist } from "@/shared/lib/types";
 import { getApiKey } from "@/shared/lib/storage";
 import {
   fetchPlaylistFromYouTube,
   fetchVideoDurations,
   fetchChannelTitles,
+  newId,
 } from "@/shared/lib/youtube";
 
 /** Playlists with a duration backfill currently in flight (avoids duplicate calls). */
@@ -21,6 +22,8 @@ const durationBackfills = new Set<string>();
 const channelBackfillTried = new Set<string>();
 
 export const LIBRARY_STORAGE_KEY = "focustube-library";
+/** Reserved pseudo-category id for videos/playlists that have no real folder. */
+export const UNCATEGORIZED_CATEGORY_ID = "uncategorized";
 const LEGACY_LIBRARY_STORAGE_KEY = "clean-youtube-library";
 /** Chapterly's course list, adopted once on upgrade. */
 const CHAPTERLY_COURSES_STORAGE_KEY = "yt-course:courses";
@@ -102,6 +105,10 @@ interface LibraryState {
   courseOrder: string[];
   courseFavorites: string[];
   courseRecent: string[];
+  /** Flat folders, keyed by category id. */
+  categories: Record<string, Category>;
+  /** Manual category order (category IDs). New categories go first. */
+  categoryOrder: string[];
   loadingIds: string[];
   error: string | null;
   hydrated: boolean;
@@ -130,6 +137,16 @@ interface LibraryState {
   setCourseOrder: (ids: string[]) => void;
   toggleCourseFavorite: (courseId: string) => void;
   pushCourseRecent: (courseId: string) => void;
+  /** Creates a folder (case-insensitive name dedupe) and returns its id. */
+  addCategory: (name: string) => string | null;
+  /** Renames a folder. Returns false for a blank or duplicate name. */
+  renameCategory: (categoryId: string, name: string) => boolean;
+  /** Deletes a folder; its videos and playlists return to Uncategorized. */
+  removeCategory: (categoryId: string) => void;
+  /** Files a video into a folder; null / unknown id clears the folder. */
+  setCourseCategory: (courseId: string, categoryId: string | null) => void;
+  /** Files a playlist into a folder; null / unknown id clears the folder. */
+  setPlaylistCategory: (playlistId: string, categoryId: string | null) => void;
 }
 
 export const useLibrary = create<LibraryState>()(
@@ -143,6 +160,8 @@ export const useLibrary = create<LibraryState>()(
       courseOrder: [],
       courseFavorites: [],
       courseRecent: [],
+      categories: {},
+      categoryOrder: [],
       loadingIds: [],
       error: null,
       hydrated: false,
@@ -341,6 +360,92 @@ export const useLibrary = create<LibraryState>()(
             ...s.courseRecent.filter((id) => id !== courseId),
           ].slice(0, 20),
         })),
+
+      addCategory: (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return null;
+        const existing = Object.values(get().categories).find(
+          (c) => c.name.toLowerCase() === trimmed.toLowerCase()
+        );
+        if (existing) return existing.id;
+        const id = newId();
+        set((s) => ({
+          categories: {
+            ...s.categories,
+            [id]: { id, name: trimmed, createdAt: Date.now() },
+          },
+          categoryOrder: [id, ...s.categoryOrder.filter((c) => c !== id)],
+        }));
+        return id;
+      },
+
+      renameCategory: (categoryId, name) => {
+        const trimmed = name.trim();
+        const category = get().categories[categoryId];
+        if (!category || !trimmed) return false;
+        const duplicate = Object.values(get().categories).some(
+          (c) => c.id !== categoryId && c.name.toLowerCase() === trimmed.toLowerCase()
+        );
+        if (duplicate) return false;
+        set((s) => ({
+          categories: {
+            ...s.categories,
+            [categoryId]: { ...category, name: trimmed },
+          },
+        }));
+        return true;
+      },
+
+      removeCategory: (categoryId) =>
+        set((s) => {
+          if (!s.categories[categoryId]) return {};
+          const { [categoryId]: _removed, ...categories } = s.categories;
+          const unfile = <T extends { categoryId?: string }>(item: T): T => {
+            if (item.categoryId !== categoryId) return item;
+            const { categoryId: _old, ...rest } = item;
+            return rest as T;
+          };
+          return {
+            categories,
+            categoryOrder: s.categoryOrder.filter((id) => id !== categoryId),
+            courses: Object.fromEntries(
+              Object.entries(s.courses).map(([id, course]) => [id, unfile(course)])
+            ),
+            playlists: Object.fromEntries(
+              Object.entries(s.playlists).map(([id, playlist]) => [id, unfile(playlist)])
+            ),
+          };
+        }),
+
+      setCourseCategory: (courseId, categoryId) =>
+        set((s) => {
+          const course = s.courses[courseId];
+          if (!course) return {};
+          const next =
+            categoryId && s.categories[categoryId] ? categoryId : undefined;
+          const { categoryId: _old, ...rest } = course;
+          return {
+            courses: {
+              ...s.courses,
+              [courseId]: next ? { ...rest, categoryId: next } : rest,
+            },
+          };
+        }),
+
+      setPlaylistCategory: (playlistId, categoryId) =>
+        set((s) => {
+          const playlist = s.playlists[playlistId];
+          if (!playlist) return {};
+          const next =
+            categoryId && s.categories[categoryId] ? categoryId : undefined;
+          const { categoryId: _old, ...rest } = playlist;
+          return {
+            playlists: {
+              ...s.playlists,
+              [playlistId]: next ? { ...rest, categoryId: next } : rest,
+            },
+          };
+        }),
     }),
     {
       name: LIBRARY_STORAGE_KEY,
@@ -353,6 +458,8 @@ export const useLibrary = create<LibraryState>()(
         courseOrder: s.courseOrder,
         courseFavorites: s.courseFavorites,
         courseRecent: s.courseRecent,
+        categories: s.categories,
+        categoryOrder: s.categoryOrder,
       }),
       onRehydrateStorage: () => (state) => state?.setHydrated(),
     }

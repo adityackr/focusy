@@ -59,6 +59,8 @@ beforeEach(() => {
     courseOrder: [],
     courseFavorites: [],
     courseRecent: [],
+    categories: {},
+    categoryOrder: [],
     loadingIds: [],
     error: null,
   });
@@ -217,6 +219,105 @@ describe("course (video) slice", () => {
   test("updateCourse ignores unknown ids", () => {
     useLibrary.getState().updateCourse(makeCourse("NOPE", 1));
     expect(useLibrary.getState().courses.NOPE).toBeUndefined();
+  });
+});
+
+describe("categories", () => {
+  test("addCategory creates folders newest-first and dedupes names", () => {
+    const api = useLibrary.getState();
+    const js = api.addCategory("  JavaScript  ")!;
+    const design = api.addCategory("Design")!;
+    expect(useLibrary.getState().categoryOrder).toEqual([design, js]);
+    expect(useLibrary.getState().categories[js].name).toBe("JavaScript");
+
+    // Same name (any casing/whitespace) reuses the existing folder.
+    expect(useLibrary.getState().addCategory("javascript")).toBe(js);
+    expect(useLibrary.getState().categoryOrder).toHaveLength(2);
+    // Blank names never create a folder.
+    expect(useLibrary.getState().addCategory("   ")).toBeNull();
+  });
+
+  test("setCourseCategory files a video and can clear it again", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    const categoryId = api.addCategory("Design")!;
+
+    useLibrary.getState().setCourseCategory("A", categoryId);
+    expect(useLibrary.getState().courses.A.categoryId).toBe(categoryId);
+
+    useLibrary.getState().setCourseCategory("A", null);
+    expect(useLibrary.getState().courses.A.categoryId).toBeUndefined();
+  });
+
+  test("setPlaylistCategory files a playlist and can clear it again", () => {
+    const api = useLibrary.getState();
+    api.addPlaylist(makePlaylist("PL", "2024-01-01"));
+    const categoryId = api.addCategory("Design")!;
+
+    useLibrary.getState().setPlaylistCategory("PL", categoryId);
+    expect(useLibrary.getState().playlists.PL.categoryId).toBe(categoryId);
+
+    useLibrary.getState().setPlaylistCategory("PL", null);
+    expect(useLibrary.getState().playlists.PL.categoryId).toBeUndefined();
+  });
+
+  test("category setters ignore unknown categories", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    api.addPlaylist(makePlaylist("PL", "2024-01-01"));
+
+    useLibrary.getState().setCourseCategory("A", "NOPE");
+    useLibrary.getState().setPlaylistCategory("PL", "NOPE");
+    expect(useLibrary.getState().courses.A.categoryId).toBeUndefined();
+    expect(useLibrary.getState().playlists.PL.categoryId).toBeUndefined();
+  });
+
+  test("renameCategory updates the name and rejects duplicates or blanks", () => {
+    const api = useLibrary.getState();
+    const design = api.addCategory("Design")!;
+    api.addCategory("Code");
+
+    expect(useLibrary.getState().renameCategory(design, "  Product  ")).toBe(true);
+    expect(useLibrary.getState().categories[design].name).toBe("Product");
+
+    expect(useLibrary.getState().renameCategory(design, "Code")).toBe(false);
+    expect(useLibrary.getState().renameCategory(design, "code")).toBe(false);
+    expect(useLibrary.getState().renameCategory(design, "   ")).toBe(false);
+    expect(useLibrary.getState().categories[design].name).toBe("Product");
+  });
+
+  test("removeCategory returns its videos and playlists to Uncategorized", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    api.addPlaylist(makePlaylist("PL", "2024-01-01"));
+    const design = api.addCategory("Design")!;
+    const other = api.addCategory("Other")!;
+    useLibrary.getState().setCourseCategory("A", design);
+    useLibrary.getState().setPlaylistCategory("PL", design);
+
+    useLibrary.getState().removeCategory(design);
+
+    expect(useLibrary.getState().categories[design]).toBeUndefined();
+    expect(useLibrary.getState().categoryOrder).toEqual([other]);
+    // The items survive, just without a folder.
+    expect(useLibrary.getState().courses.A).toBeTruthy();
+    expect(useLibrary.getState().courses.A.categoryId).toBeUndefined();
+    expect(useLibrary.getState().playlists.PL.categoryId).toBeUndefined();
+  });
+
+  test("categories and their assignments persist", () => {
+    const api = useLibrary.getState();
+    api.addCourse(makeCourse("A", 1));
+    api.addPlaylist(makePlaylist("PL", "2024-01-01"));
+    const categoryId = api.addCategory("Design")!;
+    useLibrary.getState().setCourseCategory("A", categoryId);
+    useLibrary.getState().setPlaylistCategory("PL", categoryId);
+
+    const raw = JSON.parse(localStorage.getItem(LIBRARY_STORAGE_KEY)!);
+    expect(raw.state.categoryOrder).toEqual([categoryId]);
+    expect(raw.state.categories[categoryId].name).toBe("Design");
+    expect(raw.state.courses.A.categoryId).toBe(categoryId);
+    expect(raw.state.playlists.PL.categoryId).toBe(categoryId);
   });
 });
 

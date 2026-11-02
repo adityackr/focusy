@@ -22,7 +22,12 @@ import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
 import type { Playlist } from "@/shared/lib/types";
-import { useLibrary, selectPlaylistList } from "@/shared/store/library";
+import {
+  useLibrary,
+  selectPlaylistList,
+  UNCATEGORIZED_CATEGORY_ID,
+} from "@/shared/store/library";
+import { reorderWithin } from "@/shared/lib/order";
 import { PlaylistCard } from "@/features/playlists/components/playlist-card";
 import { PlaylistGrid } from "@/features/playlists/components/playlist-grid";
 
@@ -31,7 +36,11 @@ function SortableCard({ playlist }: { playlist: Playlist }) {
     useSortableCard(playlist.playlistId);
 
   return (
-    <div ref={setNodeRef} style={style} className={cn("group relative", isDragging && "z-10")}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn("group relative mb-5 break-inside-avoid", isDragging && "z-10")}
+    >
       <div className={cn(isDragging && "scale-[1.02] opacity-90")}>
         <PlaylistCard playlist={playlist} />
       </div>
@@ -54,8 +63,8 @@ function SortableCard({ playlist }: { playlist: Playlist }) {
   );
 }
 
-export function SortablePlaylistGrid() {
-  const { items, sensors, handleDragEnd } = useSortablePlaylistGrid();
+export function SortablePlaylistGrid({ categoryId }: { categoryId?: string } = {}) {
+  const { items, sensors, handleDragEnd } = useSortablePlaylistGrid(categoryId);
 
   if (items.length === 0) return <PlaylistGrid items={items} />;
 
@@ -69,7 +78,7 @@ export function SortablePlaylistGrid() {
         items={items.map((p) => p.playlistId)}
         strategy={rectSortingStrategy}
       >
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="columns-1 gap-5 sm:columns-2 xl:columns-3">
           {items.map((p) => (
             <SortableCard key={p.playlistId} playlist={p} />
           ))}
@@ -94,8 +103,16 @@ function useSortableCard(playlistId: string) {
 }
 
 /** Items + sensors + reorder handler for `SortablePlaylistGrid` — kept out of the JSX. */
-function useSortablePlaylistGrid() {
-  const items = useLibrary(useShallow(selectPlaylistList));
+function useSortablePlaylistGrid(categoryId?: string) {
+  const allItems = useLibrary(useShallow(selectPlaylistList));
+  const categories = useLibrary((s) => s.categories);
+  const items = categoryId
+    ? allItems.filter((p) =>
+        categoryId === UNCATEGORIZED_CATEGORY_ID
+          ? !p.categoryId || !categories[p.categoryId]
+          : p.categoryId === categoryId
+      )
+    : allItems;
   const setOrder = useLibrary((s) => s.setOrder);
 
   const sensors = useSensors(
@@ -110,7 +127,9 @@ function useSortablePlaylistGrid() {
     const oldIndex = ids.indexOf(String(active.id));
     const newIndex = ids.indexOf(String(over.id));
     if (oldIndex === -1 || newIndex === -1) return;
-    setOrder(arrayMove(ids, oldIndex, newIndex));
+    // Inside a category only its items move; everything else keeps its slot.
+    const reordered = arrayMove(ids, oldIndex, newIndex);
+    setOrder(reorderWithin(allItems.map((p) => p.playlistId), reordered));
   }
 
   return { items, sensors, handleDragEnd };

@@ -31,9 +31,11 @@ export function PlaylistGrid({
     );
   }
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="columns-1 gap-5 sm:columns-2 xl:columns-3">
       {items.map((p) => (
-        <PlaylistCard key={p.playlistId} playlist={p} />
+        <div key={p.playlistId} className="mb-5 break-inside-avoid">
+          <PlaylistCard playlist={p} />
+        </div>
       ))}
     </div>
   );

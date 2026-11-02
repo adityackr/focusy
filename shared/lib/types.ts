@@ -22,6 +22,13 @@ export interface Chapter {
   endSeconds: number | null;
 }
 
+/** A user-defined folder that groups saved videos and playlists. Flat — no nesting. */
+export interface Category {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
 /** A single YouTube video turned into a chapter-based course (from Chapterly). */
 export interface Course {
   id: string;
@@ -31,6 +38,8 @@ export interface Course {
   description: string;
   /** Video creator (channel). Optional — older saves predate it; backfilled lazily. */
   channelTitle?: string;
+  /** Folder this video was saved into. Absent = uncategorized. */
+  categoryId?: string;
   durationSeconds: number | null;
   chapters: Chapter[];
   createdAt: number;
@@ -62,4 +71,6 @@ export interface Playlist {
   itemCount: number;
   videos: PlaylistVideo[];
   addedAt: string;
+  /** Folder this playlist was saved into. Absent = uncategorized. */
+  categoryId?: string;
 }

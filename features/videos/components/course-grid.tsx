@@ -37,9 +37,11 @@ export function CourseGrid({
     );
   }
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="columns-1 gap-5 sm:columns-2 xl:columns-3">
       {items.map((c) => (
-        <CourseCard key={c.id} course={c} />
+        <div key={c.id} className="mb-5 break-inside-avoid">
+          <CourseCard course={c} />
+        </div>
       ))}
     </div>
   );

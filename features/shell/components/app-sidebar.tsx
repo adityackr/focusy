@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronsLeft, Heart, History, LayoutGrid, Plus, Search, Settings, Star } from "lucide-react";
+import { ChevronsLeft, Folder, Heart, History, LayoutGrid, Plus, Search, Settings, Star } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/shared/lib/utils";
 import { Button, buttonVariants } from "@/shared/ui/button";
@@ -19,6 +19,7 @@ import { LogoMark } from "@/features/shell/components/logo";
 const NAV = [
   { href: "/library", label: "Library", icon: LayoutGrid },
   { href: "/recent", label: "Recent", icon: History },
+  { href: "/categories", label: "Categories", icon: Folder },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -83,7 +84,7 @@ export function AppSidebar({
 
       <nav className="space-y-1 px-3">
         {NAV.map((n) => {
-          const active = pathname === n.href;
+          const active = pathname === n.href || pathname.startsWith(`${n.href}/`);
           return (
             <Link
               key={n.href}

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ListVideo, Play } from "lucide-react";
+import { Folder, FolderPlus, Heart, ListVideo, Play } from "lucide-react";
+import { toast } from "sonner";
 import type { Course } from "@/shared/lib/types";
 import { getProgress } from "@/shared/lib/storage";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -12,13 +13,26 @@ import { Progress } from "@/shared/ui/progress";
 import { Button } from "@/shared/ui/button";
 import { useLibrary } from "@/shared/store/library";
 import { DeleteCourseButton } from "@/features/videos/components/delete-course-dialog";
+import { CategoryDialog } from "@/shared/components/category-dialog";
 import { cn } from "@/shared/lib/utils";
 
 /** Video course card — Chapterly's card, with Focusy's favorite action. */
 export function CourseCard({ course }: { course: Course }) {
-  const { done, pct, fav, href, pushRecent, toggleFavorite } = useCourseCard(course);
+  const {
+    done,
+    pct,
+    fav,
+    href,
+    pushRecent,
+    toggleFavorite,
+    category,
+    categoryOpen,
+    setCategoryOpen,
+    handleSetCategory,
+  } = useCourseCard(course);
 
   return (
+    <>
     <Card className="h-full gap-0 overflow-hidden py-0 transition-all hover:-translate-y-1 hover:shadow-xl">
       <Link
         href={href}
@@ -62,6 +76,12 @@ export function CourseCard({ course }: { course: Course }) {
         {course.channelTitle && (
           <p className="truncate text-xs text-muted-foreground">{course.channelTitle}</p>
         )}
+        {category && (
+          <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+            <Folder className="size-3 shrink-0" />
+            <span className="truncate">{category.name}</span>
+          </p>
+        )}
       </CardHeader>
       <CardContent className="px-4">
         <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
@@ -77,6 +97,16 @@ export function CourseCard({ course }: { course: Course }) {
           {course.chapters.length} lessons
         </span>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCategoryOpen(true)}
+            aria-label={category ? `Change category (${category.name})` : "Set category"}
+            title={category ? "Change category" : "Set category"}
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+          >
+            {category ? <Folder /> : <FolderPlus />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -97,15 +127,31 @@ export function CourseCard({ course }: { course: Course }) {
         </div>
       </CardFooter>
     </Card>
+
+    <CategoryDialog
+      open={categoryOpen}
+      onOpenChange={setCategoryOpen}
+      onSave={handleSetCategory}
+      initialCategoryId={course.categoryId ?? null}
+      title="Video category"
+      description="File this video into a folder, or create a new one."
+      confirmLabel="Save category"
+    />
+    </>
   );
 }
 
 /** Card state + actions for `CourseCard` — kept out of the JSX. */
 function useCourseCard(course: Course) {
   const [done, setDone] = useState(0);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const favorites = useLibrary((s) => s.courseFavorites);
   const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
   const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
+  const setCourseCategory = useLibrary((s) => s.setCourseCategory);
+  const category = useLibrary((s) =>
+    course.categoryId ? s.categories[course.categoryId] : undefined
+  );
   const fav = favorites.includes(course.id);
 
   useEffect(() => {
@@ -119,6 +165,11 @@ function useCourseCard(course: Course) {
   const pct =
     course.chapters.length === 0 ? 0 : Math.round((done / course.chapters.length) * 100);
 
+  function handleSetCategory(categoryId?: string) {
+    setCourseCategory(course.id, categoryId ?? null);
+    toast.success(categoryId ? "Video categorized." : "Video category cleared.");
+  }
+
   return {
     done,
     pct,
@@ -126,5 +177,9 @@ function useCourseCard(course: Course) {
     href: `/course/${course.id}`,
     pushRecent: () => pushCourseRecent(course.id),
     toggleFavorite: () => toggleCourseFavorite(course.id),
+    category,
+    categoryOpen,
+    setCategoryOpen,
+    handleSetCategory,
   };
 }

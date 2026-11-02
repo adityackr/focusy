@@ -23,6 +23,7 @@ export function useAddVideo() {
   const [videoId, setVideoId] = useState<string | null>(null);
   const [meta, setMeta] = useState<VideoMetaState | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [saveOpen, setSaveOpen] = useState(false);
 
   async function handleFetch() {
     setError("");
@@ -82,6 +83,7 @@ export function useAddVideo() {
     else setError("");
   }
 
+  /** Validates the draft, then asks which category to save it into. */
   function handleSave() {
     if (!videoId) return;
     // Same guard as the playlist import: never save a video twice — open the
@@ -98,6 +100,12 @@ export function useAddVideo() {
       setError("Add at least one chapter before saving.");
       return;
     }
+    setSaveOpen(true);
+  }
+
+  /** Commits the video to the chosen category (undefined = uncategorized). */
+  function handleConfirmSave(categoryId?: string) {
+    if (!videoId) return;
     const title = manualMode
       ? manualTitle.trim() || `Video ${videoId}`
       : meta?.title || `Video ${videoId}`;
@@ -113,6 +121,8 @@ export function useAddVideo() {
       createdAt: Date.now(),
     };
     useLibrary.getState().addCourse(course);
+    if (categoryId) useLibrary.getState().setCourseCategory(course.id, categoryId);
+    setSaveOpen(false);
     router.push(`/course/${course.id}`);
   }
 
@@ -133,6 +143,9 @@ export function useAddVideo() {
     handleFetch,
     handleManualTextChange,
     handleManualParse,
+    saveOpen,
+    setSaveOpen,
     handleSave,
+    handleConfirmSave,
   };
 }

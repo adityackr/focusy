@@ -26,10 +26,12 @@ export function PlaylistGridSkeleton({ count = 6 }: { count?: number }) {
     <div
       aria-busy="true"
       aria-label="Loading playlists"
-      className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
+      className="columns-1 gap-5 sm:columns-2 xl:columns-3"
     >
       {Array.from({ length: count }).map((_, i) => (
-        <PlaylistCardSkeleton key={i} />
+        <div key={i} className="mb-5 break-inside-avoid">
+          <PlaylistCardSkeleton />
+        </div>
       ))}
     </div>
   );

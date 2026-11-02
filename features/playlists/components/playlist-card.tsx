@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, ListVideo, Play } from "lucide-react";
+import { Folder, FolderPlus, Heart, ListVideo, Play } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Badge } from "@/shared/ui/badge";
 import { Progress } from "@/shared/ui/progress";
@@ -12,12 +13,25 @@ import type { Playlist } from "@/shared/lib/types";
 import { useLibrary } from "@/shared/store/library";
 import { readWatchedCount } from "@/features/playlists/hooks/use-watch-progress";
 import { DeletePlaylistButton } from "@/features/playlists/components/delete-playlist-dialog";
+import { CategoryDialog } from "@/shared/components/category-dialog";
 
 /** Playlist card — same layout as the video card so the grids read as one set. */
 export function PlaylistCard({ playlist }: { playlist: Playlist }) {
-  const { done, pct, fav, href, pushRecent, toggleFavorite } = usePlaylistCard(playlist);
+  const {
+    done,
+    pct,
+    fav,
+    href,
+    pushRecent,
+    toggleFavorite,
+    category,
+    categoryOpen,
+    setCategoryOpen,
+    handleSetCategory,
+  } = usePlaylistCard(playlist);
 
   return (
+    <>
     <Card className="h-full gap-0 overflow-hidden py-0 transition-all hover:-translate-y-1 hover:shadow-xl">
       <Link
         href={href}
@@ -55,6 +69,12 @@ export function PlaylistCard({ playlist }: { playlist: Playlist }) {
           </CardTitle>
         </Link>
         <p className="truncate text-xs text-muted-foreground">{playlist.channelTitle}</p>
+        {category && (
+          <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+            <Folder className="size-3 shrink-0" />
+            <span className="truncate">{category.name}</span>
+          </p>
+        )}
       </CardHeader>
       <CardContent className="px-4">
         <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
@@ -70,6 +90,16 @@ export function PlaylistCard({ playlist }: { playlist: Playlist }) {
           {playlist.videos.length} lessons
         </span>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCategoryOpen(true)}
+            aria-label={category ? `Change category (${category.name})` : "Set category"}
+            title={category ? "Change category" : "Set category"}
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+          >
+            {category ? <Folder /> : <FolderPlus />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -90,15 +120,31 @@ export function PlaylistCard({ playlist }: { playlist: Playlist }) {
         </div>
       </CardFooter>
     </Card>
+
+    <CategoryDialog
+      open={categoryOpen}
+      onOpenChange={setCategoryOpen}
+      onSave={handleSetCategory}
+      initialCategoryId={playlist.categoryId ?? null}
+      title="Playlist category"
+      description="File this playlist into a folder, or create a new one."
+      confirmLabel="Save category"
+    />
+    </>
   );
 }
 
 /** Card state + actions for `PlaylistCard` — kept out of the JSX. */
 function usePlaylistCard(playlist: Playlist) {
   const [done, setDone] = useState(0);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const favorites = useLibrary((s) => s.favorites);
   const toggleFavorite = useLibrary((s) => s.toggleFavorite);
   const pushRecent = useLibrary((s) => s.pushRecent);
+  const setPlaylistCategory = useLibrary((s) => s.setPlaylistCategory);
+  const category = useLibrary((s) =>
+    playlist.categoryId ? s.categories[playlist.categoryId] : undefined
+  );
   const fav = favorites.includes(playlist.playlistId);
 
   useEffect(() => {
@@ -111,6 +157,11 @@ function usePlaylistCard(playlist: Playlist) {
       ? 0
       : Math.round((done / playlist.videos.length) * 100);
 
+  function handleSetCategory(categoryId?: string) {
+    setPlaylistCategory(playlist.playlistId, categoryId ?? null);
+    toast.success(categoryId ? "Playlist categorized." : "Playlist category cleared.");
+  }
+
   return {
     done,
     pct,
@@ -118,5 +169,9 @@ function usePlaylistCard(playlist: Playlist) {
     href: `/watch/${playlist.playlistId}`,
     pushRecent: () => pushRecent(playlist.playlistId),
     toggleFavorite: () => toggleFavorite(playlist.playlistId),
+    category,
+    categoryOpen,
+    setCategoryOpen,
+    handleSetCategory,
   };
 }

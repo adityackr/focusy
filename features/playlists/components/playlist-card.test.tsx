@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, mock } from "bun:test";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Playlist } from "@/shared/lib/types";
 
 // next/navigation needs an app-router context that doesn't exist under jsdom.
@@ -8,6 +8,7 @@ mock.module("next/navigation", () => ({
 }));
 
 const { PlaylistCard } = await import("./playlist-card");
+const { useLibrary } = await import("@/shared/store/library");
 
 function video(i: number) {
   return {
@@ -34,6 +35,14 @@ const PLAYLIST: Playlist = {
 beforeEach(() => {
   cleanup();
   localStorage.clear();
+  useLibrary.setState({
+    playlists: {},
+    order: [],
+    favorites: [],
+    recent: [],
+    categories: {},
+    categoryOrder: [],
+  });
 });
 
 describe("PlaylistCard progress (mirrors the video card)", () => {
@@ -57,5 +66,23 @@ describe("PlaylistCard progress (mirrors the video card)", () => {
     render(<PlaylistCard playlist={PLAYLIST} />);
     expect(screen.getByText("0/5 done")).toBeTruthy();
     expect(screen.getByText("0%")).toBeTruthy();
+  });
+});
+
+describe("PlaylistCard categories", () => {
+  test("files an existing playlist into a new category from its card", () => {
+    useLibrary.getState().addPlaylist(PLAYLIST);
+    render(<PlaylistCard playlist={PLAYLIST} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Set category" }));
+    fireEvent.change(screen.getByLabelText("New category name"), {
+      target: { value: "Frontend" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Create/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save category" }));
+
+    const categoryId = useLibrary.getState().categoryOrder[0];
+    expect(useLibrary.getState().categories[categoryId].name).toBe("Frontend");
+    expect(useLibrary.getState().playlists.PL1.categoryId).toBe(categoryId);
   });
 });

@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/alert";
 import { Badge } from "@/shared/ui/badge";
 import { Separator } from "@/shared/ui/separator";
 import { cn } from "@/shared/lib/utils";
+import { CategoryDialog } from "@/shared/components/category-dialog";
 
 export function AddVideoView() {
   const {
@@ -34,7 +35,10 @@ export function AddVideoView() {
     handleFetch,
     handleManualTextChange,
     handleManualParse,
+    saveOpen,
+    setSaveOpen,
     handleSave,
+    handleConfirmSave,
   } = useAddVideo();
 
   return (
@@ -188,6 +192,15 @@ export function AddVideoView() {
           </CardContent>
         </Card>
       )}
+
+      <CategoryDialog
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        onSave={handleConfirmSave}
+        title="Save to a category"
+        description="Pick a folder for this video, or create a new one. You can change it later from the video card."
+        confirmLabel="Save video"
+      />
     </main>
   );
 }

@@ -12,9 +12,11 @@ import {
 	DialogTitle,
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
+import { Label } from '@/shared/ui/label';
+import { CategoryPicker } from '@/shared/components/category-dialog';
 import { Link2, Loader2, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export function AddPlaylistButton({
@@ -47,14 +49,12 @@ export function AddPlaylistDialog({
 	open: boolean;
 	onOpenChange: (v: boolean) => void;
 }) {
-	const { value, setValue, busy, handleSubmit } = useAddPlaylistDialog(
-		open,
-		onOpenChange,
-	);
+	const { value, setValue, categoryId, setCategoryId, busy, handleSubmit } =
+		useAddPlaylistDialog(open, onOpenChange);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
+			<DialogContent className="max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>Add a playlist</DialogTitle>
 					<DialogDescription>
@@ -71,6 +71,13 @@ export function AddPlaylistDialog({
 							onChange={(e) => setValue(e.target.value)}
 							placeholder="e.g. https://www.youtube.com/playlist?list=PL…"
 							className="pl-10"
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label>Category (optional)</Label>
+						<CategoryPicker
+							selectedId={categoryId}
+							onSelect={setCategoryId}
 						/>
 					</div>
 					<DialogFooter>
@@ -104,10 +111,18 @@ function useAddPlaylistDialog(
 	onOpenChange: (v: boolean) => void,
 ) {
 	const [value, setValue] = useState('');
+	const [categoryId, setCategoryId] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 	const fetchPlaylist = useLibrary((s) => s.fetchPlaylist);
 	const playlists = useLibrary((s) => s.playlists);
 	const router = useRouter();
+
+	// Every open starts from a clean form.
+	useEffect(() => {
+		if (!open) return;
+		setValue('');
+		setCategoryId(null);
+	}, [open]);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -126,6 +141,9 @@ function useAddPlaylistDialog(
 		const ok = await fetchPlaylist(id);
 		setBusy(false);
 		if (ok) {
+			if (categoryId) {
+				useLibrary.getState().setPlaylistCategory(id, categoryId);
+			}
 			toast.success('Playlist added to your library.');
 			setValue('');
 			onOpenChange(false);
@@ -137,5 +155,5 @@ function useAddPlaylistDialog(
 		}
 	}
 
-	return { value, setValue, busy, handleSubmit };
+	return { value, setValue, categoryId, setCategoryId, busy, handleSubmit };
 }
