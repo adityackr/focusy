@@ -51,18 +51,32 @@ export function CategoryPicker({
           No categories yet — create one below.
         </p>
       )}
-      <form onSubmit={handleCreate} className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <Input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => {
+            // The picker can sit inside a larger <form> (e.g. add playlist),
+            // so Enter must create the folder instead of submitting that form.
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleCreate();
+            }
+          }}
           placeholder="New category name"
           aria-label="New category name"
           className="h-9"
         />
-        <Button type="submit" variant="outline" size="sm" disabled={!newName.trim()}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!newName.trim()}
+          onClick={handleCreate}
+        >
           <Plus className="size-4" /> Create
         </Button>
-      </form>
+      </div>
     </div>
   );
 }
@@ -174,8 +188,7 @@ function useCategoryPicker(onSelect: (categoryId: string | null) => void) {
   );
   const addCategory = useLibrary((s) => s.addCategory);
 
-  function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
+  function handleCreate() {
     const id = addCategory(newName);
     if (!id) return;
     // Creating a folder selects it, so saving finishes in one more click.

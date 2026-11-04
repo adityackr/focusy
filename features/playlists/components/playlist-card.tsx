@@ -13,6 +13,7 @@ import type { Playlist } from "@/shared/lib/types";
 import { useLibrary } from "@/shared/store/library";
 import { readWatchedCount } from "@/features/playlists/hooks/use-watch-progress";
 import { DeletePlaylistButton } from "@/features/playlists/components/delete-playlist-dialog";
+import { RefreshPlaylistButton } from "@/features/playlists/components/refresh-playlist-button";
 import { CategoryDialog } from "@/shared/components/category-dialog";
 
 /** Playlist card — same layout as the video card so the grids read as one set. */
@@ -112,6 +113,10 @@ export function PlaylistCard({ playlist }: { playlist: Playlist }) {
           >
             <Heart className={cn(fav && "fill-current")} />
           </Button>
+          <RefreshPlaylistButton
+            playlistId={playlist.playlistId}
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+          />
           <DeletePlaylistButton
             playlistId={playlist.playlistId}
             playlistTitle={playlist.playlistTitle}

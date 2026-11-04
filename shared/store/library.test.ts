@@ -444,6 +444,176 @@ describe("duration backfill", () => {
   });
 });
 
+describe("playlist refresh", () => {
+  test("merges YouTube's current lessons in without losing saved state or progress", async () => {
+    const origFetch = globalThis.fetch;
+    setApiKey("test-key");
+
+    function video(videoId: string, durationSeconds?: number) {
+      return {
+        videoId,
+        title: `Lesson ${videoId}`,
+        description: "",
+        thumbnail: { url: "", width: 320, height: 180 },
+        position: 0,
+        ...(durationSeconds === undefined ? {} : { durationSeconds }),
+      };
+    }
+
+    const saved = makePlaylist("A", "2024-01-01");
+    saved.playlistTitle = "Old title";
+    saved.categoryId = "cat-1";
+    saved.videos = [video("v1", 12), video("v2", 99), video("gone")];
+    useLibrary.getState().addPlaylist(saved);
+    useLibrary.getState().toggleFavorite("A");
+    localStorage.setItem(
+      "focustube:progress:A",
+      JSON.stringify({ watched: ["v2"], lastWatched: "v2", completedChapters: [], positions: {} })
+    );
+
+    const json = (body: unknown) => ({ ok: true, json: async () => body });
+    globalThis.fetch = (async (input: unknown) => {
+      const url = String(input);
+      if (url.includes("/playlists?")) {
+        return json({
+          items: [
+            {
+              snippet: {
+                title: "Fresh title",
+                description: "Now with a new lesson",
+                channelId: "ch1",
+                channelTitle: "Some channel",
+              },
+              contentDetails: { itemCount: 3 },
+            },
+          ],
+        });
+      }
+      if (url.includes("/playlistItems?")) {
+        return json({
+          items: ["v1", "v2", "v3"].map((videoId, position) => ({
+            snippet: { title: `Lesson ${videoId}`, description: "", position, resourceId: { videoId } },
+          })),
+        });
+      }
+      if (url.includes("/videos?")) {
+        // Only v3 gets a duration here; v2's saved duration must survive.
+        return json({ items: [{ id: "v3", contentDetails: { duration: "PT1M5S" } }] });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      const result = await useLibrary.getState().refreshPlaylist("A");
+      expect(result).toEqual({ added: 1, removed: 1, total: 3 });
+
+      const playlist = useLibrary.getState().playlists["A"];
+      expect(playlist.videos.map((v) => v.videoId)).toEqual(["v1", "v2", "v3"]);
+      expect(playlist.playlistTitle).toBe("Fresh title");
+      expect(playlist.channelTitle).toBe("Some channel");
+      // Saved identity and manual state are untouched.
+      expect(playlist.addedAt).toBe("2024-01-01");
+      expect(playlist.categoryId).toBe("cat-1");
+      expect(useLibrary.getState().favorites).toEqual(["A"]);
+      expect(useLibrary.getState().order).toEqual(["A"]);
+      // Durations: known ones survive, new ones come from the fresh fetch.
+      expect(playlist.videos[1].durationSeconds).toBe(99);
+      expect(playlist.videos[2].durationSeconds).toBe(65);
+      // Progress is stored separately and stays put.
+      expect(localStorage.getItem("focustube:progress:A")).toContain("v2");
+      expect(useLibrary.getState().loadingIds).toEqual([]);
+    } finally {
+      globalThis.fetch = origFetch;
+      setApiKey("");
+    }
+  });
+
+  test("leaves the saved playlist alone when no API key is set", async () => {
+    setApiKey("");
+    const saved = makePlaylist("A", "2024-01-01");
+    useLibrary.getState().addPlaylist(saved);
+
+    const result = await useLibrary.getState().refreshPlaylist("A");
+
+    expect(result).toBeNull();
+    expect(useLibrary.getState().playlists["A"]).toEqual(saved);
+    expect(useLibrary.getState().error).toContain("No YouTube API key");
+  });
+
+  test("refresh all reports lesson changes per playlist", async () => {
+    const origFetch = globalThis.fetch;
+    setApiKey("test-key");
+
+    function video(videoId: string) {
+      return {
+        videoId,
+        title: `Lesson ${videoId}`,
+        description: "",
+        thumbnail: { url: "", width: 320, height: 180 },
+        position: 0,
+      };
+    }
+
+    const b = makePlaylist("B", "2024-01-01");
+    b.videos = [video("v1")];
+    const a = makePlaylist("A", "2024-02-01");
+    a.videos = [video("v1")];
+    useLibrary.getState().addPlaylist(b);
+    useLibrary.getState().addPlaylist(a);
+
+    const freshVideos: Record<string, string[]> = { A: ["v1", "v2"], B: ["v1"] };
+    const json = (body: unknown) => ({ ok: true, json: async () => body });
+    globalThis.fetch = (async (input: unknown) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/playlists")) {
+        const id = url.searchParams.get("id")!;
+        return json({
+          items: [
+            {
+              snippet: { title: `Fresh ${id}`, description: "", channelId: "", channelTitle: "" },
+              contentDetails: { itemCount: freshVideos[id].length },
+            },
+          ],
+        });
+      }
+      if (url.pathname.endsWith("/playlistItems")) {
+        const id = url.searchParams.get("playlistId")!;
+        return json({
+          items: freshVideos[id].map((videoId, position) => ({
+            snippet: { title: `Lesson ${videoId}`, description: "", position, resourceId: { videoId } },
+          })),
+        });
+      }
+      if (url.pathname.endsWith("/videos")) return json({ items: [] });
+      throw new Error(`unexpected fetch: ${url.toString()}`);
+    }) as unknown as typeof fetch;
+
+    try {
+      // Manual order is newest-first, so A is refreshed before B.
+      const reports = await useLibrary.getState().refreshAllPlaylists();
+      expect(reports).toEqual([
+        {
+          playlistId: "A",
+          playlistTitle: "Fresh A",
+          change: { added: 1, removed: 0, total: 2 },
+          error: null,
+        },
+        {
+          playlistId: "B",
+          playlistTitle: "Fresh B",
+          change: { added: 0, removed: 0, total: 1 },
+          error: null,
+        },
+      ]);
+      expect(useLibrary.getState().playlists.A.videos.map((v) => v.videoId)).toEqual(["v1", "v2"]);
+      expect(useLibrary.getState().loadingIds).toEqual([]);
+    } finally {
+      globalThis.fetch = origFetch;
+      setApiKey("");
+    }
+  });
+});
+
 describe("course creator backfill", () => {
   test("fills channel titles missing on old saves without re-fetching complete ones", async () => {
     const origFetch = globalThis.fetch;

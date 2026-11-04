@@ -6,7 +6,12 @@ import { Plus } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useLibrary, selectPlaylistList, selectCourseList } from "@/shared/store/library";
 import { PageHeader } from "@/shared/ui/page-header";
-import { SortablePlaylistGrid, PlaylistGridSkeleton, AddPlaylistButton } from "@/features/playlists";
+import {
+  SortablePlaylistGrid,
+  PlaylistGridSkeleton,
+  AddPlaylistButton,
+  RefreshAllPlaylistsButton,
+} from "@/features/playlists";
 import { SortableCourseGrid } from "@/features/videos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { buttonVariants } from "@/shared/ui/button";
@@ -30,7 +35,10 @@ export function LibraryView() {
               <Plus className="size-4" /> Add video
             </Link>
           ) : (
-            <AddPlaylistButton />
+            <div className="flex items-center gap-2">
+              <RefreshAllPlaylistsButton />
+              <AddPlaylistButton />
+            </div>
           )
         }
       />

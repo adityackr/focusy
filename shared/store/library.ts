@@ -93,6 +93,22 @@ export function migrateChapterlyCourses() {
 migrateLegacyLibraryStorage();
 migrateChapterlyCourses();
 
+/** What changed when a saved playlist was re-fetched from YouTube. */
+export interface PlaylistRefreshResult {
+  added: number;
+  removed: number;
+  total: number;
+}
+
+/** One entry in the bulk refresh's per-playlist report. */
+export interface PlaylistRefreshReport {
+  playlistId: string;
+  playlistTitle: string;
+  /** null when the refresh failed (see `error`). */
+  change: PlaylistRefreshResult | null;
+  error: string | null;
+}
+
 interface LibraryState {
   playlists: Record<string, Playlist>;
   /** Manual playlist order (playlist IDs). New playlists go first. */
@@ -121,6 +137,19 @@ interface LibraryState {
   toggleFavorite: (playlistId: string) => void;
   pushRecent: (playlistId: string) => void;
   fetchPlaylist: (playlistId: string) => Promise<boolean>;
+  /**
+   * Re-fetches a saved playlist from YouTube and merges its current lessons in.
+   * Keeps the playlist's manual order, folder, favorites and added date, and
+   * never touches watch progress (stored per playlist, keyed by video id).
+   * Returns null when the playlist isn't saved or the fetch fails.
+   */
+  refreshPlaylist: (playlistId: string) => Promise<PlaylistRefreshResult | null>;
+  /**
+   * Refreshes every saved playlist one at a time (keeping API quota gentle)
+   * and reports what changed per playlist. Playlists that fail are reported
+   * with their error instead of aborting the rest.
+   */
+  refreshAllPlaylists: () => Promise<PlaylistRefreshReport[]>;
   /**
    * Best-effort: fetch `durationSeconds` for videos imported before duration
    * support existed, so their thumbnails can show a time badge.
@@ -243,6 +272,86 @@ export const useLibrary = create<LibraryState>()(
             loadingIds: s.loadingIds.filter((id) => id !== playlistId),
           }));
         }
+      },
+
+      refreshPlaylist: async (playlistId) => {
+        const { playlists, loadingIds } = get();
+        const existing = playlists[playlistId];
+        if (!existing || loadingIds.includes(playlistId)) return null;
+        const key = getApiKey();
+        if (!key) {
+          set({
+            error:
+              "No YouTube API key set. Add one in Settings — it takes about 2 minutes.",
+          });
+          return null;
+        }
+        set((s) => ({ loadingIds: [...s.loadingIds, playlistId], error: null }));
+        try {
+          const fresh = await fetchPlaylistFromYouTube(playlistId, key);
+          const current = get().playlists[playlistId];
+          if (!current) return null;
+
+          const known = new Map(current.videos.map((v) => [v.videoId, v]));
+          const knownIds = new Set(known.keys());
+          const freshIds = new Set(fresh.videos.map((v) => v.videoId));
+          // YouTube is authoritative for order and metadata; local durations are
+          // kept where the duration fetch was best-effort and came back empty.
+          const videos = fresh.videos.map((v) => ({
+            ...v,
+            durationSeconds: v.durationSeconds ?? known.get(v.videoId)?.durationSeconds ?? null,
+          }));
+          const added = fresh.videos.filter((v) => !knownIds.has(v.videoId)).length;
+          const removed = current.videos.filter((v) => !freshIds.has(v.videoId)).length;
+
+          set((s) => ({
+            playlists: {
+              ...s.playlists,
+              [playlistId]: {
+                ...current, // keeps addedAt and categoryId
+                playlistTitle: fresh.playlistTitle,
+                playlistDescription: fresh.playlistDescription,
+                playlistThumbnail: fresh.playlistThumbnail,
+                channelId: fresh.channelId,
+                channelTitle: fresh.channelTitle,
+                itemCount: fresh.itemCount,
+                videos,
+              },
+            },
+          }));
+          return { added, removed, total: videos.length };
+        } catch (e) {
+          set({ error: e instanceof Error ? e.message : "Failed to refresh playlist" });
+          return null;
+        } finally {
+          set((s) => ({
+            loadingIds: s.loadingIds.filter((id) => id !== playlistId),
+          }));
+        }
+      },
+
+      refreshAllPlaylists: async () => {
+        const targets = selectPlaylistList(get());
+        if (targets.length === 0) return [];
+        if (!getApiKey()) {
+          set({
+            error:
+              "No YouTube API key set. Add one in Settings — it takes about 2 minutes.",
+          });
+          return [];
+        }
+        const reports: PlaylistRefreshReport[] = [];
+        for (const target of targets) {
+          const result = await get().refreshPlaylist(target.playlistId);
+          reports.push({
+            playlistId: target.playlistId,
+            playlistTitle:
+              get().playlists[target.playlistId]?.playlistTitle ?? target.playlistTitle,
+            change: result,
+            error: result ? null : get().error,
+          });
+        }
+        return reports;
       },
 
       backfillDurations: async (playlistId) => {

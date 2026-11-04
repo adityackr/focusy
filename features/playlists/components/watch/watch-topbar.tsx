@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useLibrary } from "@/shared/store/library";
 import { DeletePlaylistButton } from "@/features/playlists/components/delete-playlist-dialog";
+import { RefreshPlaylistButton } from "@/features/playlists/components/refresh-playlist-button";
 
 export function WatchTopbar({
   playlistId,
@@ -34,6 +35,11 @@ export function WatchTopbar({
           <Heart className={cn("size-4", fav && "fill-primary text-primary")} />
           {fav ? "Favorited" : "Favorite"}
         </Button>
+        <RefreshPlaylistButton
+          playlistId={playlistId}
+          iconOnly={false}
+          className="h-8 px-3 text-xs"
+        />
         <DeletePlaylistButton
           playlistId={playlistId}
           playlistTitle={playlistTitle}
