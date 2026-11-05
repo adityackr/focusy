@@ -72,7 +72,7 @@ Marketing-style homepage with a hero (live-feel classroom mock), stats, feature 
 
 - **No API key lives in env vars or on the server.** The key is entered in the app, stored only in that browser's `localStorage`, and used directly from the client against the YouTube Data API.
 - Step-by-step tutorial with links (Cloud Console → enable API → create key → restrict → paste), a **Test key** button, and quota notes.
-- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, notes) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file — a replace, not a merge, confirmed before it touches anything. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
+- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, notes) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win), with the file's contents previewed, the mode chosen and confirmed before anything changes. The library page nudges you when new playlists or videos have landed since a backup that is already over a week old, or when the library has never been backed up at all. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
 
 ### App sidebar
 

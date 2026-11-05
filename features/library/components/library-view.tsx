@@ -16,6 +16,7 @@ import { SortableCourseGrid } from "@/features/videos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
+import { BackupReminder } from "./backup-reminder";
 
 export function LibraryView() {
   const { tab, setTab, playlists, courses, hydrated, plural } = useLibraryView();
@@ -42,6 +43,7 @@ export function LibraryView() {
           )
         }
       />
+      <BackupReminder />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="videos">
