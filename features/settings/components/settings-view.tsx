@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { BackupCard } from './backup-card';
 
 const CONSOLE = 'https://console.cloud.google.com';
 const API_LIBRARY =
@@ -127,6 +128,9 @@ export function SettingsView() {
 					)}
 				</CardContent>
 			</Card>
+
+			{/* backup & restore */}
+			<BackupCard />
 
 			{/* tutorial */}
 			<Card className="mt-4">

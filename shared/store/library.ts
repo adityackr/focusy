@@ -178,6 +178,38 @@ interface LibraryState {
   setPlaylistCategory: (playlistId: string, categoryId: string | null) => void;
 }
 
+/** The slice of the library that is persisted — and therefore backed up as a whole. */
+export interface LibrarySnapshot {
+  playlists: Record<string, Playlist>;
+  order: string[];
+  favorites: string[];
+  recent: string[];
+  courses: Record<string, Course>;
+  courseOrder: string[];
+  courseFavorites: string[];
+  courseRecent: string[];
+  categories: Record<string, Category>;
+  categoryOrder: string[];
+}
+
+/**
+ * Everything worth saving, without the transient runtime fields (loading,
+ * errors, hydration flag). Shared by persistence and by backup/restore so the
+ * two can never drift apart.
+ */
+export const selectLibrarySnapshot = (s: LibraryState): LibrarySnapshot => ({
+  playlists: s.playlists,
+  order: s.order,
+  favorites: s.favorites,
+  recent: s.recent,
+  courses: s.courses,
+  courseOrder: s.courseOrder,
+  courseFavorites: s.courseFavorites,
+  courseRecent: s.courseRecent,
+  categories: s.categories,
+  categoryOrder: s.categoryOrder,
+});
+
 export const useLibrary = create<LibraryState>()(
   persist(
     (set, get) => ({
@@ -558,22 +590,16 @@ export const useLibrary = create<LibraryState>()(
     }),
     {
       name: LIBRARY_STORAGE_KEY,
-      partialize: (s) => ({
-        playlists: s.playlists,
-        order: s.order,
-        favorites: s.favorites,
-        recent: s.recent,
-        courses: s.courses,
-        courseOrder: s.courseOrder,
-        courseFavorites: s.courseFavorites,
-        courseRecent: s.courseRecent,
-        categories: s.categories,
-        categoryOrder: s.categoryOrder,
-      }),
+      partialize: selectLibrarySnapshot,
       onRehydrateStorage: () => (state) => state?.setHydrated(),
     }
   )
 );
+
+/** Replace the saved library wholesale (used when restoring a backup file). */
+export function restoreLibrarySnapshot(snapshot: LibrarySnapshot): void {
+  useLibrary.setState(snapshot);
+}
 
 export const selectPlaylistList = (s: LibraryState): Playlist[] => {
   const inOrder = s.order
