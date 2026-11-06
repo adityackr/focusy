@@ -47,9 +47,9 @@ export function BackupReminder() {
 	}
 
 	return (
-		<div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border bg-muted/40 px-4 py-3 text-sm">
+		<div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-muted/40 px-3 py-3 text-sm sm:px-4">
 			<DatabaseBackup className="size-4 shrink-0 text-primary" />
-			<p className="flex-1 text-muted-foreground">
+			<p className="min-w-0 flex-1 text-muted-foreground">
 				{reminder.neverBackedUp ? (
 					<>
 						<span className="font-medium text-foreground">
@@ -67,17 +67,21 @@ export function BackupReminder() {
 					</>
 				)}
 			</p>
-			<Button size="sm" onClick={handleDownload}>
-				Download backup
-			</Button>
-			<Button
-				variant="ghost"
-				size="icon"
-				aria-label="Dismiss backup reminder"
-				onClick={handleDismiss}
-			>
-				<X className="size-4" />
-			</Button>
+			{/* Full-width action row on phones; inline with the text from sm up. */}
+			<div className="flex w-full items-center gap-2 sm:w-auto">
+				<Button size="sm" onClick={handleDownload} className="flex-1 sm:flex-none">
+					Download backup
+				</Button>
+				<Button
+					variant="ghost"
+					size="icon"
+					aria-label="Dismiss backup reminder"
+					onClick={handleDismiss}
+					className="shrink-0"
+				>
+					<X className="size-4" />
+				</Button>
+			</div>
 		</div>
 	);
 }
