@@ -63,10 +63,13 @@ export function AppSidebar({
         collapsed ? "w-19" : "w-72"
       )}
     >
-      <div className="flex items-center gap-2 p-3">
+      <div className={cn("relative flex items-center gap-2 p-3", collapsed && "justify-center")}>
         <Link
           href="/"
-          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1.5 hover:bg-sidebar-accent"
+          className={cn(
+            "flex min-w-0 items-center gap-2.5 rounded-xl p-1.5 hover:bg-sidebar-accent",
+            !collapsed && "flex-1"
+          )}
         >
           <LogoMark size={36} />
           {!collapsed && (
@@ -78,7 +81,17 @@ export function AppSidebar({
             </span>
           )}
         </Link>
-        <Button variant="ghost" size="icon" onClick={onToggle} aria-label="Collapse sidebar" className="shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={cn(
+            "shrink-0",
+            collapsed &&
+              "absolute -right-3 top-1/2 z-20 h-6 w-6 -translate-y-1/2 rounded-full border bg-sidebar shadow-sm [&_svg]:size-3.5"
+          )}
+        >
           <ChevronsLeft className={cn("size-4 transition-transform", collapsed && "rotate-180")} />
         </Button>
       </div>
