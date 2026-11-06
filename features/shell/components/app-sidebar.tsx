@@ -15,6 +15,7 @@ import { useLibrary, selectPlaylistList, selectCourseList } from "@/shared/store
 import { AddPlaylistDialog, DeletePlaylistButton } from "@/features/playlists";
 import { DeleteCourseButton } from "@/features/videos";
 import { LogoMark } from "@/features/shell/components/logo";
+import { ThemeToggle } from "@/features/shell/components/theme-toggle";
 
 const NAV = [
   { href: "/library", label: "Library", icon: LayoutGrid },
@@ -358,6 +359,10 @@ export function AppSidebar({
               ))}
         </div>
       )}
+
+      <div className="border-t p-3">
+        <ThemeToggle collapsed={collapsed} />
+      </div>
 
       <AddPlaylistDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </aside>

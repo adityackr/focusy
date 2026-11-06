@@ -30,7 +30,7 @@ export default function CourseFooter({
           <Link href="/library" className="text-xs text-muted-foreground hover:underline">
             ← Library
           </Link>
-          <h1 className="truncate text-xl font-semibold">{course.title}</h1>
+          <h1 className="truncate text-xl font-bold tracking-tight">{course.title}</h1>
           <div className="text-xs text-muted-foreground">
             {course.chapters.length} lessons • {pct}% complete •{" "}
             <Link
@@ -57,7 +57,7 @@ export default function CourseFooter({
           </Button>
         </div>
       </div>
-      <Progress value={pct} className="mt-2 [&>div]:bg-green-600" />
+      <Progress value={pct} className="mt-2 [&>div]:bg-success" />
 
       {course.description?.trim() && <VideoDescription description={course.description} />}
     </>

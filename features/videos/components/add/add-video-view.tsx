@@ -13,6 +13,7 @@ import { Label } from "@/shared/ui/label";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/alert";
 import { Badge } from "@/shared/ui/badge";
+import { PageHeader } from "@/shared/ui/page-header";
 import { Separator } from "@/shared/ui/separator";
 import { cn } from "@/shared/lib/utils";
 import { CategoryDialog } from "@/shared/components/category-dialog";
@@ -42,13 +43,13 @@ export function AddVideoView() {
   } = useAddVideo();
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 p-4 pb-16">
-      <h1 className="text-xl font-semibold tracking-tight">Add a video</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Paste a YouTube link or ID. We&apos;ll fetch its title + description and split it by timestamps.
-      </p>
+    <div className="mx-auto w-full max-w-3xl p-4 pb-16 sm:p-8">
+      <PageHeader
+        title="Add a video"
+        subtitle="Paste a YouTube link or ID. We'll fetch its title + description and split it by timestamps."
+      />
 
-      <Card className="mt-4">
+      <Card>
         <CardHeader>
           <CardTitle className="text-base">YouTube link or ID</CardTitle>
         </CardHeader>
@@ -185,7 +186,7 @@ export function AddVideoView() {
             <Button
               onClick={handleSave}
               disabled={chapters.length === 0}
-              className="w-full bg-green-700 text-white hover:bg-green-600"
+              className="w-full"
             >
               Save as course →
             </Button>
@@ -201,6 +202,6 @@ export function AddVideoView() {
         description="Pick a folder for this video, or create a new one. You can change it later from the video card."
         confirmLabel="Save video"
       />
-    </main>
+    </div>
   );
 }

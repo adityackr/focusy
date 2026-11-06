@@ -39,7 +39,7 @@ export function CoursePlayerView() {
   if (!course) return <CourseNotFound />;
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 p-4">
+    <div className="mx-auto w-full max-w-6xl p-4">
       <div className={`grid gap-4 ${sidebarOpen ? "lg:grid-cols-[minmax(0,1fr)_320px]" : ""}`}>
         <PlayerSection
           course={course}
@@ -80,6 +80,6 @@ export function CoursePlayerView() {
         editing={editing}
         setEditing={setEditing}
       />
-    </main>
+    </div>
   );
 }

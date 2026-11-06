@@ -94,13 +94,8 @@ export default function PlayerSection({
               <NoteButton videoId={course.videoId} title={course.title} as="labeled" />
               <Button
                 size="sm"
-                variant={completedIds.includes(active.id) ? "secondary" : "default"}
+                variant={completedIds.includes(active.id) ? "success" : "default"}
                 onClick={() => toggleComplete(active.id)}
-                className={
-                  completedIds.includes(active.id)
-                    ? "border-green-600 bg-green-600 text-white hover:bg-green-600 hover:text-white dark:border-green-600 dark:bg-green-600 dark:text-white dark:hover:bg-green-600 dark:hover:text-white"
-                    : undefined
-                }
               >
                 {completedIds.includes(active.id) ? "✓ Done" : "Mark done"}
               </Button>

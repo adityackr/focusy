@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clapperboard } from "lucide-react";
 import { buttonVariants } from "@/shared/ui/button";
+import { EmptyState } from "@/shared/ui/empty-state";
 import { CourseCard } from "@/features/videos/components/course-card";
 import { cn } from "@/shared/lib/utils";
 import type { Course } from "@/shared/lib/types";
@@ -20,26 +21,28 @@ export function CourseGrid({
 }) {
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed px-6 py-16 text-center">
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-          <EmptyIcon className="size-7" />
-        </span>
-        <div>
-          <h3 className="font-bold">{emptyTitle}</h3>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">{emptyText}</p>
-        </div>
-        {emptyAction ?? (
-          <Link href="/add" className={cn(buttonVariants())}>
-            Add a video
-          </Link>
-        )}
-      </div>
+      <EmptyState
+        icon={EmptyIcon}
+        title={emptyTitle}
+        text={emptyText}
+        action={
+          emptyAction ?? (
+            <Link href="/add" className={cn(buttonVariants())}>
+              Add a video
+            </Link>
+          )
+        }
+      />
     );
   }
   return (
     <div className="columns-1 gap-5 sm:columns-2 xl:columns-3">
-      {items.map((c) => (
-        <div key={c.id} className="mb-5 break-inside-avoid">
+      {items.map((c, i) => (
+        <div
+          key={c.id}
+          className="card-enter mb-5 break-inside-avoid"
+          style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+        >
           <CourseCard course={c} />
         </div>
       ))}

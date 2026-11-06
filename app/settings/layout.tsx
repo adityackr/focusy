@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TopBar } from "@/features/shell";
+import { AppShell } from "@/features/shell";
 import { JsonLd } from "@/shared/components/json-ld";
 import { absoluteUrl } from "@/shared/lib/site";
 
@@ -29,10 +29,9 @@ const BREADCRUMBS = {
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh">
+    <AppShell>
       <JsonLd data={BREADCRUMBS} />
-      <TopBar />
       {children}
-    </div>
+    </AppShell>
   );
 }

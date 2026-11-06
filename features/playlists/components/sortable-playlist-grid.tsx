@@ -31,7 +31,7 @@ import { reorderWithin } from "@/shared/lib/order";
 import { PlaylistCard } from "@/features/playlists/components/playlist-card";
 import { PlaylistGrid } from "@/features/playlists/components/playlist-grid";
 
-function SortableCard({ playlist }: { playlist: Playlist }) {
+function SortableCard({ playlist, index }: { playlist: Playlist; index: number }) {
   const { style, isDragging, attributes, listeners, setNodeRef } =
     useSortableCard(playlist.playlistId);
 
@@ -42,7 +42,12 @@ function SortableCard({ playlist }: { playlist: Playlist }) {
       className={cn("group relative mb-5 break-inside-avoid", isDragging && "z-10")}
     >
       <div className={cn(isDragging && "scale-[1.02] opacity-90")}>
-        <PlaylistCard playlist={playlist} />
+        <div
+          className="card-enter"
+          style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+        >
+          <PlaylistCard playlist={playlist} />
+        </div>
       </div>
       <Button
         variant="secondary"
@@ -79,8 +84,8 @@ export function SortablePlaylistGrid({ categoryId }: { categoryId?: string } = {
         strategy={rectSortingStrategy}
       >
         <div className="columns-1 gap-5 sm:columns-2 xl:columns-3">
-          {items.map((p) => (
-            <SortableCard key={p.playlistId} playlist={p} />
+          {items.map((p, i) => (
+            <SortableCard key={p.playlistId} playlist={p} index={i} />
           ))}
         </div>
       </SortableContext>

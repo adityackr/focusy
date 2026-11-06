@@ -1,10 +1,5 @@
-import { TopBar } from "@/features/shell";
+import { AppShell } from "@/features/shell";
 
 export default function WatchLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-dvh">
-      <TopBar />
-      {children}
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
 }

@@ -92,7 +92,11 @@ export function HowItWorksSection() {
 					>
 						Add a video <ArrowRight className="size-4" />
 					</Link>
-					<AddPlaylistButton variant="outline" className="w-full sm:w-auto" />
+					<AddPlaylistButton
+						size="lg"
+						variant="outline"
+						className="w-full sm:w-auto"
+					/>
 					<span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
 						<History className="size-4" /> Recents and favorites are saved
 						automatically

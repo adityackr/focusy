@@ -4,6 +4,8 @@
 
 :root {
   /* Tide — light: foam-white surfaces with a deep-blue ocean primary (#3E5CEB) */
+  /* Native controls, scrollbars and form fields follow the active theme. */
+  color-scheme: light;
   --background: oklch(0.984 0.007 243);
   --foreground: oklch(0.22 0.04 258);
   --card: oklch(0.999 0.002 243);
@@ -23,6 +25,8 @@
   --border: oklch(0.9 0.018 250);
   --input: oklch(0.9 0.018 250);
   --ring: oklch(0.55 0.2 262);
+  --success: oklch(0.56 0.14 158);
+  --success-foreground: oklch(0.985 0.005 240);
   --radius: 0.75rem;
   --sidebar: oklch(0.968 0.011 248);
   --sidebar-foreground: oklch(0.22 0.04 258);
@@ -32,6 +36,7 @@
 
 .dark {
   /* Tide — dark: deep-navy ocean surfaces, brighter blue primary */
+  color-scheme: dark;
   --background: oklch(0.17 0.032 256);
   --foreground: oklch(0.97 0.01 240);
   --card: oklch(0.21 0.034 256);
@@ -51,6 +56,8 @@
   --border: oklch(0.31 0.034 256);
   --input: oklch(0.31 0.034 256);
   --ring: oklch(0.63 0.165 258);
+  --success: oklch(0.66 0.15 158);
+  --success-foreground: oklch(0.16 0.03 256);
   --sidebar: oklch(0.19 0.032 256);
   --sidebar-foreground: oklch(0.97 0.01 240);
   --sidebar-border: oklch(0.29 0.034 256);
@@ -74,6 +81,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -167,6 +176,15 @@
     to { opacity: 1; transform: none; filter: blur(0); }
   }
 
+  /* Library cards settling in on first paint (stagger set inline per card) */
+  .card-enter {
+    animation: card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes card-enter {
+    from { opacity: 0; transform: translateY(10px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+
   /* Accent rule that grows left-to-right when its section reveals */
   .bar-in {
     transform: scaleX(0);
@@ -244,6 +262,60 @@
     66% { transform: translate3d(-16px, 16px, 0) scale(0.94); }
   }
 
+  /* Landing backdrop — drifting grid that fades out below the fold */
+  .bg-landing-grid {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--color-border) 65%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--color-border) 65%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(75% 60% at 50% 0%, #000 8%, transparent 78%);
+    mask-image: radial-gradient(75% 60% at 50% 0%, #000 8%, transparent 78%);
+    animation: grid-drift 30s linear infinite;
+  }
+  @keyframes grid-drift {
+    from { background-position: 0 0; }
+    to { background-position: 56px 56px; }
+  }
+
+  /* Slow color blooms behind the landing page */
+  .animate-aurora {
+    animation: aurora-drift 22s ease-in-out infinite alternate;
+  }
+  @keyframes aurora-drift {
+    0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+    50% { transform: translate3d(5%, 4%, 0) scale(1.15); opacity: 0.85; }
+    100% { transform: translate3d(-4%, -3%, 0) scale(1.05); opacity: 0.6; }
+  }
+
+  /* Infinite capability ticker under the hero */
+  .marquee-fade {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+  }
+  .animate-marquee {
+    animation: marquee 38s linear infinite;
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Decorative conic ring behind the hero mock */
+  .animate-spin-slow {
+    animation: spin-slow 26s linear infinite;
+  }
+  @keyframes spin-slow {
+    to { transform: rotate(360deg); }
+  }
+
   /* Periodic light sheen sweeping over the CTA panel */
   .sheen {
     position: relative;
@@ -289,6 +361,11 @@
     .animate-gradient-text,
     .animate-pop,
     .animate-orb,
+    .card-enter,
+    .animate-aurora,
+    .animate-marquee,
+    .animate-spin-slow,
+    .bg-landing-grid,
     .typewriter-caret,
     .ping-ring,
     .progress-fill,

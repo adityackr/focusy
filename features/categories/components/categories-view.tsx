@@ -11,6 +11,7 @@ import {
   UNCATEGORIZED_CATEGORY_ID,
 } from "@/shared/store/library";
 import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
 import { PlaylistGridSkeleton } from "@/features/playlists";
 import {
   DeleteCategoryButton,
@@ -34,18 +35,11 @@ export function CategoriesView() {
       {!hydrated ? (
         <PlaylistGridSkeleton count={3} />
       ) : folders.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed px-6 py-16 text-center">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-            <FolderIcon className="size-7" />
-          </span>
-          <div>
-            <h2 className="font-bold">No categories yet</h2>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              Save a video or playlist and pick a category, or use the folder button on any
-              card to file it later.
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={FolderIcon}
+          title="No categories yet"
+          text="Save a video or playlist and pick a category, or use the folder button on any card to file it later."
+        />
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {folders.map((folder) => (

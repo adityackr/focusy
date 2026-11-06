@@ -114,7 +114,11 @@ export function SpotlightSection() {
 											{c.cta.label} <ArrowRight className="size-4" />
 										</Link>
 									) : (
-										<AddPlaylistButton variant={'outline'} className="w-full" />
+										<AddPlaylistButton
+											size="lg"
+											variant={'outline'}
+											className="w-full"
+										/>
 									)}
 								</div>
 							</div>

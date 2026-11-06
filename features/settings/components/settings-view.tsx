@@ -16,6 +16,7 @@ import {
 	CardTitle,
 } from '@/shared/ui/card';
 import { Input } from '@/shared/ui/input';
+import { PageHeader } from '@/shared/ui/page-header';
 import { Separator } from '@/shared/ui/separator';
 import {
 	BookOpenText,
@@ -67,18 +68,15 @@ export function SettingsView() {
 		useSettingsKey();
 
 	return (
-		<main className="mx-auto w-full max-w-2xl flex-1 p-4 pb-16">
-			<div className="flex items-center gap-2">
-				<h1 className="text-xl font-semibold tracking-tight">Settings</h1>
-				<Badge variant="secondary">Takes ~2 minutes</Badge>
-			</div>
-			<p className="mt-1 text-sm text-muted-foreground">
-				Your key is stored only in this browser&apos;s localStorage — it never
-				touches our servers (there are none).
-			</p>
+		<div className="mx-auto w-full max-w-3xl p-4 pb-16 sm:p-8">
+			<PageHeader
+				title="Settings"
+				subtitle="Your key is stored only in this browser's localStorage — it never touches our servers (there are none)."
+				action={<Badge variant="secondary">Takes ~2 minutes</Badge>}
+			/>
 
 			{/* key input */}
-			<Card className="mt-4">
+			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2 text-base">
 						<KeyRound className="size-4" /> YouTube Data API v3 key
@@ -169,14 +167,14 @@ export function SettingsView() {
 					</ol>
 					<Separator className="my-4" />
 					<p className="flex items-start gap-2 text-xs text-muted-foreground">
-						<ShieldCheck className="mt-0.5 size-4 shrink-0 text-green-600" />
+						<ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
 						Quota note: Google&apos;s free tier allows ~10,000 units/day (≈
 						6,000 video lookups). If you ever hit the limit, the app tells you
 						and you can paste chapters manually instead.
 					</p>
 				</CardContent>
 			</Card>
-		</main>
+		</div>
 	);
 }
 

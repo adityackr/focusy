@@ -34,6 +34,7 @@ export function CtaSection() {
 								Add a video <ArrowRight className="size-4" />
 							</Link>
 							<AddPlaylistButton
+								size="lg"
 								variant="outline"
 								className="w-full sm:w-auto"
 							/>

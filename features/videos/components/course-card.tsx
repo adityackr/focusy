@@ -90,7 +90,7 @@ export function CourseCard({ course }: { course: Course }) {
           </span>
           <span className="font-medium">{pct}%</span>
         </div>
-        <Progress value={pct} className="mb-2 [&>div]:bg-green-600" />
+        <Progress value={pct} className="mb-2 [&>div]:bg-success" />
       </CardContent>
       <CardFooter className="mt-auto flex items-center justify-between px-4 pb-3">
         <span className="text-[11px] font-medium text-muted-foreground">

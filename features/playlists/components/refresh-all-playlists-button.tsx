@@ -32,7 +32,6 @@ export function RefreshAllPlaylistsButton() {
     <>
       <Button
         variant="outline"
-        size="lg"
         onClick={refreshAll}
         disabled={busy || !hasPlaylists}
       >

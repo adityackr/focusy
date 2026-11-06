@@ -2,7 +2,7 @@ import { Skeleton } from "@/shared/ui/skeleton";
 
 export default function CourseSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 p-4">
+    <div className="mx-auto w-full max-w-6xl p-4">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0">
           <Skeleton className="aspect-video w-full rounded-xl" />
@@ -37,6 +37,6 @@ export default function CourseSkeleton() {
         <Skeleton className="h-3 w-48" />
         <Skeleton className="h-1.5 w-full" />
       </div>
-    </main>
+    </div>
   );
 }

@@ -22,15 +22,17 @@ import { toast } from 'sonner';
 export function AddPlaylistButton({
 	className,
 	variant = 'default',
+	size = 'default',
 }: {
 	className?: string;
 	variant?: ButtonProps['variant'];
+	size?: ButtonProps['size'];
 }) {
 	const { open, setOpen } = useAddPlaylistButton();
 	return (
 		<>
 			<Button
-				size={'lg'}
+				size={size}
 				onClick={() => setOpen(true)}
 				className={className}
 				variant={variant}

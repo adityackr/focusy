@@ -13,6 +13,7 @@ import {
   UNCATEGORIZED_CATEGORY_ID,
 } from "@/shared/store/library";
 import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { CategoryDialog } from "@/shared/components/category-dialog";
@@ -50,23 +51,16 @@ export function CategoryView({ categoryId }: { categoryId: string }) {
   if (!category) {
     return (
       <div className="mx-auto max-w-6xl p-4 sm:p-8">
-        <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed px-6 py-16 text-center">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-            <FolderX className="size-7" />
-          </span>
-          <div>
-            <h2 className="font-bold">Category not found</h2>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              This category doesn&apos;t exist in this browser. It may have been removed.
-            </p>
-          </div>
-          <Link
-            href="/categories"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            All categories
-          </Link>
-        </div>
+        <EmptyState
+          icon={FolderX}
+          title="Category not found"
+          text="This category doesn't exist in this browser. It may have been removed."
+          action={
+            <Link href="/categories" className={cn(buttonVariants({ variant: "outline" }))}>
+              All categories
+            </Link>
+          }
+        />
       </div>
     );
   }

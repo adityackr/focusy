@@ -31,7 +31,7 @@ import { reorderWithin } from "@/shared/lib/order";
 import { CourseCard } from "@/features/videos/components/course-card";
 import { CourseGrid } from "@/features/videos/components/course-grid";
 
-function SortableCard({ course }: { course: Course }) {
+function SortableCard({ course, index }: { course: Course; index: number }) {
   const { style, isDragging, attributes, listeners, setNodeRef } = useSortableCard(course.id);
 
   return (
@@ -41,7 +41,12 @@ function SortableCard({ course }: { course: Course }) {
       className={cn("group relative mb-5 break-inside-avoid", isDragging && "z-10")}
     >
       <div className={cn(isDragging && "scale-[1.02] opacity-90")}>
-        <CourseCard course={course} />
+        <div
+          className="card-enter"
+          style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+        >
+          <CourseCard course={course} />
+        </div>
       </div>
       <Button
         variant="secondary"
@@ -78,8 +83,8 @@ export function SortableCourseGrid({ categoryId }: { categoryId?: string } = {})
         strategy={rectSortingStrategy}
       >
         <div className="columns-1 gap-5 sm:columns-2 xl:columns-3">
-          {items.map((c) => (
-            <SortableCard key={c.id} course={c} />
+          {items.map((c, i) => (
+            <SortableCard key={c.id} course={c} index={i} />
           ))}
         </div>
       </SortableContext>

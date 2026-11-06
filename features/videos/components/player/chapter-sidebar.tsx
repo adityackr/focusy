@@ -52,7 +52,7 @@ export default function ChapterSidebar({
 								title={done ? 'Mark incomplete' : 'Mark complete'}
 								className={`mt-0.5 size-5 rounded-full p-0 ${
 									done
-										? 'border-green-600 bg-green-600 text-white hover:bg-green-600 hover:text-white dark:border-green-600 dark:bg-green-600 dark:text-white dark:hover:bg-green-600 dark:hover:text-white'
+										? 'border-success bg-success text-success-foreground hover:bg-success hover:text-success-foreground'
 										: 'text-transparent'
 								}`}
 							>

@@ -117,7 +117,7 @@ export function VideoList({
                   aria-label={done ? "Mark as unwatched" : "Mark as watched"}
                   className={cn(
                     "h-7 w-7",
-                    done ? "text-green-500" : "text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                    done ? "text-success" : "text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   )}
                 >
                   {done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
@@ -193,7 +193,7 @@ export function VideoList({
                               className={cn(
                                 "h-6 w-6 shrink-0",
                                 done
-                                  ? "text-green-500"
+                                  ? "text-success"
                                   : "text-muted-foreground opacity-0 group-hover/chapter:opacity-100 focus-visible:opacity-100"
                               )}
                             >

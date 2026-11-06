@@ -4,11 +4,13 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { AppSidebar } from "@/features/shell/components/app-sidebar";
+import { ThemeToggle, useThemeShortcut } from "@/features/shell/components/theme-toggle";
 import { LogoMark } from "@/features/shell/components/logo";
 import { cn } from "@/shared/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed, toggleCollapsed, mobileOpen, openMobile, closeMobile } = useAppShell();
+  useThemeShortcut();
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
@@ -36,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="text-sm font-extrabold tracking-tight">
             Focus<span className="text-primary">y</span>
           </span>
+          <ThemeToggle collapsed className="ml-auto" />
         </div>
         <main className={cn("min-h-0 flex-1 overflow-y-auto")}>{children}</main>
       </div>

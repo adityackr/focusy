@@ -88,25 +88,24 @@ function HeroCopy() {
 				chapter-by-chapter lessons, a collapsible sidebar, and nothing else
 				competing for your attention.
 			</p>
-			<div className="flex flex-col gap-y-3">
-				<div className="mt-8 flex items-center justify-between sm:justify-start gap-3">
-					<Link
-						href="/add"
-						className={cn(
-							buttonVariants({ size: 'lg' }),
-							'h-12 px-4 text-base sm:px-7 flex-1',
-						)}
-					>
-						Add a video <ArrowRight className="size-4" />
-					</Link>
-					<AddPlaylistButton
-						variant="outline"
-						className="h-12 px-4 text-base sm:px-7 flex-1"
-					/>
-				</div>
+			<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+				<Link
+					href="/add"
+					className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto')}
+				>
+					Add a video <ArrowRight className="size-4" />
+				</Link>
+				<AddPlaylistButton
+					size="lg"
+					variant="outline"
+					className="w-full sm:w-auto"
+				/>
 				<Link
 					href="/library"
-					className={cn(buttonVariants({ size: 'lg', variant: 'secondary' }))}
+					className={cn(
+						buttonVariants({ size: 'lg', variant: 'secondary' }),
+						'w-full sm:w-auto',
+					)}
 				>
 					<LibraryBig className="size-4" /> Explore library
 				</Link>
@@ -146,6 +145,10 @@ function HeroVisual() {
 
 	return (
 		<div className="relative">
+			<div
+				aria-hidden
+				className="animate-spin-slow absolute left-1/2 top-1/2 -z-10 size-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[conic-gradient(from_0deg,transparent,oklch(0.63_0.165_258/0.22),transparent_45%)] blur-2xl"
+			/>
 			<div className="animate-float">
 				<div
 					ref={cardRef}
@@ -154,7 +157,7 @@ function HeroVisual() {
 					style={{
 						transform: `perspective(1200px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
 					}}
-					className="rounded-3xl border bg-card p-3 shadow-2xl shadow-primary/10 transition-transform duration-500 ease-out will-change-transform"
+					className="sheen rounded-3xl border bg-card p-3 shadow-2xl shadow-primary/10 transition-transform duration-500 ease-out will-change-transform"
 				>
 					<div className="overflow-hidden rounded-2xl bg-black">
 						<div className="relative flex aspect-video flex-col items-center justify-center gap-3 bg-linear-to-br from-zinc-900 via-zinc-900 to-[#251a10] text-white">

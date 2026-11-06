@@ -75,7 +75,7 @@ export function TopBar() {
 					<Link
 						href="/add"
 						className={cn(
-							buttonVariants({ variant: 'default', size: 'sm' }),
+							buttonVariants({ variant: 'default' }),
 							pathname === '/add' && 'ring-2 ring-ring/40',
 						)}
 					>

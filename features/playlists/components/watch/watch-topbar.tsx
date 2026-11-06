@@ -35,16 +35,11 @@ export function WatchTopbar({
           <Heart className={cn("size-4", fav && "fill-primary text-primary")} />
           {fav ? "Favorited" : "Favorite"}
         </Button>
-        <RefreshPlaylistButton
-          playlistId={playlistId}
-          iconOnly={false}
-          className="h-8 px-3 text-xs"
-        />
+        <RefreshPlaylistButton playlistId={playlistId} iconOnly={false} />
         <DeletePlaylistButton
           playlistId={playlistId}
           playlistTitle={playlistTitle}
           iconOnly={false}
-          className="h-8 px-3 text-xs"
           onDeleted={goLibrary}
         />
         <Button variant="outline" size="sm" onClick={onToggleSidebar}>

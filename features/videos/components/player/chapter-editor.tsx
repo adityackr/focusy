@@ -105,7 +105,7 @@ const { deleteId, deleteTarget, setDeleteId, confirmDelete } = useChapterDelete(
 									size="sm"
 									onClick={() => setDeleteId(c.id)}
 									aria-label={`Delete "${c.title}"`}
-									className="h-7 px-2 text-xs text-red-500 hover:bg-destructive/10 hover:text-destructive"
+									className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
 								>
 									<Trash2 /> Del
 								</Button>
