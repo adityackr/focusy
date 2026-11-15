@@ -6,6 +6,10 @@ import CourseNotFound from "@/features/videos/components/player/course-not-found
 import PlayerSection from "@/features/videos/components/player/player-section";
 import LessonsSidebar from "@/features/videos/components/player/lessons-sidebar";
 import CourseFooter from "@/features/videos/components/player/course-footer";
+import {
+  StudioLessonPanel,
+  studioSourceForCourse,
+} from "@/features/studio";
 
 export function CoursePlayerView() {
   const {
@@ -71,6 +75,11 @@ export function CoursePlayerView() {
           />
         )}
       </div>
+
+      <StudioLessonPanel
+        source={studioSourceForCourse(course.id, course.videoId)}
+        lessonTitle={course.title}
+      />
 
       <CourseFooter
         course={course}

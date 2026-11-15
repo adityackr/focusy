@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, mock } from "bun:test";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Playlist } from "@/shared/lib/types";
 
 const replace = mock(() => {});
@@ -102,5 +102,32 @@ describe("WatchView resume on re-entry", () => {
     render(<WatchView playlistId="PL1" activeVideoId="vid-1" />);
     expect(replace).not.toHaveBeenCalled();
     expect(screen.getByText("Lesson 2 of 3")).toBeTruthy();
+  });
+
+  test("opens the active lesson's Studio workspace without disturbing playback", async () => {
+    const { rerender } = render(
+      <WatchView playlistId="PL1" activeVideoId="vid-1" />
+    );
+
+    expect(screen.getByText("Lesson 2 of 3")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /open studio/i }));
+
+    expect(
+      await screen.findByText("Start a project for this lesson")
+    ).toBeTruthy();
+    expect(
+      (screen.getByLabelText("Project name") as HTMLInputElement).value
+    ).toBe("Lesson 1");
+    expect(screen.getByText("Lesson 2 of 3")).toBeTruthy();
+
+    // Switching lessons keeps the panel open but moves to that lesson's project.
+    rerender(<WatchView playlistId="PL1" activeVideoId="vid-2" />);
+    expect(
+      await screen.findByText("Start a project for this lesson")
+    ).toBeTruthy();
+    expect(
+      (screen.getByLabelText("Project name") as HTMLInputElement).value
+    ).toBe("Lesson 2");
+    expect(screen.getByText("Lesson 3 of 3")).toBeTruthy();
   });
 });

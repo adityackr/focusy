@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useThemeShortcut();
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
+    <div className="fixed inset-0 flex overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <div className="hidden shrink-0 md:block">
         <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} />
@@ -29,7 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2 border-b px-4 py-3 md:hidden">
           <Button variant="ghost" size="icon" onClick={openMobile} aria-label="Open menu">
             <Menu className="size-5" />

@@ -3,9 +3,11 @@ import { useLibrary, LIBRARY_STORAGE_KEY } from "../store/library";
 import { getApiKey, setApiKey } from "./storage";
 import {
   applyBackup,
+  BACKUP_VERSION,
   backupFileName,
   backupPreview,
   backupReminder,
+  backupSummary,
   collectBackup,
   dismissBackupReminder,
   downloadBackup,
@@ -14,6 +16,7 @@ import {
   readLastBackup,
   recordLastBackup,
   serializeBackup,
+  STUDIO_BACKUP_SECTION_VERSION,
 } from "./backup";
 import type { Course, Playlist } from "./types";
 
@@ -185,6 +188,27 @@ describe("backup export", () => {
       "focusy-backup-2026-11-05.json"
     );
   });
+
+  test("includes an optional Studio project section", () => {
+    seed();
+    const studio = {
+      version: STUDIO_BACKUP_SECTION_VERSION,
+      activeWorkspaceId: "ws-1",
+      order: ["ws-1"],
+      workspaces: [{ id: "ws-1" }],
+    };
+
+    const backup = collectBackup(studio);
+    expect(backup.version).toBe(BACKUP_VERSION);
+    expect(backup.studio).toEqual(studio);
+
+    const parsed = parseBackup(serializeBackup(backup));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.backup.studio).toEqual(studio);
+    expect(backupPreview(parsed.backup).studioProjects).toBe(1);
+    expect(backupSummary(parsed.backup)).toContain("1 Studio project");
+  });
 });
 
 describe("backup import", () => {
@@ -242,6 +266,30 @@ describe("backup import", () => {
     expect(parsed.backup.notes.broken).toBeUndefined();
     expect(parsed.backup.playlistProgress.PL1.watched).toEqual(["PL1-v1"]);
     expect(parsed.backup.notes["PL1-v1"].text).toBe("# Idea");
+  });
+
+  test("reads version 1 backups without Studio data", () => {
+    seed();
+    const current = collectBackup();
+    const { studio: _studio, ...legacy } = current;
+
+    const parsed = parseBackup(JSON.stringify({ ...legacy, version: 1 }));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.backup.studio).toBeNull();
+    expect(backupPreview(parsed.backup).studioProjects).toBeNull();
+    expect(backupSummary(parsed.backup)).not.toContain("Studio");
+  });
+
+  test("rejects unreadable Studio sections instead of dropping them", () => {
+    seed();
+    const backup = collectBackup();
+    const parsed = parseBackup(
+      JSON.stringify({ ...backup, studio: { version: 99, workspaces: [] } })
+    );
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) return;
+    expect(parsed.error).toContain("Studio");
   });
 });
 
@@ -425,6 +473,23 @@ describe("backup reminder", () => {
 
     useLibrary.getState().addPlaylist(makePlaylist("PL3", "2024-06-01"));
     expect(backupReminder(NOW)).not.toBeNull();
+  });
+
+  test("counts Studio projects when deciding whether to nudge", () => {
+    localStorage.setItem(
+      "focusy-studio:workspaces",
+      JSON.stringify({
+        state: { workspaces: { "ws-1": { id: "ws-1" } } },
+        version: 0,
+      })
+    );
+
+    expect(backupReminder(NOW)).toEqual({
+      items: 1,
+      itemsSince: 0,
+      daysSince: null,
+      neverBackedUp: true,
+    });
   });
 
   test("downloading a backup records when it was taken", () => {

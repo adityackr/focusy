@@ -16,14 +16,19 @@ import type {
 
 /**
  * Portable JSON backup of everything that lives in this browser: the saved
- * library, per-playlist watch progress, per-course chapter progress and notes.
+ * library, per-playlist watch progress, per-course chapter progress, notes and
+ * Studio projects. Studio project contents live in IndexedDB, so callers pass
+ * that section in after collecting it asynchronously.
  *
  * Deliberately excluded: the YouTube API key and player/sidebar preferences —
  * those are per-device settings, not data worth carrying around.
  */
 
 export const BACKUP_APP = "focusy";
-export const BACKUP_VERSION = 1;
+export const BACKUP_VERSION = 2;
+/** Version 1 files predate Studio projects and remain readable. */
+export const LEGACY_BACKUP_VERSION = 1;
+export const STUDIO_BACKUP_SECTION_VERSION = 1;
 
 const PLAYLIST_PROGRESS_PREFIX = "focustube:progress:";
 const COURSE_PROGRESS_PREFIX = "yt-course:progress:";
@@ -41,6 +46,18 @@ export interface StoredNote {
   updatedAt: number;
 }
 
+/**
+ * Studio projects travel as a separate, versioned section so the shared
+ * library backup stays independent of Studio's IndexedDB implementation.
+ * Workspace entries are validated by Studio when restored.
+ */
+export interface StudioBackupSection {
+  version: typeof STUDIO_BACKUP_SECTION_VERSION;
+  activeWorkspaceId: string | null;
+  order: string[];
+  workspaces: unknown[];
+}
+
 export interface Backup {
   app: typeof BACKUP_APP;
   version: number;
@@ -52,6 +69,8 @@ export interface Backup {
   courseProgress: Record<string, CourseProgress>;
   /** videoId → note */
   notes: Record<string, StoredNote>;
+  /** Null for legacy backups that never contained Studio projects. */
+  studio: StudioBackupSection | null;
 }
 
 export type BackupParseResult =
@@ -208,6 +227,23 @@ function normalizeNote(raw: unknown): StoredNote | null {
   };
 }
 
+/** Validate the envelope of a Studio backup section, not each project. */
+export function normalizeStudioBackupSection(
+  raw: unknown,
+): StudioBackupSection | null {
+  if (!isRecord(raw)) return null;
+  if (raw.version !== STUDIO_BACKUP_SECTION_VERSION) return null;
+  return {
+    version: STUDIO_BACKUP_SECTION_VERSION,
+    activeWorkspaceId:
+      typeof raw.activeWorkspaceId === "string"
+        ? raw.activeWorkspaceId
+        : null,
+    order: stringArray(raw.order),
+    workspaces: Array.isArray(raw.workspaces) ? raw.workspaces : [],
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* merging helpers                                                            */
 /* -------------------------------------------------------------------------- */
@@ -272,8 +308,14 @@ function storedValues<T>(
   return out;
 }
 
-/** Snapshot everything currently saved in this browser. */
-export function collectBackup(): Backup {
+/**
+ * Snapshot everything currently saved in this browser. Pass the Studio section
+ * from `collectStudioBackup()` to include projects; omitting it produces a
+ * library-only backup that leaves Studio untouched when restored.
+ */
+export function collectBackup(
+  studio: StudioBackupSection | null = null,
+): Backup {
   return {
     app: BACKUP_APP,
     version: BACKUP_VERSION,
@@ -288,6 +330,7 @@ export function collectBackup(): Backup {
       normalizeCourseProgress,
     ),
     notes: storedValues(NOTE_PREFIX, normalizeNote),
+    studio,
   };
 }
 
@@ -318,12 +361,30 @@ export interface LastBackup {
   items: number;
 }
 
-/** What the library is worth backing up for: playlists and videos. */
+/** Studio's persisted metadata index, read without importing its feature code. */
+const STUDIO_METADATA_KEY = "focusy-studio:workspaces";
+
+function studioProjectCount(): number {
+  try {
+    const raw = localStorage.getItem(STUDIO_METADATA_KEY);
+    if (!raw) return 0;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || !isRecord(parsed.state)) return 0;
+    return isRecord(parsed.state.workspaces)
+      ? Object.keys(parsed.state.workspaces).length
+      : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** What the library is worth backing up for: playlists, videos and projects. */
 export function libraryItemCount(): number {
   const snapshot = selectLibrarySnapshot(useLibrary.getState());
   return (
     Object.keys(snapshot.playlists).length +
-    Object.keys(snapshot.courses).length
+    Object.keys(snapshot.courses).length +
+    studioProjectCount()
   );
 }
 
@@ -432,9 +493,12 @@ function isReminderDismissed(
  * Download the current browser's data as a JSON file. Returns the file name
  * that was used (also handy in tests without touching the DOM).
  */
-export function downloadBackup(): string {
+export function downloadBackup(
+  studio: StudioBackupSection | null = null,
+): string {
   const fileName = backupFileName();
-  const blob = new Blob([serializeBackup(collectBackup())], {
+  const backup = collectBackup(studio);
+  const blob = new Blob([serializeBackup(backup)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);
@@ -467,15 +531,28 @@ export function parseBackup(text: string): BackupParseResult {
   if (raw.app !== BACKUP_APP) {
     return { ok: false, error: "That file isn't a Focusy backup." };
   }
-  if (raw.version !== BACKUP_VERSION) {
+  if (
+    raw.version !== LEGACY_BACKUP_VERSION &&
+    raw.version !== BACKUP_VERSION
+  ) {
     return {
       ok: false,
-      error: `Unsupported backup version (${String(raw.version)}). This app reads version ${BACKUP_VERSION}.`,
+      error: `Unsupported backup version (${String(raw.version)}). This app reads versions ${LEGACY_BACKUP_VERSION} and ${BACKUP_VERSION}.`,
     };
   }
   const library = normalizeLibrary(raw.library);
   if (!library) {
     return { ok: false, error: "The backup is missing its library data." };
+  }
+  let studio: StudioBackupSection | null = null;
+  if (raw.version === BACKUP_VERSION && raw.studio != null) {
+    studio = normalizeStudioBackupSection(raw.studio);
+    if (!studio) {
+      return {
+        ok: false,
+        error: "This backup's Studio project data isn't readable.",
+      };
+    }
   }
   return {
     ok: true,
@@ -494,6 +571,7 @@ export function parseBackup(text: string): BackupParseResult {
         const note = normalizeNote(r);
         return note && note.text.trim() ? note : null;
       }),
+      studio,
     },
   };
 }
@@ -516,9 +594,11 @@ function clearPrefix(prefix: string): void {
 }
 
 /**
- * Replace this browser"s data with the backup"s. This is a replace, not a
+ * Replace this browser"s library with the backup"s. This is a replace, not a
  * merge: any playlists, progress or notes saved here that aren't in the file
- * are removed. The API key and player preferences are left alone.
+ * are removed. Studio projects are handled separately through the Studio
+ * feature because they live in IndexedDB. The API key and player preferences
+ * are left alone.
  */
 export function applyBackup(backup: Backup): void {
   restoreLibrarySnapshot(backup.library);
@@ -559,6 +639,7 @@ export interface MergeReport {
  * the local copy wins when both sides have the same id (it's the copy this
  * browser has been keeping current). Folders match by name, so the same folder
  * on two devices stays one folder. Progress and notes keep the newest version.
+ * Studio projects are merged separately through the Studio feature.
  */
 export function mergeBackup(backup: Backup): MergeReport {
   const current = selectLibrarySnapshot(useLibrary.getState());
@@ -688,6 +769,8 @@ export interface BackupPreview {
   playlistProgress: number;
   courseProgress: number;
   notes: number;
+  /** Null when the file has no Studio section (version 1 backups). */
+  studioProjects: number | null;
 }
 
 /**
@@ -715,6 +798,9 @@ export function backupPreview(backup: Backup): BackupPreview {
     playlistProgress: Object.keys(backup.playlistProgress).length,
     courseProgress: Object.keys(backup.courseProgress).length,
     notes: Object.keys(backup.notes).length,
+    studioProjects: backup.studio
+      ? backup.studio.workspaces.length
+      : null,
   };
 }
 
@@ -741,10 +827,16 @@ export function backupSummary(backup: Backup): string {
   const playlists = Object.keys(backup.library.playlists).length;
   const videos = Object.keys(backup.library.courses).length;
   const notes = Object.keys(backup.notes).length;
+  const studioProjects = backup.studio?.workspaces.length ?? 0;
   const parts = [
     `${playlists} playlist${playlists === 1 ? "" : "s"}`,
     `${videos} video${videos === 1 ? "" : "s"}`,
   ];
   if (notes > 0) parts.push(`${notes} note${notes === 1 ? "" : "s"}`);
+  if (studioProjects > 0) {
+    parts.push(
+      `${studioProjects} Studio project${studioProjects === 1 ? "" : "s"}`,
+    );
+  }
   return parts.join(" · ");
 }

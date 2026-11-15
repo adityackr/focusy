@@ -1,5 +1,10 @@
 'use client';
 
+import {
+	collectStudioBackup,
+	restoreStudioBackup,
+	type StudioRestoreReport,
+} from '@/features/studio';
 import { useLibrary } from '@/shared/store/library';
 import {
 	applyBackup,
@@ -51,14 +56,28 @@ export function BackupCard() {
 		null
 	);
 	const [busy, setBusy] = useState(false);
+	const [exporting, setExporting] = useState(false);
 	const preview = pending ? backupPreview(pending) : null;
 
-	function handleDownload() {
+	async function handleDownload() {
+		if (exporting) return;
+		setExporting(true);
+		setMessage(null);
 		try {
-			const name = downloadBackup();
+			const studio = await collectStudioBackup();
+			if (!studio.ok) {
+				setMessage({
+					text: `Couldn't include Studio projects: ${studio.error.message}`,
+					error: true,
+				});
+				return;
+			}
+			const name = downloadBackup(studio.value);
 			setMessage({ text: `Saved ${name}`, error: false });
 		} catch {
 			setMessage({ text: "Couldn't create the backup file.", error: true });
+		} finally {
+			setExporting(false);
 		}
 	}
 
@@ -80,21 +99,39 @@ export function BackupCard() {
 		}
 	}
 
-	function confirmRestore() {
-		if (!pending) return;
+	async function confirmRestore() {
+		if (!pending || busy) return;
+		setBusy(true);
 		try {
+			let studioReport: StudioRestoreReport | null = null;
+			if (pending.studio) {
+				const studio = await restoreStudioBackup(pending.studio, mode);
+				if (!studio.ok) {
+					setMessage({
+						text: `Couldn't restore Studio projects: ${studio.error.message}`,
+						error: true,
+					});
+					return;
+				}
+				studioReport = studio.value;
+			}
+
 			if (mode === 'merge') {
-				setMessage({ text: mergeMessage(mergeBackup(pending)), error: false });
+				setMessage({
+					text: mergeMessage(mergeBackup(pending), studioReport),
+					error: false,
+				});
 			} else {
 				applyBackup(pending);
 				setMessage({
-					text: `Replaced this browser's data with ${backupSummary(pending)}.`,
+					text: replaceMessage(pending, studioReport),
 					error: false,
 				});
 			}
 		} catch {
 			setMessage({ text: "Couldn't restore that backup.", error: true });
 		} finally {
+			setBusy(false);
 			setPending(null);
 		}
 	}
@@ -107,9 +144,9 @@ export function BackupCard() {
 						<HardDriveDownload className="size-4" /> Backup &amp; restore
 					</CardTitle>
 					<CardDescription>
-						Move your playlists, videos, folders, watch progress and notes to
-						another browser or device with one JSON file. Your API key and player
-						settings stay on this device.
+						Move your playlists, videos, folders, progress, notes and Studio
+						projects to another browser or device with one JSON file. Your API
+						key and player settings stay on this device.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -140,16 +177,20 @@ export function BackupCard() {
 					</fieldset>
 
 					<div className="flex flex-wrap gap-2">
-						<Button onClick={handleDownload} disabled={!hydrated}>
-							<HardDriveDownload className="size-4" /> Download backup
+						<Button
+							onClick={() => void handleDownload()}
+							disabled={!hydrated || exporting || busy}
+						>
+							<HardDriveDownload className="size-4" />{' '}
+							{exporting ? 'Preparing…' : 'Download backup'}
 						</Button>
 						<Button
 							variant="outline"
 							onClick={() => fileInput.current?.click()}
-							disabled={!hydrated || busy}
+							disabled={!hydrated || busy || exporting}
 						>
 							<Upload className="size-4" />{' '}
-							{busy ? 'Reading…' : 'Restore from file'}
+							{busy ? 'Working…' : 'Restore from file'}
 						</Button>
 						<input
 							ref={fileInput}
@@ -204,22 +245,33 @@ export function BackupCard() {
 						<BackupContents preview={preview} />
 
 						<p className="mt-4 text-xs text-muted-foreground">
-							{mode === 'merge'
-								? 'These are added to what is already saved here. Nothing is removed, and the newest watch progress and notes win.'
-								: 'This overwrites the playlists, videos, progress and notes saved here. Download a backup first if you want to keep them.'}
+						{mode === 'merge'
+							? pending.studio
+								? 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Studio projects already linked here are kept as they are.'
+								: 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Your existing Studio projects are left unchanged because this backup has no Studio data.'
+							: pending.studio
+								? 'This overwrites the playlists, videos, progress, notes and Studio projects saved here. Download a backup first if you want to keep them.'
+								: 'This overwrites the playlists, videos, progress and notes saved here. Your existing Studio projects are left unchanged because this backup has no Studio data.'}
 						</p>
 
 						<DialogFooter>
-							<Button variant="outline" onClick={() => setPending(null)}>
+							<Button
+								variant="outline"
+								onClick={() => setPending(null)}
+								disabled={busy}
+							>
 								Cancel
 							</Button>
 							<Button
 								variant={mode === 'replace' ? 'destructive' : 'default'}
-								onClick={confirmRestore}
+								onClick={() => void confirmRestore()}
+								disabled={busy}
 							>
-								{mode === 'replace'
-									? 'Replace everything'
-									: 'Merge into this browser'}
+								{busy
+									? 'Restoring…'
+									: mode === 'replace'
+										? 'Replace everything'
+										: 'Merge into this browser'}
 							</Button>
 						</DialogFooter>
 					</DialogContent>
@@ -245,6 +297,9 @@ function BackupContents({ preview }: { preview: BackupPreview }) {
 				<PreviewStat value={preview.playlistProgress} label="with progress" />
 				<PreviewStat value={preview.courseProgress} label="chapter states" />
 				<PreviewStat value={preview.notes} label="notes" />
+				{preview.studioProjects !== null && (
+					<PreviewStat value={preview.studioProjects} label="Studio projects" />
+				)}
 			</div>
 
 			{groups.length > 0 && (
@@ -279,7 +334,24 @@ function summarizeNames(names: string[]): string {
 	return rest > 0 ? `${shown} +${rest} more` : shown;
 }
 
-function mergeMessage(report: MergeReport): string {
+function replaceMessage(
+	backup: Backup,
+	studio: StudioRestoreReport | null,
+): string {
+	const base = `Replaced this browser's data with ${backupSummary(backup)}.`;
+	if (!backup.studio) {
+		return `${base} Your Studio projects were left unchanged because this older backup has no Studio data.`;
+	}
+	if (studio && studio.projectsSkipped > 0) {
+		return `${base} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
+	}
+	return base;
+}
+
+function mergeMessage(
+	report: MergeReport,
+	studio: StudioRestoreReport | null,
+): string {
 	const parts: string[] = [];
 	if (report.playlistsAdded > 0) {
 		parts.push(
@@ -294,6 +366,11 @@ function mergeMessage(report: MergeReport): string {
 	if (report.notesUpdated > 0) {
 		parts.push(
 			`${report.notesUpdated} note${report.notesUpdated === 1 ? '' : 's'} updated`
+		);
+	}
+	if (studio && studio.projectsAdded > 0) {
+		parts.push(
+			`${studio.projectsAdded} Studio project${studio.projectsAdded === 1 ? '' : 's'} added`
 		);
 	}
 	if (parts.length === 0) {

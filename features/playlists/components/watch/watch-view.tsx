@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/shared/ui/separator";
 import { cn } from "@/shared/lib/utils";
 import { useLibrary } from "@/shared/store/library";
+import {
+  StudioLessonPanel,
+  studioSourceForPlaylistVideo,
+} from "@/features/studio";
 import { useWatchProgress } from "@/features/playlists/hooks/use-watch-progress";
 import { VideoList } from "@/features/playlists/components/watch/video-list";
 import { WatchSkeleton } from "@/features/playlists/components/watch/watch-skeleton";
@@ -74,16 +78,25 @@ export function WatchView({
       >
         <div className="min-w-0">
           {activeVideo ? (
-            <NowPlaying
-              playlist={playlist}
-              activeVideo={activeVideo}
-              activeIndex={activeIndex}
-              watched={watched}
-              startAt={startAt ?? resumeAt}
-              seekRequest={seekReq}
-              onChapterChange={handleChapterChange}
-              onProgress={handleProgress}
-            />
+            <>
+              <NowPlaying
+                playlist={playlist}
+                activeVideo={activeVideo}
+                activeIndex={activeIndex}
+                watched={watched}
+                startAt={startAt ?? resumeAt}
+                seekRequest={seekReq}
+                onChapterChange={handleChapterChange}
+                onProgress={handleProgress}
+              />
+              <StudioLessonPanel
+                source={studioSourceForPlaylistVideo(
+                  playlistId,
+                  activeVideo.videoId
+                )}
+                lessonTitle={activeVideo.title}
+              />
+            </>
           ) : (
             <PlaylistOverview playlist={playlist} onStart={startLesson} />
           )}
