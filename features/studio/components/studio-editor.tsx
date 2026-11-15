@@ -3,7 +3,11 @@
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { monacoLanguageForPath, monacoModelPath } from "../lib/monaco";
+import {
+  configureMonaco,
+  monacoLanguageForPath,
+  monacoModelPath,
+} from "../lib/monaco";
 
 // Monaco touches `window` on import — keep it out of the server bundle.
 const MonacoEditor = dynamic(
@@ -35,6 +39,7 @@ export function StudioEditor({
   return (
     <MonacoEditor
       height="100%"
+      beforeMount={configureMonaco}
       path={monacoModelPath(filePath, workspaceId)}
       language={monacoLanguageForPath(filePath)}
       value={value}

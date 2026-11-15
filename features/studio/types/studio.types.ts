@@ -7,7 +7,8 @@ export type StudioTemplate =
   | "vanilla-ts"
   | "react"
   | "react-ts"
-  | "express";
+  | "express"
+  | "express-ts";
 
 /** One source file inside a Studio workspace. */
 export interface StudioFile {

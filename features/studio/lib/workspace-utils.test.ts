@@ -148,6 +148,34 @@ describe("normalizeStudioWorkspace", () => {
     expect(withEntry?.activeFile).toBe("/App.js");
   });
 
+  test("migrates saved Express TS projects to the JavaScript bootstrap", () => {
+    const normalized = normalizeStudioWorkspace({
+      ...workspace,
+      template: "express-ts",
+      activeFile: "/index.ts",
+      files: [
+        { path: "/index.ts", content: "const app = 1;\n" },
+        {
+          path: "/package.json",
+          content: JSON.stringify({
+            name: "saved-project",
+            main: "index.ts",
+            scripts: { start: "ts-node index.ts" },
+          }),
+        },
+      ],
+      dependencies: { express: "^4.21.2", "ts-node": "^10.9.2" },
+    });
+
+    expect(normalized).not.toBeNull();
+    expect(normalized?.files.map((file) => file.path)).toContain("/index.js");
+    expect(normalized?.dependencies).toEqual({
+      express: "^4.21.2",
+      typescript: "^5.7.2",
+    });
+    expect(normalized?.activeFile).toBe("/index.ts");
+  });
+
   test("keeps only valid dependency names and versions", () => {
     const normalized = normalizeStudioWorkspace({
       ...workspace,

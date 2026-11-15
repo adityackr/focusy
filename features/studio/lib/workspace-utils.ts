@@ -6,6 +6,7 @@ import { normalizeFilePath } from "./file-utils";
 import {
   STUDIO_TEMPLATES,
   STUDIO_TEMPLATE_ORDER,
+  upgradeLegacyExpressTs,
   upgradeLegacyStarterStyles,
 } from "./templates";
 import type {
@@ -154,7 +155,15 @@ export function normalizeStudioWorkspace(raw: unknown): StudioWorkspace | null {
 
   const rawFiles = normalizeFiles(raw.files);
   if (rawFiles.length === 0) return null;
-  const files = upgradeLegacyStarterStyles(rawFiles);
+  const styledFiles = upgradeLegacyStarterStyles(rawFiles);
+  const normalizedDependencies = normalizeDependencies(raw.dependencies);
+  const expressTsUpgrade =
+    template === "express-ts"
+      ? upgradeLegacyExpressTs(styledFiles, normalizedDependencies)
+      : null;
+  const files = expressTsUpgrade?.files ?? styledFiles;
+  const dependencies =
+    expressTsUpgrade?.dependencies ?? normalizedDependencies;
 
   const definition = STUDIO_TEMPLATES[template];
   const candidates = new Set(files.map((file) => file.path));
@@ -186,7 +195,7 @@ export function normalizeStudioWorkspace(raw: unknown): StudioWorkspace | null {
     createdAt,
     updatedAt,
     files,
-    dependencies: normalizeDependencies(raw.dependencies),
+    dependencies,
   };
 }
 

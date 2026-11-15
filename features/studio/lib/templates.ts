@@ -307,6 +307,157 @@ const EXPRESS_PACKAGE = JSON.stringify(
   2
 );
 
+const EXPRESS_TS_INDEX = `import express, { type Request, type Response } from "express";
+
+const app = express();
+const port: number = 3000;
+
+app.get("/", (_req: Request, res: Response) => {
+  res.send([
+    '<!doctype html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="utf-8" />',
+    '<meta name="viewport" content="width=device-width, initial-scale=1" />',
+    '<title>Focusy Studio — Express + TypeScript</title>',
+    '<style>',
+    '* { box-sizing: border-box; }',
+    'body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #0b1220; color: #e8edf7; font-family: ui-sans-serif, system-ui, sans-serif; }',
+    '.card { width: min(460px, 100%); padding: 28px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: #121b2d; }',
+    '.eyebrow { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #8ea4c8; }',
+    'h1 { margin: 0 0 10px; font-size: 24px; }',
+    'p { margin: 0 0 18px; line-height: 1.55; color: #b9c6dd; }',
+    'code { color: #7dd3a0; }',
+    '</style>',
+    '</head>',
+    '<body>',
+    '<main class="card">',
+    '<p class="eyebrow">Focusy Studio · Express TS</p>',
+    '<h1>Hello from typed Express</h1>',
+    '<p>This page is rendered by an Express route written in TypeScript at <code>GET /</code>.</p>',
+    '</main>',
+    '</body>',
+    '</html>',
+  ].join(""));
+});
+
+app.get("/api/hello", (_req: Request, res: Response) => {
+  res.json({ message: "Hello from Express + TypeScript" });
+});
+
+app.listen(port, () => {
+  console.log("Express + TypeScript running at http://localhost:" + port);
+});
+`;
+
+const EXPRESS_TS_BOOTSTRAP = `const fs = require("fs");
+const path = require("path");
+const Module = require("module");
+const ts = require("typescript");
+
+const entry = path.join(process.cwd(), "index.ts");
+const source = fs.readFileSync(entry, "utf8");
+const { outputText } = ts.transpileModule(source, {
+  fileName: "index.ts",
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+    esModuleInterop: true,
+  },
+});
+
+const compiled = new Module(entry, module);
+compiled.filename = entry;
+compiled.paths = module.paths;
+compiled._compile(outputText, entry);
+`;
+
+const EXPRESS_TS_PACKAGE = JSON.stringify(
+  {
+    name: "focusy-express-ts",
+    private: true,
+    main: "index.js",
+    scripts: { start: "node index.js" },
+  },
+  null,
+  2
+);
+
+/**
+ * Express TS projects created before the JavaScript bootstrap used a `ts-node`
+ * or `tsx` start script, which Sandpack's Nodebox cannot run. Saved projects
+ * are upgraded when they load so they don't stay stuck on the broken runner.
+ */
+export function upgradeLegacyExpressTs(
+  files: StudioFile[],
+  dependencies: Record<string, string>
+): { files: StudioFile[]; dependencies: Record<string, string> } | null {
+  const packageFile = files.find((file) => file.path === "/package.json");
+  if (!packageFile) return null;
+
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(packageFile.content);
+  } catch {
+    return null;
+  }
+  if (typeof manifest !== "object" || manifest === null) return null;
+
+  const record = manifest as Record<string, unknown>;
+  const scripts =
+    typeof record.scripts === "object" && record.scripts !== null
+      ? (record.scripts as Record<string, unknown>)
+      : null;
+  const start = scripts?.start;
+  if (
+    typeof start !== "string" ||
+    !/\b(ts-node|tsx)\b/.test(start)
+  ) {
+    return null;
+  }
+
+  const nextManifest = {
+    ...record,
+    main: "index.js",
+    scripts: { ...scripts, start: "node index.js" },
+  };
+  const nextDependencies = { ...dependencies };
+  delete nextDependencies["ts-node"];
+  delete nextDependencies.tsx;
+  nextDependencies.typescript ??= "^5.7.2";
+
+  const hasBootstrap = files.some((file) => file.path === "/index.js");
+  return {
+    files: [
+      ...files.map((file) =>
+        file.path === "/package.json"
+          ? { ...file, content: JSON.stringify(nextManifest, null, 2) }
+          : file
+      ),
+      ...(hasBootstrap
+        ? []
+        : [{ path: "/index.js", content: EXPRESS_TS_BOOTSTRAP }]),
+    ],
+    dependencies: nextDependencies,
+  };
+}
+
+const EXPRESS_TS_CONFIG = JSON.stringify(
+  {
+    compilerOptions: {
+      target: "ES2022",
+      module: "commonjs",
+      moduleResolution: "node",
+      esModuleInterop: true,
+      forceConsistentCasingInFileNames: true,
+      strict: true,
+      skipLibCheck: true,
+    },
+  },
+  null,
+  2
+);
+
 function files(...entries: StudioFile[]): StudioFile[] {
   return entries;
 }
@@ -393,6 +544,23 @@ export const STUDIO_TEMPLATES: Record<StudioTemplate, StudioTemplateDefinition> 
     ),
     dependencies: { express: "^4.21.2" },
   },
+  "express-ts": {
+    id: "express-ts",
+    label: "Express TS",
+    description: "Express server with TypeScript in the Node runtime",
+    sandpackTemplate: "node",
+    entryFile: "/index.ts",
+    files: files(
+      { path: "/index.ts", content: EXPRESS_TS_INDEX },
+      { path: "/index.js", content: EXPRESS_TS_BOOTSTRAP },
+      { path: "/package.json", content: EXPRESS_TS_PACKAGE },
+      { path: "/tsconfig.json", content: EXPRESS_TS_CONFIG }
+    ),
+    dependencies: {
+      express: "^4.21.2",
+      typescript: "^5.7.2",
+    },
+  },
 };
 
 export const STUDIO_TEMPLATE_ORDER: StudioTemplate[] = [
@@ -402,6 +570,7 @@ export const STUDIO_TEMPLATE_ORDER: StudioTemplate[] = [
   "react",
   "react-ts",
   "express",
+  "express-ts",
 ];
 
 /** Immutable copy of a template's starter files. */

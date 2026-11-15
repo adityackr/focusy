@@ -3,6 +3,7 @@ import {
   STUDIO_TEMPLATES,
   STUDIO_TEMPLATE_ORDER,
   createTemplateFiles,
+  upgradeLegacyExpressTs,
   upgradeLegacyStarterStyles,
 } from "./templates";
 import {
@@ -20,6 +21,7 @@ describe("studio templates", () => {
       "react",
       "react-ts",
       "express",
+      "express-ts",
     ]);
     for (const id of STUDIO_TEMPLATE_ORDER) {
       expect(STUDIO_TEMPLATES[id].id).toBe(id);
@@ -34,6 +36,66 @@ describe("studio templates", () => {
       expect(new Set(paths).size).toBe(paths.length);
       for (const path of paths) expect(path.startsWith("/")).toBe(true);
     }
+  });
+
+  test("Express TS transpiles its entry through a JavaScript bootstrap", () => {
+    const definition = STUDIO_TEMPLATES["express-ts"];
+    const packageFile = definition.files.find(
+      (file) => file.path === "/package.json"
+    );
+
+    expect(definition.sandpackTemplate).toBe("node");
+    expect(definition.entryFile).toBe("/index.ts");
+    expect(definition.files.map((file) => file.path)).toEqual(
+      expect.arrayContaining(["/index.ts", "/index.js", "/tsconfig.json"])
+    );
+    expect(definition.dependencies.typescript).toBeDefined();
+    expect(packageFile).toBeDefined();
+    if (!packageFile) return;
+    expect(JSON.parse(packageFile.content).scripts.start).toBe(
+      "node index.js"
+    );
+  });
+
+  test("upgrades saved Express TS projects off ts-node", () => {
+    const upgraded = upgradeLegacyExpressTs(
+      [
+        { path: "/index.ts", content: "const app = 1;\n" },
+        {
+          path: "/package.json",
+          content: JSON.stringify({
+            name: "saved-project",
+            main: "index.ts",
+            scripts: { start: "ts-node index.ts", lint: "tsc --noEmit" },
+          }),
+        },
+      ],
+      { express: "^4.21.2", "ts-node": "^10.9.2", dayjs: "^1.11.13" }
+    );
+
+    expect(upgraded).not.toBeNull();
+    const packageFile = upgraded?.files.find(
+      (file) => file.path === "/package.json"
+    );
+    expect(packageFile).toBeDefined();
+    if (!packageFile) return;
+    const manifest = JSON.parse(packageFile.content);
+    expect(manifest.main).toBe("index.js");
+    expect(manifest.scripts.start).toBe("node index.js");
+    expect(manifest.scripts.lint).toBe("tsc --noEmit");
+    expect(upgraded?.files.map((file) => file.path)).toContain("/index.js");
+    expect(upgraded?.dependencies).toEqual({
+      express: "^4.21.2",
+      dayjs: "^1.11.13",
+      typescript: "^5.7.2",
+    });
+
+    expect(
+      upgradeLegacyExpressTs(createTemplateFiles("express-ts"), {
+        express: "^4.21.2",
+        typescript: "^5.7.2",
+      })
+    ).toBeNull();
   });
 
   test("createTemplateFiles returns an isolated copy", () => {

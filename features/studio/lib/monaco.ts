@@ -1,3 +1,31 @@
+import type { Monaco } from "@monaco-editor/react";
+
+/**
+ * Monaco has no project `node_modules`, so it cannot resolve imports such as
+ * `react`, `express`, or `./styles.css`. Sandpack owns dependency resolution;
+ * keep syntax and real type diagnostics, but hide only module lookup errors.
+ */
+const IGNORED_MODULE_DIAGNOSTICS = [
+  2307, // Cannot find module or its type declarations.
+  2688, // Cannot find type definition file.
+  2792, // Cannot find module; check moduleResolution.
+];
+
+export function configureMonaco(monaco: Monaco): void {
+  const diagnostics = {
+    noSemanticValidation: false,
+    noSyntaxValidation: false,
+    diagnosticCodesToIgnore: IGNORED_MODULE_DIAGNOSTICS,
+  };
+
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
+    diagnostics
+  );
+  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
+    diagnostics
+  );
+}
+
 /** Monaco language id for a Studio file path (extension based). */
 export function monacoLanguageForPath(path: string): string {
   const extension = path.split(".").pop()?.toLowerCase() ?? "";
