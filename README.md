@@ -2,7 +2,7 @@
 
 **Focusy turns YouTube videos and playlists into calm, course-style classrooms — no recommendations, no Shorts, no comments, no autoplay rabbit holes. Just the lessons you chose, in order.**
 
-Paste a video link and Focusy splits it into chapter-based lessons using its timestamps, or paste a playlist link (or ID) and it imports every video — titles, thumbnails, order, channel info — then lets you watch it like a proper online course, with a collapsible lesson sidebar, per-video progress tracking, favorites, and recents. Everything lives in your browser: no account, no tracking, no server-side watch history.
+Paste a video link and Focusy splits it into chapter-based lessons using its timestamps, or paste a playlist link (or ID) and it imports every video — titles, thumbnails, order, channel info — then lets you watch it like a proper online course, with a collapsible lesson sidebar, per-video progress tracking, favorites, and recents. **Focusy Studio** adds a coding workspace to that experience, so you can follow a programming tutorial and practice its code without switching tabs. Library data, projects, and progress stay in your browser: no account, no tracking, no server-side watch history.
 
 ---
 
@@ -12,6 +12,7 @@ Paste a video link and Focusy splits it into chapter-based lessons using its tim
   - [Table of contents](#table-of-contents)
   - [Why this exists](#why-this-exists)
   - [Features](#features)
+  - [Focusy Studio (`/studio`)](#focusy-studio-studio)
   - [Landing page (`/`)](#landing-page-)
   - [Library (`/library`), Recent (`/recent`), Favorites (`/favorites`)](#library-library-recent-recent-favorites-favorites)
   - [Adding videos (`/add`) — from the Chapterly app](#adding-videos-add--from-the-chapterly-app)
@@ -72,7 +73,7 @@ Marketing-style homepage with a hero (live-feel classroom mock), stats, feature 
 
 - **No API key lives in env vars or on the server.** The key is entered in the app, stored only in that browser's `localStorage`, and used directly from the client against the YouTube Data API.
 - Step-by-step tutorial with links (Cloud Console → enable API → create key → restrict → paste), a **Test key** button, and quota notes.
-- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, notes) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win), with the file's contents previewed, the mode chosen and confirmed before anything changes. The library page nudges you when new playlists or videos have landed since a backup that is already over a week old, or when the library has never been backed up at all. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
+- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, notes, and Studio projects with their files and dependencies) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win), with the file's contents previewed, the mode chosen and confirmed before anything changes. The library page nudges you when new playlists or videos have landed since a backup that is already over a week old, or when the library has never been backed up at all. Older backups without Studio data remain compatible. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
 
 ### App sidebar
 
@@ -103,6 +104,19 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 - Footer with `auto-advance` toggle, overall `%`, and the cleaned video description (timestamp lines stripped, links auto-linked).
 - Chapterly's progress and sidebar state keys (`yt-course:*`) are kept so existing Chapterly users keep their data after the merge.
 
+### Focusy Studio (`/studio`)
+
+- **Watch and practice together.** A standalone Studio route is available at `/studio`; every video, course, and playlist lesson also gets a Studio launcher. The lesson launcher opens the workspace in a **full-size sheet**, keeping the player and lesson page intact behind it.
+- **Monaco editor** with syntax highlighting, line numbers, bracket matching, find/replace, light/dark themes, editor font sizing, word wrap, and language detection for HTML, CSS, JavaScript, TypeScript, JSX, TSX, and JSON. The editor can expand to a distraction-free **full-screen mode**.
+- **File explorer** for creating, switching, renaming, and deleting files and derived folders. Changes save automatically with debounced IndexedDB writes; an in-flight edit is flushed when switching files, projects, or lessons.
+- **Live Sandpack preview** with runtime status, refresh/restart controls, and a console for runtime and compilation errors. Supported starters: HTML/CSS/JS, Vanilla JS, Vanilla TS, React JS, React TS, and Express JS.
+- **Project management** for creating, switching, renaming, deleting, and replacing a project's template. Template replacement warns before overwriting files. Explicit **New project** creates another project even when the current lesson already has one; ordinary lesson navigation still reuses saved projects instead of creating duplicates.
+- **Linked workspaces**: standalone videos get a workspace, course chapters share the course workspace, and each playlist lesson keeps its own workspace. Every project restores its files, active file, and dependencies after a refresh or when you return to the lesson.
+- **Package manager** for adding, updating, and removing public npm dependencies through Sandpack's `customSetup.dependencies`. Input is validated and dependency state is saved with the project.
+- **Local-first persistence**: lightweight project metadata lives in Zustand/localStorage, while file contents and dependencies live in IndexedDB. Invalid or missing project data is reported without crashing the app.
+- **Backup integration**: Studio projects, files, dependencies, and lesson associations are included in the existing Focusy backup/restore flow.
+- **Runtime disclosure**: previews run through Sandpack's hosted bundler and public npm resolution, so network access is required and project source is processed by that external runtime. Studio is not offline and does not execute code in Focusy's application context. The runtime supports browser-oriented projects and public npm packages, not arbitrary Node.js, native binaries, or shell commands. Express runs in Sandpack's Node environment; Next.js App Router is not included because Sandpack's bundled Next template is the older Pages Router.
+
 ### Cross-cutting
 
 - **Dark / light mode** with system support (`next-themes`), honey-amber brand theme.
@@ -116,20 +130,24 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 
 ## Tech stack
 
-| Technology                                                       | Version              | Role                                                                                    |
-| ---------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------- | --- | --------------------------------------------------------------- | --- | ---------------------------------------------------------------------- |
-| [Next.js](https://nextjs.org/) (App Router)                      | 16                   | Framework, routing, API routes, image optimization                                      |
-| [React](https://react.dev/)                                      | 19                   | UI                                                                                      |
-| [TypeScript](https://www.typescriptlang.org/)                    | 5                    | Type safety                                                                             |
-| [Tailwind CSS](https://tailwindcss.com/)                         | 4 (CSS-first config) | Styling + `shadcn` theme tokens in `app/globals.css`                                    |
-| [shadcn/ui](https://ui.shadcn.com/) (New York)                   | vendored             | `button, card, dialog, alert-dialog, input, badge, skeleton, separator` in `shared/ui/` |
-| [Zustand](https://zustand.docs.pmnd.rs/) + `persist`             | 5                    | Client store (library, order, favorites, recents) persisted to `localStorage`           |
-| [dnd-kit](https://dndkit.com/) (`core`, `sortable`, `utilities`) | 6 / 10               | Drag-and-drop playlist reordering                                                       |
-| [Lucide](https://lucide.dev/)                                    | —                    | Icons (including the custom `LogoMark` SVG in `features/shell/components/logo.tsx`)     |
-| [Sonner](https://sonner.emilkowal.ski/)                          | 1                    | Toasts                                                                                  |
-| [next-themes](https://github.com/pacocoursey/next-themes)        | 0.4                  | Dark/light mode                                                                         |
-| [Bun](https://bun.sh/)                                           | —                    | Package manager, runtime, and test runner                                               |
-| Testing Library + jsdom                                          | dev-only             | Component/hook tests (`bun test`)                                                       |     | [YouTube Data API v3](https://developers.google.com/youtube/v3) | —   | Playlist metadata + video lists (client-side, key entered in Settings) |
+| Technology                                                       | Version              | Role                                                                                                             |
+| ---------------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [Next.js](https://nextjs.org/) (App Router)                      | 16                   | Framework, routing, image optimization                                                                           |
+| [React](https://react.dev/)                                      | 19                   | UI                                                                                                               |
+| [TypeScript](https://www.typescriptlang.org/)                    | 5                    | Type safety                                                                                                      |
+| [Tailwind CSS](https://tailwindcss.com/)                         | 4 (CSS-first config) | Styling + `shadcn` theme tokens in `app/globals.css`                                                              |
+| [shadcn/ui](https://ui.shadcn.com/) (New York)                   | vendored             | `button, card, dialog, alert-dialog, sheet, input, badge, skeleton, separator` in `shared/ui/`                    |
+| [Monaco Editor](https://microsoft.github.io/monaco-editor/)      | 0.57                 | Studio code editor (`@monaco-editor/react`)                                                                      |
+| [Sandpack](https://sandpack.codesandbox.io/)                     | 2.20                 | Studio previews, compilation/runtime errors, and dependency resolution (`@codesandbox/sandpack-react`)           |
+| IndexedDB                                                        | browser API          | Studio project files and dependencies; metadata stays in Zustand/localStorage                                     |
+| [Zustand](https://zustand.docs.pmnd.rs/) + `persist`             | 5                    | Library and Studio metadata stores persisted to `localStorage`                                                   |
+| [dnd-kit](https://dndkit.com/) (`core`, `sortable`, `utilities`) | 6 / 10               | Drag-and-drop playlist reordering                                                                                |
+| [Lucide](https://lucide.dev/)                                    | —                    | Icons (including the custom `LogoMark` SVG in `features/shell/components/logo.tsx`)                              |
+| [Sonner](https://sonner.emilkowal.ski/)                          | 1                    | Toasts                                                                                                           |
+| [next-themes](https://github.com/pacocoursey/next-themes)        | 0.4                  | Dark/light mode                                                                                                  |
+| [YouTube Data API v3](https://developers.google.com/youtube/v3)  | —                    | Playlist metadata + video lists (client-side, key entered in Settings)                                           |
+| [Bun](https://bun.sh/)                                           | —                    | Package manager, runtime, and test runner                                                                        |
+| Testing Library + jsdom                                          | dev-only             | Component/hook tests (`bun test`)                                                                                |
 
 ---
 
@@ -195,11 +213,19 @@ Add a playlist (dialog)
       /playlists (metadata) + /playlistItems (all pages), client-side
   → playlist saved to Zustand store → persisted to localStorage
   → classroom opens at /watch/[playlistId]
+
+Open Studio (/studio or a lesson's "Open Studio" button)
+  → sourceKeyForSource() links a project to a video, course, or playlist lesson
+  → workspace metadata comes from Zustand/localStorage
+  → files and dependencies come from IndexedDB
+  → Monaco edits update workspace state → debounced IndexedDB save
+  → Sandpack rebuilds the preview from the same files and dependencies
 ```
 
 - **IDs accepted**: raw IDs (`PL…`), `youtube.com/playlist?list=…` / `watch?v=…&list=…`, `youtu.be/…?list=…`.
 - **No server proxy**: both fetch paths run in the browser with the user's own key (entered in Settings); there is no env var and no API route.
 - **Watch progress** (`features/playlists/hooks/use-watch-progress.ts`) stores `{ watched[], lastWatched, completedChapters[], positions{} }` per playlist in `localStorage`. Mutations go through a ref mirror so mount-time auto-marking can never clobber previously saved progress (this exact race is covered by a regression test). Playback position per video is reported by the player every ~5s, so reopening a lesson cues it where you left off — an explicit `?t=` deep link wins, and watching to the end drops the resume point.
+- **Studio projects** are keyed by `sourceKeyForSource()` for videos, courses, and playlist lessons. A project's metadata is indexed in `localStorage`; its files and dependencies live in IndexedDB. The lesson route opens the workspace in a full-size sheet, while `/studio` manages projects directly. Opening a lesson restores its project without creating a new one; using **New project** explicitly creates another project linked to the same lesson.
 
 ---
 
@@ -216,6 +242,7 @@ Add a playlist (dialog)
 | `/favorites`                    | Static + client | Pinned videos & playlists                        |
 | `/add`                          | Static + client | Add a video: fetch chapters or paste manually    |
 | `/settings`                     | Static + client | User-provided YouTube API key + tutorial         |
+| `/studio`                       | Static + client | Standalone coding workspace with live preview    |
 | `/course/[id]`                  | Dynamic         | Chapter-based course player (Chapterly port)     |
 | `/watch/[playlistId]`           | Dynamic         | Playlist overview + lesson list                  |
 | `/watch/[playlistId]/[videoId]` | Dynamic         | Focused player + lesson sidebar                  |
@@ -242,6 +269,7 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   └── favorites/page.tsx    # → FavoritesView
 │   ├── add/                      # /add → AddVideoView (features/videos)
 │   ├── settings/                 # /settings → SettingsView (features/settings)
+│   ├── studio/                   # /studio → StudioPrototype (features/studio)
 │   ├── course/[id]/              # → CoursePlayerView (features/videos)
 │   └── watch/                    # → WatchView (features/playlists)
 │
@@ -286,16 +314,26 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   └── hooks/                # use-add-video, use-course-player,
 │   │                             # use-video-player (segment-aware),
 │   │                             # use-chapter-editor
-│   └── settings/                 # User-provided API key
-│       ├── index.ts              # SettingsView
-│       ├── components/           # settings-view (key form + tutorial)
-│       └── lib/                  # actions-client (key test helper)
+│   ├── settings/                 # User-provided API key
+│   │   ├── index.ts              # SettingsView
+│   │   ├── components/           # settings-view (key form + tutorial)
+│   │   └── lib/                  # actions-client (key test helper)
+│   └── studio/                   # Watch-and-practice coding workspaces
+│       ├── index.ts              # StudioLessonPanel, StudioPrototype, backup API
+│       ├── components/           # workspace view, Monaco editor, file explorer,
+│       │                         # Sandpack preview, console, package manager,
+│       │                         # project toolbar/form, full-size lesson sheet
+│       ├── hooks/                # workspace lifecycle/persistence, packages
+│       ├── lib/                  # templates, file/path helpers, IndexedDB,
+│       │                         # workspace validation, backup, Sandpack/Monaco
+│       ├── store/                # workspace metadata + editor preferences
+│       └── types/                # Studio types
 │
 ├── shared/                       # Cross-feature infrastructure
 │   ├── ui/                       # Dependency-free primitives (button, card,
 │   │                             # dialog, alert-dialog, alert, input, textarea,
 │   │                             # label, checkbox, progress, tabs, badge,
-│   │                             # skeleton, separator, page-header)
+│   │                             # skeleton, separator, page-header, sheet)
 │   ├── components/               # video-description (rich, linkified — used
 │   │                             # by both watch features)
 │   ├── player/                   # iframe-api (one loader + YTPlayer type),
@@ -348,6 +386,10 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 - `shared/lib/chapters.test.ts` — chapter parsing from descriptions (both line orders, sorting, end-time chaining), timestamp formatting, description cleanup, memoization.
 - `features/playlists/components/watch/video-list.test.tsx` — nested chapter lists: auto-expand of the active lesson, expand/collapse, in-place seek vs `?t=` deep links, current-chapter highlight.
 - `features/playlists/components/watch/now-playing.test.tsx` — custom player chrome renders, chapters surface in the player menu, timestamp lines stripped from the description.
+- `features/studio/lib/workspaces.test.ts` — project creation, linked-source reuse, explicit duplicate projects, rename/delete, template replacement, and IndexedDB round-trips.
+- `features/studio/hooks/use-studio-workspace.test.tsx` — lesson restoration, switching sources without leaking files, flush-before-switch, rename/change/delete, and fallback to another project.
+- `features/studio/lib/studio-backup.test.ts` — Studio backup collection and replace/merge restore, including multiple projects sharing one lesson.
+- `features/studio/components/studio-lesson-panel.test.tsx` — the full-size sheet, first-visit form, closing without leaving the lesson, and restoring the right workspace per lesson.
 
 ---
 
@@ -359,4 +401,4 @@ The app deploys as a standard Next.js app (e.g. Vercel):
 2. No required environment variables — each user adds their own YouTube API key in the app under Settings. Set `NEXT_PUBLIC_SITE_URL` to your custom domain so canonical URLs, `sitemap.xml` and social cards point at it.
 3. Build command `bun run build` (or `next build`), output served with `bun start`.
 
-No database or additional services required.
+No database or additional services required. Studio previews use Sandpack's hosted bundler and public npm resolution, so they need network access and are not described as offline; self-hosting that runtime is outside the current scope.
