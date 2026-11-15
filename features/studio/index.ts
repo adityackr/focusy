@@ -1,5 +1,4 @@
 export { StudioLessonPanel } from "./components/studio-lesson-panel";
-export { StudioPrototype } from "./components/studio-prototype";
 export {
   collectStudioBackup,
   restoreStudioBackup,

@@ -12,7 +12,6 @@ Paste a video link and Focusy splits it into chapter-based lessons using its tim
   - [Table of contents](#table-of-contents)
   - [Why this exists](#why-this-exists)
   - [Features](#features)
-  - [Focusy Studio (`/studio`)](#focusy-studio-studio)
   - [Landing page (`/`)](#landing-page-)
   - [Library (`/library`), Recent (`/recent`), Favorites (`/favorites`)](#library-library-recent-recent-favorites-favorites)
   - [Adding videos (`/add`) — from the Chapterly app](#adding-videos-add--from-the-chapterly-app)
@@ -20,6 +19,7 @@ Paste a video link and Focusy splits it into chapter-based lessons using its tim
   - [App sidebar](#app-sidebar)
   - [Watch pages (`/watch/[playlistId]`, `/watch/[playlistId]/[videoId]`)](#watch-pages-watchplaylistid-watchplaylistidvideoid)
   - [Course pages (`/course/[id]`) — the Chapterly player, exact port](#course-pages-courseid--the-chapterly-player-exact-port)
+  - [Focusy Studio](#focusy-studio)
     - [Cross-cutting](#cross-cutting)
   - [Tech stack](#tech-stack)
   - [Getting started](#getting-started)
@@ -104,9 +104,9 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 - Footer with `auto-advance` toggle, overall `%`, and the cleaned video description (timestamp lines stripped, links auto-linked).
 - Chapterly's progress and sidebar state keys (`yt-course:*`) are kept so existing Chapterly users keep their data after the merge.
 
-### Focusy Studio (`/studio`)
+### Focusy Studio
 
-- **Watch and practice together.** A standalone Studio route is available at `/studio`; every video, course, and playlist lesson also gets a Studio launcher. The lesson launcher opens the workspace in a **full-size sheet**, keeping the player and lesson page intact behind it.
+- **Watch and practice together.** Every video, course, and playlist lesson gets a Studio launcher. It opens the workspace in a **full-size sheet**, keeping the player and lesson page intact behind it.
 - **Monaco editor** with syntax highlighting, line numbers, bracket matching, find/replace, light/dark themes, editor font sizing, word wrap, and language detection for HTML, CSS, JavaScript, TypeScript, JSX, TSX, and JSON. The editor can expand to a distraction-free **full-screen mode**.
 - **File explorer** for creating, switching, renaming, and deleting files and derived folders. Changes save automatically with debounced IndexedDB writes; an in-flight edit is flushed when switching files, projects, or lessons.
 - **Live Sandpack preview** with runtime status, refresh/restart controls, and a console for runtime and compilation errors. Supported starters: HTML/CSS/JS, Vanilla JS, Vanilla TS, React JS, React TS, and Express JS.
@@ -214,7 +214,7 @@ Add a playlist (dialog)
   → playlist saved to Zustand store → persisted to localStorage
   → classroom opens at /watch/[playlistId]
 
-Open Studio (/studio or a lesson's "Open Studio" button)
+Open Studio (a lesson's "Open Studio" button)
   → sourceKeyForSource() links a project to a video, course, or playlist lesson
   → workspace metadata comes from Zustand/localStorage
   → files and dependencies come from IndexedDB
@@ -225,7 +225,7 @@ Open Studio (/studio or a lesson's "Open Studio" button)
 - **IDs accepted**: raw IDs (`PL…`), `youtube.com/playlist?list=…` / `watch?v=…&list=…`, `youtu.be/…?list=…`.
 - **No server proxy**: both fetch paths run in the browser with the user's own key (entered in Settings); there is no env var and no API route.
 - **Watch progress** (`features/playlists/hooks/use-watch-progress.ts`) stores `{ watched[], lastWatched, completedChapters[], positions{} }` per playlist in `localStorage`. Mutations go through a ref mirror so mount-time auto-marking can never clobber previously saved progress (this exact race is covered by a regression test). Playback position per video is reported by the player every ~5s, so reopening a lesson cues it where you left off — an explicit `?t=` deep link wins, and watching to the end drops the resume point.
-- **Studio projects** are keyed by `sourceKeyForSource()` for videos, courses, and playlist lessons. A project's metadata is indexed in `localStorage`; its files and dependencies live in IndexedDB. The lesson route opens the workspace in a full-size sheet, while `/studio` manages projects directly. Opening a lesson restores its project without creating a new one; using **New project** explicitly creates another project linked to the same lesson.
+- **Studio projects** are keyed by `sourceKeyForSource()` for videos, courses, and playlist lessons. A project's metadata is indexed in `localStorage`; its files and dependencies live in IndexedDB. The lesson route opens the workspace in a full-size sheet. Opening a lesson restores its project without creating a new one; using **New project** explicitly creates another project linked to the same lesson.
 
 ---
 
@@ -242,7 +242,6 @@ Open Studio (/studio or a lesson's "Open Studio" button)
 | `/favorites`                    | Static + client | Pinned videos & playlists                        |
 | `/add`                          | Static + client | Add a video: fetch chapters or paste manually    |
 | `/settings`                     | Static + client | User-provided YouTube API key + tutorial         |
-| `/studio`                       | Static + client | Standalone coding workspace with live preview    |
 | `/course/[id]`                  | Dynamic         | Chapter-based course player (Chapterly port)     |
 | `/watch/[playlistId]`           | Dynamic         | Playlist overview + lesson list                  |
 | `/watch/[playlistId]/[videoId]` | Dynamic         | Focused player + lesson sidebar                  |
@@ -269,7 +268,6 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   └── favorites/page.tsx    # → FavoritesView
 │   ├── add/                      # /add → AddVideoView (features/videos)
 │   ├── settings/                 # /settings → SettingsView (features/settings)
-│   ├── studio/                   # /studio → StudioPrototype (features/studio)
 │   ├── course/[id]/              # → CoursePlayerView (features/videos)
 │   └── watch/                    # → WatchView (features/playlists)
 │
@@ -319,7 +317,7 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   ├── components/           # settings-view (key form + tutorial)
 │   │   └── lib/                  # actions-client (key test helper)
 │   └── studio/                   # Watch-and-practice coding workspaces
-│       ├── index.ts              # StudioLessonPanel, StudioPrototype, backup API
+│       ├── index.ts              # StudioLessonPanel and backup API
 │       ├── components/           # workspace view, Monaco editor, file explorer,
 │       │                         # Sandpack preview, console, package manager,
 │       │                         # project toolbar/form, full-size lesson sheet
