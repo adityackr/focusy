@@ -26,6 +26,7 @@ import {
   resolveNoteContext,
   type NoteFilter,
 } from "@/features/notes/lib/note-search";
+import { usePresenceActivity } from "@/features/analytics";
 
 const FILTERS: { value: NoteFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -35,6 +36,8 @@ const FILTERS: { value: NoteFilter; label: string }[] = [
 
 export function NotesView() {
   const notes = useAllNotes();
+  // Reading and searching notes counts as reviewing time (idle-aware).
+  usePresenceActivity("reviewing", true);
   const playlists = useLibrary((s) => s.playlists);
   const courses = useLibrary((s) => s.courses);
   const [query, setQuery] = useState("");

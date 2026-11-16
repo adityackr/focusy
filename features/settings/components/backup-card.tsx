@@ -5,6 +5,10 @@ import {
 	restoreStudioBackup,
 	type StudioRestoreReport,
 } from '@/features/studio';
+import {
+	collectAnalyticsBackup,
+	restoreAnalyticsBackup,
+} from '@/features/analytics';
 import { useLibrary } from '@/shared/store/library';
 import {
 	applyBackup,
@@ -72,7 +76,7 @@ export function BackupCard() {
 				});
 				return;
 			}
-			const name = downloadBackup(studio.value);
+			const name = downloadBackup(studio.value, collectAnalyticsBackup());
 			setMessage({ text: `Saved ${name}`, error: false });
 		} catch {
 			setMessage({ text: "Couldn't create the backup file.", error: true });
@@ -116,15 +120,28 @@ export function BackupCard() {
 				studioReport = studio.value;
 			}
 
+			let analyticsDays = 0;
+			if (pending.analytics != null) {
+				const analytics = restoreAnalyticsBackup(pending.analytics, mode);
+				if (!analytics.ok) {
+					setMessage({
+						text: `Couldn't restore learning history: ${analytics.error}`,
+						error: true,
+					});
+					return;
+				}
+				analyticsDays = analytics.daysImported;
+			}
+
 			if (mode === 'merge') {
 				setMessage({
-					text: mergeMessage(mergeBackup(pending), studioReport),
+					text: mergeMessage(mergeBackup(pending), studioReport, analyticsDays),
 					error: false,
 				});
 			} else {
 				applyBackup(pending);
 				setMessage({
-					text: replaceMessage(pending, studioReport),
+					text: replaceMessage(pending, studioReport, analyticsDays),
 					error: false,
 				});
 			}
@@ -337,20 +354,24 @@ function summarizeNames(names: string[]): string {
 function replaceMessage(
 	backup: Backup,
 	studio: StudioRestoreReport | null,
+	analyticsDays: number,
 ): string {
 	const base = `Replaced this browser's data with ${backupSummary(backup)}.`;
+	const analytics =
+		analyticsDays > 0 ? ` ${analyticsDays} day${analyticsDays === 1 ? '' : 's'} of learning history imported.` : '';
 	if (!backup.studio) {
-		return `${base} Your Studio projects were left unchanged because this older backup has no Studio data.`;
+		return `${base}${analytics} Your Studio projects were left unchanged because this older backup has no Studio data.`;
 	}
 	if (studio && studio.projectsSkipped > 0) {
-		return `${base} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
+		return `${base}${analytics} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
 	}
-	return base;
+	return `${base}${analytics}`;
 }
 
 function mergeMessage(
 	report: MergeReport,
 	studio: StudioRestoreReport | null,
+	analyticsDays: number,
 ): string {
 	const parts: string[] = [];
 	if (report.playlistsAdded > 0) {
@@ -371,6 +392,11 @@ function mergeMessage(
 	if (studio && studio.projectsAdded > 0) {
 		parts.push(
 			`${studio.projectsAdded} Studio project${studio.projectsAdded === 1 ? '' : 's'} added`
+		);
+	}
+	if (analyticsDays > 0) {
+		parts.push(
+			`${analyticsDays} day${analyticsDays === 1 ? '' : 's'} of learning history`
 		);
 	}
 	if (parts.length === 0) {

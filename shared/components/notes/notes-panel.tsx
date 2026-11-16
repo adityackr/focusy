@@ -73,6 +73,8 @@ export interface NotesPanelProps {
   onSeek?: (seconds: number) => void;
   /** Optional context line under the heading (lesson / playlist title). */
   title?: string;
+  /** Reports sheet visibility, so the page can track note-taking time. */
+  onOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
@@ -87,6 +89,7 @@ export function NotesPanel({
   getCurrentTime,
   onSeek,
   title,
+  onOpenChange,
   className,
 }: NotesPanelProps) {
   const notes = useVideoNotes(videoId);
@@ -100,6 +103,10 @@ export function NotesPanel({
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
 
   const deleteTarget = notes.find((note) => note.id === deleteId) ?? null;
+
+  React.useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   // Shift+N opens the sheet from the lesson page. Player shortcuts use
   // Space/K, J/L, arrows, M, C and F, so N is free; skip typing targets,

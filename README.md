@@ -112,6 +112,15 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 - **Search across the library.** `/notes` lists every note newest-edit-first, searches note Markdown plus lesson/playlist/course titles, filters by playlists or courses, and shows the source, timestamp, edited date and jump action. The sidebar shows a live notes count.
 - **Storage and migration.** Notes live under `focustube:notes:v2:<videoId>` (one bucket per video, so a video keeps its notes wherever it appears). Legacy `focustube:note:<videoId>` entries are adopted once as untimed `legacy:<videoId>` notes; the old key is intentionally left in place so older builds and files keep reading it.
 
+### Learning analytics (`/analytics`)
+
+- **A local, honest picture of your learning.** Four summary cards (total learning time, lessons completed, courses completed, current streak), a GitHub-style 12-month activity heatmap, and interactive 7-day → 12-month trends with period-over-period comparisons.
+- **Actual activity, not visits.** A shared one-second tracker counts only running video playback, open-and-active Studio/notes sheets and note reviewing, never paused video or hidden tabs. Overlapping activities are attributed to one activity only. A study day needs 5 minutes of active learning.
+- **Course progress and Studio practice.** Every saved video course and playlist shows completion and status, with filters and sorting, and links straight to its player. Studio reports projects, files, languages and coding sessions from the data it already stores.
+- **Optional goals and subtle achievements.** Daily/weekly time, weekly lessons, monthly courses and Studio targets, plus six quiet milestone badges.
+- **Continue learning and a timeline.** Resume the last lesson at its saved position, or jump back into the last Studio project; recent lesson, note, course and Studio events form a chronological timeline.
+- **Everything stays in this browser.** History lives under `focusy-analytics:v1`, survives course deletion, is included in backups, and is validated defensively so corrupt or missing data never blocks the app.
+
 ### Focusy Studio
 
 - **Watch and practice together.** Every video, course, and playlist lesson gets a Studio launcher. It opens the workspace in a **full-size sheet**, keeping the player and lesson page intact behind it.
@@ -249,6 +258,7 @@ Open Studio (a lesson's "Open Studio" button)
 | `/recent`                       | Static + client | Last opened videos & playlists (up to 12 each)   |
 | `/favorites`                    | Static + client | Pinned videos & playlists                        |
 | `/notes`                        | Static + client | Search, filter and jump back to every note       |
+| `/analytics`                    | Static + client | Local learning analytics dashboard               |
 | `/add`                          | Static + client | Add a video: fetch chapters or paste manually    |
 | `/settings`                     | Static + client | User-provided YouTube API key + tutorial         |
 | `/course/[id]`                  | Dynamic         | Chapter-based course player (Chapterly port)     |
@@ -322,6 +332,16 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   └── hooks/                # use-add-video, use-course-player,
 │   │                             # use-video-player (segment-aware),
 │   │                             # use-chapter-editor
+│   ├── analytics/                # Local learning analytics dashboard
+│   │   ├── index.ts              # AnalyticsView + tracking/backup API
+│   │   ├── components/           # summary, calendar, trends, progress,
+│   │   │                         # breakdown, Studio, goals, insights, timeline
+│   │   ├── hooks/                # reactive snapshot, presence tracking,
+│   │   │                         # Studio summary
+│   │   ├── lib/                  # activity tracker, persistence store,
+│   │   │                         # aggregation selectors, progress/timeline
+│   │   │                         # snapshots, backup
+│   │   └── types/                # analytics types
 │   ├── settings/                 # User-provided API key
 │   │   ├── index.ts              # SettingsView
 │   │   ├── components/           # settings-view (key form + tutorial)
@@ -401,6 +421,8 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 - `features/notes/components/notes-view.test.tsx` — the `/notes` page renders search results, filters, empty states and exact jump links.
 - `features/studio/lib/studio-backup.test.ts` — Studio backup collection and replace/merge restore, including multiple projects sharing one lesson.
 - `features/studio/components/studio-lesson-panel.test.tsx` — the full-size sheet, first-visit form, closing without leaving the lesson, and restoring the right workspace per lesson.
+- `features/analytics/lib/analytics.test.ts` — activity aggregation, streaks, period comparison, goals, insights, progress snapshots, persistence, and backup merge/replace.
+- `features/analytics/lib/activity-tracker.test.ts` — active-second tracking, hidden-tab exclusion, session thresholds, duplicate-event prevention, and overlap rules.
 
 ---
 

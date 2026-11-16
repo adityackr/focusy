@@ -18,6 +18,7 @@ import { NowPlaying } from "@/features/playlists/components/watch/now-playing";
 import { PlaylistOverview } from "@/features/playlists/components/watch/playlist-overview";
 import { LessonSidebar } from "@/features/playlists/components/watch/lesson-sidebar";
 import { PlaylistNotFound } from "@/features/playlists/components/watch/playlist-not-found";
+import { usePresenceActivity } from "@/features/analytics";
 
 export function WatchView({
   playlistId,
@@ -51,6 +52,8 @@ export function WatchView({
     resumeVideoId,
     startLesson,
   } = useWatchView({ playlistId, activeVideoId });
+  const [studioOpen, setStudioOpen] = useState(false);
+  usePresenceActivity("studio", studioOpen);
 
   if (!playlist) {
     if (!hydrated || loading) return <WatchSkeleton />;
@@ -95,6 +98,7 @@ export function WatchView({
                   activeVideo.videoId
                 )}
                 lessonTitle={activeVideo.title}
+                onOpenChange={setStudioOpen}
               />
             </>
           ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { PanelLeftOpen } from "lucide-react";
 import type { Course } from "@/shared/lib/types";
 import { formatTimestamp } from "@/shared/lib/chapters";
@@ -8,6 +8,7 @@ import VideoPlayer from "@/features/videos/components/player/video-player";
 import ChapterEditor from "@/features/videos/components/player/chapter-editor";
 import { NotesPanel } from "@/shared/components/notes/notes-panel";
 import type { PlayerTimeControls } from "@/shared/player/player-chrome";
+import { usePresenceActivity } from "@/features/analytics";
 import { Button } from "@/shared/ui/button";
 
 interface Props {
@@ -54,6 +55,8 @@ export default function PlayerSection({
 }: Props) {
   const active = activeIndex >= 0 ? course.chapters[activeIndex] : null;
   const controlsRef = useRef<PlayerTimeControls | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
+  usePresenceActivity("notes", notesOpen);
   const getCurrentTime = useCallback(
     () => controlsRef.current?.getCurrentTime() ?? null,
     [],
@@ -90,6 +93,14 @@ export default function PlayerSection({
             onEnded={handleEnded}
             onSeek={handleSeek}
             onProgress={handleProgress}
+            activitySource={{
+              kind: "course",
+              id: course.id,
+              title: course.title,
+              href: `/course/${course.id}`,
+              videoId: course.videoId,
+              lessonTitle: active.title,
+            }}
           />
           {resumedFrom != null && (
             <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground">
@@ -126,6 +137,7 @@ export default function PlayerSection({
                 }}
                 getCurrentTime={getCurrentTime}
                 onSeek={seekFromNote}
+                onOpenChange={setNotesOpen}
               />
               <Button
                 size="sm"

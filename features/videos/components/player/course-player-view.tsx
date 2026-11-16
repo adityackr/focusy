@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useCoursePlayer } from "@/features/videos/hooks/use-course-player";
 import CourseSkeleton from "@/features/videos/components/player/course-skeleton";
 import CourseNotFound from "@/features/videos/components/player/course-not-found";
@@ -10,6 +11,7 @@ import {
   StudioLessonPanel,
   studioSourceForCourse,
 } from "@/features/studio";
+import { usePresenceActivity } from "@/features/analytics";
 
 export function CoursePlayerView({ startAt }: { startAt?: number }) {
   const {
@@ -38,6 +40,8 @@ export function CoursePlayerView({ startAt }: { startAt?: number }) {
     clearResume,
     handleChaptersChange,
   } = useCoursePlayer(startAt);
+  const [studioOpen, setStudioOpen] = useState(false);
+  usePresenceActivity("studio", studioOpen);
 
   if (!loaded) return <CourseSkeleton />;
 
@@ -81,6 +85,7 @@ export function CoursePlayerView({ startAt }: { startAt?: number }) {
       <StudioLessonPanel
         source={studioSourceForCourse(course.id, course.videoId)}
         lessonTitle={course.title}
+        onOpenChange={setStudioOpen}
       />
 
       <CourseFooter

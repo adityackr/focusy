@@ -3,6 +3,7 @@
 import { useEffect, type RefObject } from "react";
 import { useVideoPlayer } from "@/features/playlists/hooks/use-video-player";
 import type { Chapter } from "@/shared/lib/types";
+import type { AnalyticsSource } from "@/features/analytics";
 import {
   PlayerChrome,
   type PlayerTimeControls,
@@ -25,6 +26,8 @@ interface Props {
   onProgress?: (time: number, duration: number) => void;
   /** Filled with live time/seek access for the notes panel. */
   controlsRef?: RefObject<PlayerTimeControls | null>;
+  /** Learning resource this video belongs to, for local analytics. */
+  activitySource?: AnalyticsSource | null;
 }
 
 /**
@@ -39,8 +42,9 @@ export function VideoPlayer({
   onChapterChange,
   onProgress,
   controlsRef,
+  activitySource = null,
 }: Props) {
-  const player = useVideoPlayer({ videoId, startAt });
+  const player = useVideoPlayer({ videoId, startAt, activitySource });
 
   useEffect(() => {
     if (!controlsRef) return;

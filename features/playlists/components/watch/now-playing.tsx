@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/shared/ui/button";
@@ -11,6 +11,7 @@ import { chaptersForVideo } from "@/shared/lib/chapters";
 import { NotesPanel } from "@/shared/components/notes/notes-panel";
 import VideoDescription from "@/shared/components/video-description";
 import type { Playlist, PlaylistVideo } from "@/shared/lib/types";
+import { usePresenceActivity } from "@/features/analytics";
 
 export function NowPlaying({
   playlist,
@@ -50,6 +51,9 @@ export function NowPlaying({
     (seconds: number) => controlsRef.current?.seekTo(seconds),
     [],
   );
+  // Note-taking time is tracked while the notes sheet is open and recently used.
+  const [notesOpen, setNotesOpen] = useState(false);
+  usePresenceActivity("notes", notesOpen);
 
   return (
     <>
@@ -63,6 +67,14 @@ export function NowPlaying({
           controlsRef={controlsRef}
           onChapterChange={onChapterChange}
           onProgress={onProgress}
+          activitySource={{
+            kind: "playlist",
+            id: playlist.playlistId,
+            title: playlist.playlistTitle,
+            href: `/watch/${playlist.playlistId}/${activeVideo.videoId}`,
+            videoId: activeVideo.videoId,
+            lessonTitle: activeVideo.title,
+          }}
         />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -82,6 +94,7 @@ export function NowPlaying({
           }}
           getCurrentTime={getCurrentTime}
           onSeek={seekTo}
+          onOpenChange={setNotesOpen}
         />
         {nextVideo && (
           <Button size="sm" className="ml-auto" onClick={goNext}>

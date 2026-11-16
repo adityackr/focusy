@@ -6,6 +6,10 @@ import { useParams } from "next/navigation";
 import type { Course } from "@/shared/lib/types";
 import { getProgress, setProgress } from "@/shared/lib/storage";
 import { useLibrary } from "@/shared/store/library";
+import {
+  trackCourseCompleted,
+  trackLessonCompleted,
+} from "@/features/analytics";
 
 const SIDEBAR_KEY = "yt-course:sidebar-open";
 
@@ -119,6 +123,51 @@ export function useCoursePlayer(startAt?: number | null) {
   useEffect(() => {
     positionsRef.current = positions;
   }, [positions]);
+
+  // Record new completions for local analytics. The first pass adopts the
+  // progress that already existed, so opening an old course never invents
+  // history that didn't happen today.
+  const trackedCourseIdRef = useRef<string | null>(null);
+  const trackedCompletedRef = useRef<Set<string>>(new Set());
+  const trackedCourseDoneRef = useRef(false);
+  useEffect(() => {
+    if (!course || !loaded) return;
+    const current = new Set(completedIds);
+    if (trackedCourseIdRef.current !== course.id) {
+      trackedCourseIdRef.current = course.id;
+      trackedCompletedRef.current = current;
+      trackedCourseDoneRef.current =
+        course.chapters.length > 0 && completedIds.length >= course.chapters.length;
+      return;
+    }
+
+    const previous = trackedCompletedRef.current;
+    for (const id of completedIds) {
+      if (previous.has(id)) continue;
+      const chapter = course.chapters.find((c) => c.id === id);
+      trackLessonCompleted({
+        courseId: course.id,
+        courseTitle: course.title,
+        lessonId: id,
+        lessonTitle: chapter?.title,
+        href: `/course/${course.id}`,
+      });
+    }
+    trackedCompletedRef.current = current;
+
+    const complete =
+      course.chapters.length > 0 && completedIds.length >= course.chapters.length;
+    if (complete && !trackedCourseDoneRef.current) {
+      trackedCourseDoneRef.current = true;
+      trackCourseCompleted({
+        courseId: course.id,
+        courseTitle: course.title,
+        href: `/course/${course.id}`,
+      });
+    } else if (!complete) {
+      trackedCourseDoneRef.current = false;
+    }
+  }, [course, loaded, completedIds]);
 
   function persistProgress(
     nextCompleted: string[],

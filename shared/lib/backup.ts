@@ -83,6 +83,12 @@ export interface Backup {
   learningNotes: LearningNotesByVideo;
   /** Null for legacy backups that never contained Studio projects. */
   studio: StudioBackupSection | null;
+  /**
+   * Local learning-analytics history (days, events, goals). Additive and
+   * optional so older Focusy builds keep reading these files; the analytics
+   * feature validates and restores it separately, like Studio projects.
+   */
+  analytics?: unknown | null;
 }
 
 export type BackupParseResult =
@@ -368,6 +374,7 @@ function storedValues<T>(
  */
 export function collectBackup(
   studio: StudioBackupSection | null = null,
+  analytics: unknown | null = null,
 ): Backup {
   const notes = storedValues(NOTE_PREFIX, normalizeNote);
   return {
@@ -386,6 +393,7 @@ export function collectBackup(
     notes,
     learningNotes: allNotesByVideo(),
     studio,
+    analytics,
   };
 }
 
@@ -550,9 +558,10 @@ function isReminderDismissed(
  */
 export function downloadBackup(
   studio: StudioBackupSection | null = null,
+  analytics: unknown | null = null,
 ): string {
   const fileName = backupFileName();
-  const backup = collectBackup(studio);
+  const backup = collectBackup(studio, analytics);
   const blob = new Blob([serializeBackup(backup)], {
     type: "application/json",
   });
@@ -637,6 +646,7 @@ export function parseBackup(text: string): BackupParseResult {
       notes,
       learningNotes,
       studio,
+      analytics: raw.analytics ?? null,
     },
   };
 }

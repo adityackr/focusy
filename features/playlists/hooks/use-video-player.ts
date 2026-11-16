@@ -12,6 +12,10 @@ import {
   savePlayerSettings,
   type PlayerSettings,
 } from "@/shared/player/player-settings";
+import {
+  startVideoActivity,
+  type AnalyticsSource,
+} from "@/features/analytics";
 
 const PLAYING = 1;
 
@@ -20,6 +24,8 @@ export interface UseVideoPlayerOptions {
   /** Absolute video time to cue on load. */
   startAt?: number | null;
   autoPlay?: boolean;
+  /** Learning resource this video belongs to, for local analytics. */
+  activitySource?: AnalyticsSource | null;
 }
 
 /**
@@ -32,6 +38,7 @@ export function useVideoPlayer({
   videoId,
   startAt = null,
   autoPlay = false,
+  activitySource = null,
 }: UseVideoPlayerOptions) {
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -56,6 +63,21 @@ export function useVideoPlayer({
   const captionsRef = useRef(captionsOn);
   const captionsRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasPlayingRef = useRef(false);
+  const activitySourceRef = useRef(activitySource);
+  activitySourceRef.current = activitySource;
+  const activitySourceKey = activitySource
+    ? `${activitySource.kind}:${activitySource.id}:${activitySource.videoId ?? ""}`
+    : null;
+
+  // Active learning time: only while playback is actually running. The tracker
+  // ignores hidden tabs and never counts paused video.
+  useEffect(() => {
+    if (!isPlaying) return;
+    return startVideoActivity({
+      videoId,
+      source: activitySourceRef.current,
+    });
+  }, [isPlaying, videoId, activitySourceKey]);
 
   /**
    * Force the player back to the wanted captions state. The module can reset

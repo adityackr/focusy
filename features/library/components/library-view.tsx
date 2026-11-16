@@ -13,6 +13,7 @@ import {
   RefreshAllPlaylistsButton,
 } from "@/features/playlists";
 import { SortableCourseGrid } from "@/features/videos";
+import { AnalyticsSummaryWidget } from "@/features/analytics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
@@ -44,6 +45,7 @@ export function LibraryView() {
         }
       />
       <BackupReminder />
+      <AnalyticsSummaryWidget />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="videos">

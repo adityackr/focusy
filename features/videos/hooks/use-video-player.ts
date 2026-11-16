@@ -12,6 +12,10 @@ import {
   savePlayerSettings,
   type PlayerSettings,
 } from "@/shared/player/player-settings";
+import {
+  startVideoActivity,
+  type AnalyticsSource,
+} from "@/features/analytics";
 
 const PLAYING = 1;
 const SEEK_JUMP = 2; // seconds — bigger deltas between polls mean the user scrubbed
@@ -34,6 +38,8 @@ export interface UseVideoPlayerOptions {
   onSeek?: (seconds: number) => void;
   /** Throttled playback-position reports while watching — parent persists for resume. Null = chapter finished, clear saved position. */
   onProgress?: (seconds: number | null) => void;
+  /** Learning resource this chapter belongs to, for local analytics. */
+  activitySource?: AnalyticsSource | null;
 }
 
 /**
@@ -54,6 +60,7 @@ export function useVideoPlayer({
   onEnded,
   onSeek,
   onProgress,
+  activitySource = null,
 }: UseVideoPlayerOptions) {
   const mountRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -94,6 +101,20 @@ export function useVideoPlayer({
   const captionsRef = useRef(captionsOn);
   const captionsRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasPlayingRef = useRef(false);
+  const activitySourceRef = useRef(activitySource);
+  activitySourceRef.current = activitySource;
+  const activitySourceKey = activitySource
+    ? `${activitySource.kind}:${activitySource.id}:${activitySource.videoId ?? ""}`
+    : null;
+
+  // Count only real playback time; paused chapters and hidden tabs never tick.
+  useEffect(() => {
+    if (!isPlaying) return;
+    return startVideoActivity({
+      videoId,
+      source: activitySourceRef.current,
+    });
+  }, [isPlaying, videoId, activitySourceKey]);
 
   function resolveCueAt(): number {
     const s = boundsRef.current.startSeconds;

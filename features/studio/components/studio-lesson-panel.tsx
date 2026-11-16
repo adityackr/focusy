@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Code2, Maximize2, TriangleAlert } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { Badge } from "@/shared/ui/badge";
@@ -168,14 +168,21 @@ export function StudioLessonPanel({
   source,
   lessonTitle,
   className,
+  onOpenChange,
 }: {
   source: StudioSource;
   lessonTitle?: string;
   className?: string;
+  /** Reports sheet visibility so the lesson page can track Studio practice. */
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const sourceKey = sourceKeyForSource(source);
   const copy = copyForSource(source);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   return (
     <>
