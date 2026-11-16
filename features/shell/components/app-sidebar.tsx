@@ -17,6 +17,7 @@ import { AddPlaylistDialog, DeletePlaylistButton } from "@/features/playlists";
 import { DeleteCourseButton } from "@/features/videos";
 import { LogoMark } from "@/features/shell/components/logo";
 import { ThemeToggle } from "@/features/shell/components/theme-toggle";
+import { openGlobalSearch } from "@/features/search";
 
 const NAV = [
   { href: "/library", label: "Library", icon: LayoutGrid },
@@ -139,12 +140,44 @@ export function AppSidebar({
 
       <div className="px-3">
         {collapsed ? (
-          <Button size="icon" onClick={() => setDialogOpen(true)} aria-label="Add playlist" className="w-full">
-            <Plus className="size-4" />
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                openGlobalSearch();
+                onNavigate?.();
+              }}
+              aria-label="Search everything"
+              aria-keyshortcuts="Control+K Meta+K"
+              title="Search everything (⌘K)"
+              className="w-full"
+            >
+              <Search className="size-4" />
+            </Button>
+            <Button size="icon" onClick={() => setDialogOpen(true)} aria-label="Add playlist" className="w-full">
+              <Plus className="size-4" />
+            </Button>
+          </div>
         ) : (
           <>
-            <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                openGlobalSearch();
+                onNavigate?.();
+              }}
+              aria-keyshortcuts="Control+K Meta+K"
+              title="Search everything (⌘K)"
+              className="flex w-full items-center gap-2 rounded-xl border bg-background px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Search className="size-4 shrink-0" />
+              <span className="flex-1 text-left">Search everything</span>
+              <kbd className="shrink-0 rounded border bg-muted px-1 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘K
+              </kbd>
+            </button>
+            <div className="mt-2 flex gap-2">
               <Link
                 href="/add"
                 onClick={onNavigate}

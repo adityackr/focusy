@@ -6,6 +6,7 @@ import { Button } from "@/shared/ui/button";
 import { AppSidebar } from "@/features/shell/components/app-sidebar";
 import { ThemeToggle, useThemeShortcut } from "@/features/shell/components/theme-toggle";
 import { LogoMark } from "@/features/shell/components/logo";
+import { GlobalSearchDialog } from "@/features/search";
 import { cn } from "@/shared/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      <GlobalSearchDialog />
     </div>
   );
 }

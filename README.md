@@ -17,6 +17,7 @@ Paste a video link and Focusy splits it into chapter-based lessons using its tim
   - [Adding videos (`/add`) — from the Chapterly app](#adding-videos-add--from-the-chapterly-app)
   - [Settings (`/settings`) — user-provided API key](#settings-settings--user-provided-api-key)
   - [App sidebar](#app-sidebar)
+  - [Global search](#global-search)
   - [Watch pages (`/watch/[playlistId]`, `/watch/[playlistId]/[videoId]`)](#watch-pages-watchplaylistid-watchplaylistidvideoid)
   - [Course pages (`/course/[id]`) — the Chapterly player, exact port](#course-pages-courseid--the-chapterly-player-exact-port)
   - [Focusy Studio](#focusy-studio)
@@ -81,9 +82,21 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 
 - Navigation (Library, Recent, Favorites with a combined count badge, Settings).
 - Two CTAs: **Add video** (opens `/add`) and **Playlist** (opens the import dialog).
-- A **Videos / Playlists toggle** above the list — search and the list itself switch between the two content types.
+- A **Search everything** button (also `⌘K` / `Ctrl+K`) that opens global search from any page.
+- A **Videos / Playlists toggle** above the list — search and the list itself switch between the two content types. This filter is separate from global search and only narrows the sidebar list.
 - Rows in your manual order (titles, thumbnails, lesson counts), each opening its player, with hover-reveal favorite/delete actions (rendered as a floating chip so rows stay compact).
 - Skeleton rows while the library is loading.
+
+### Global search
+
+One command palette for the whole library — no dedicated route.
+
+- **Open it anywhere** with `⌘K` / `Ctrl+K` or the sidebar trigger. It is mounted once in the app shell, so every page (and the mobile drawer) can reach it.
+- **Searches all six content types at once**: saved videos (courses), playlists, lessons (course chapters and playlist videos), note text plus lesson metadata, course/playlist bookmarks, and Studio projects.
+- Every search word must match somewhere, and exact/prefix title hits rank first. Results are grouped, with a per-group cap and a full match count so one big category cannot bury the others.
+- **Keyboard-first**: type to search, `↑` / `↓` to move, `↵` to open, `Esc` to close. Mouse and touch work too.
+- Links go straight to the right spot: chapters jump with `?t=`, playlist lessons open `/watch/<playlistId>/<videoId>`, notes keep their recorded lesson/timestamp, and Studio projects open the lesson where they're linked. Standalone projects (no associated lesson) are shown but not navigable.
+- Matching/ranking is pure and tested (`features/search/lib/global-search.ts`), independent of the dialog and storage.
 
 ### Watch pages (`/watch/[playlistId]`, `/watch/[playlistId]/[videoId]`)
 
@@ -353,6 +366,10 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   ├── index.ts              # SettingsView
 │   │   ├── components/           # settings-view (key form + tutorial)
 │   │   └── lib/                  # actions-client (key test helper)
+│   ├── search/                   # Global search palette (⌘K)
+│   │   ├── index.ts              # GlobalSearchDialog + open event
+│   │   ├── components/           # global-search-dialog (command palette)
+│   │   └── lib/                  # global-search (+test) matching/ranking
 │   └── studio/                   # Watch-and-practice coding workspaces
 │       ├── index.ts              # StudioLessonPanel and backup API
 │       ├── components/           # workspace view, Monaco editor, file explorer,
