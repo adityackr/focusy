@@ -89,6 +89,11 @@ export interface Backup {
    * feature validates and restores it separately, like Studio projects.
    */
   analytics?: unknown | null;
+  /**
+   * Locally saved certificate name. Additive and optional so older Focusy
+   * builds keep reading these files; the certificate feature validates it.
+   */
+  certificate?: unknown | null;
 }
 
 export type BackupParseResult =
@@ -375,6 +380,7 @@ function storedValues<T>(
 export function collectBackup(
   studio: StudioBackupSection | null = null,
   analytics: unknown | null = null,
+  certificate: unknown | null = null,
 ): Backup {
   const notes = storedValues(NOTE_PREFIX, normalizeNote);
   return {
@@ -394,6 +400,7 @@ export function collectBackup(
     learningNotes: allNotesByVideo(),
     studio,
     analytics,
+    certificate,
   };
 }
 
@@ -559,9 +566,10 @@ function isReminderDismissed(
 export function downloadBackup(
   studio: StudioBackupSection | null = null,
   analytics: unknown | null = null,
+  certificate: unknown | null = null,
 ): string {
   const fileName = backupFileName();
-  const backup = collectBackup(studio, analytics);
+  const backup = collectBackup(studio, analytics, certificate);
   const blob = new Blob([serializeBackup(backup)], {
     type: "application/json",
   });
@@ -647,6 +655,7 @@ export function parseBackup(text: string): BackupParseResult {
       learningNotes,
       studio,
       analytics: raw.analytics ?? null,
+      certificate: raw.certificate ?? null,
     },
   };
 }
@@ -838,6 +847,8 @@ export interface BackupPreview {
   notes: number;
   /** Null when the file has no Studio section (version 1 backups). */
   studioProjects: number | null;
+  /** Name chosen for printable certificates, when the file carries one. */
+  certificateName: string | null;
 }
 
 /**
@@ -868,7 +879,14 @@ export function backupPreview(backup: Backup): BackupPreview {
     studioProjects: backup.studio
       ? backup.studio.workspaces.length
       : null,
+    certificateName: optionalCertificateName(backup.certificate),
   };
+}
+
+function optionalCertificateName(raw: unknown): string | null {
+  if (!isRecord(raw) || typeof raw.name !== "string") return null;
+  const name = raw.name.trim().slice(0, 80);
+  return name || null;
 }
 
 function orderedLabels<T>(

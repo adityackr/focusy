@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, ChevronsLeft, Folder, Heart, History, LayoutGrid, NotebookPen, Plus, Search, Settings, Star } from "lucide-react";
+import { Award, BarChart3, ChevronsLeft, Folder, Heart, History, LayoutGrid, NotebookPen, Plus, Search, Settings, Star } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/shared/lib/utils";
 import { Button, buttonVariants } from "@/shared/ui/button";
@@ -23,6 +23,7 @@ const NAV = [
   { href: "/recent", label: "Recent", icon: History },
   { href: "/notes", label: "Notes", icon: NotebookPen },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/certificates", label: "Certificates", icon: Award },
   { href: "/categories", label: "Categories", icon: Folder },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/settings", label: "Settings", icon: Settings },

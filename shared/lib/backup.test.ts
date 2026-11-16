@@ -715,3 +715,17 @@ describe("backup reminder", () => {
     expect(backupReminder(Date.parse(last!.at))).toBeNull();
   });
 });
+
+describe("optional certificate backups", () => {
+  test("round-trips the saved certificate name", () => {
+    const backup = collectBackup(null, null, { name: "Ada Lovelace" });
+    expect(backup.certificate).toEqual({ name: "Ada Lovelace" });
+
+    const parsed = parseBackup(serializeBackup(backup));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.backup.certificate).toEqual({ name: "Ada Lovelace" });
+      expect(backupPreview(parsed.backup).certificateName).toBe("Ada Lovelace");
+    }
+  });
+});

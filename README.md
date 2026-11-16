@@ -73,7 +73,7 @@ Marketing-style homepage with a hero (live-feel classroom mock), stats, feature 
 
 - **No API key lives in env vars or on the server.** The key is entered in the app, stored only in that browser's `localStorage`, and used directly from the client against the YouTube Data API.
 - Step-by-step tutorial with links (Cloud Console → enable API → create key → restrict → paste), a **Test key** button, and quota notes.
-- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, timestamped Markdown notes, and Studio projects with their files and dependencies) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win per note), with the file's contents previewed, the mode chosen and confirmed before anything changes. Backup format **version 3** carries per-video note buckets; version 1 and 2 files remain readable, with their legacy notes adopted as untimed notes on restore. The library page nudges you when new playlists or videos have landed since a backup that is already over a week old, or when the library has never been backed up at all. Older backups without Studio data remain compatible. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
+- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, timestamped Markdown notes, Studio projects with their files and dependencies, learning history, and the saved certificate name) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win per note), with the file's contents previewed, the mode chosen and confirmed before anything changes. Backup format **version 3** carries per-video note buckets; version 1 and 2 files remain readable, with their legacy notes adopted as untimed notes on restore. The library page nudges you when new playlists or videos have landed since a backup that is already over a week old, or when the library has never been backed up at all. Older backups without Studio data remain compatible. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
 
 ### App sidebar
 
@@ -102,6 +102,7 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 - **Progress & resume** with the exact Chapterly rules: forward jumps auto-complete skipped lessons, backward never does, scrubbing follows you, and resume points are dropped once a lesson completes.
 - **Lesson editor**: rename, retime, add, delete, reorder chapters (with derived end times).
 - Footer with `auto-advance` toggle, overall `%`, and the cleaned video description (timestamp lines stripped, links auto-linked).
+- **Completion certificates.** Finishing every lesson unlocks a certificate from the course footer or its library card, with the course, optional locally saved name, lesson total, completion date and a stable local reference. Download landscape or portrait PNGs (SVG fallback), print cleanly, or save a PDF through the browser dialog; nothing is uploaded or publicly verified. The `/certificates` gallery lists every completed course, and the chosen name is included in backups and their contents preview.
 - Chapterly's progress and sidebar state keys (`yt-course:*`) are kept so existing Chapterly users keep their data after the merge.
 
 ### Smart learning notes (notes sheet + `/notes`)
@@ -259,9 +260,11 @@ Open Studio (a lesson's "Open Studio" button)
 | `/favorites`                    | Static + client | Pinned videos & playlists                        |
 | `/notes`                        | Static + client | Search, filter and jump back to every note       |
 | `/analytics`                    | Static + client | Local learning analytics dashboard               |
+| `/certificates`                 | Static + client | Gallery of completed course certificates         |
 | `/add`                          | Static + client | Add a video: fetch chapters or paste manually    |
 | `/settings`                     | Static + client | User-provided YouTube API key + tutorial         |
 | `/course/[id]`                  | Dynamic         | Chapter-based course player (Chapterly port)     |
+| `/course/[id]/certificate`      | Dynamic         | Local printable completion certificate           |
 | `/watch/[playlistId]`           | Dynamic         | Playlist overview + lesson list                  |
 | `/watch/[playlistId]/[videoId]` | Dynamic         | Focused player + lesson sidebar                  |
 
@@ -332,6 +335,10 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   └── hooks/                # use-add-video, use-course-player,
 │   │                             # use-video-player (segment-aware),
 │   │                             # use-chapter-editor
+│   ├── certificates/             # Local printable course certificates
+│   │   ├── index.ts              # CourseCertificateView + certificate helpers
+│   │   ├── components/           # printable certificate, gallery, locked/not-found
+│   │   └── lib/                  # completion check, reference code, local name
 │   ├── analytics/                # Local learning analytics dashboard
 │   │   ├── index.ts              # AnalyticsView + tracking/backup API
 │   │   ├── components/           # summary, calendar, trends, progress,
@@ -416,13 +423,15 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 - `features/playlists/components/watch/now-playing.test.tsx` — custom player chrome renders, chapters surface in the player menu, timestamp lines stripped from the description.
 - `features/studio/lib/workspaces.test.ts` — project creation, linked-source reuse, explicit duplicate projects, rename/delete, template replacement, and IndexedDB round-trips.
 - `features/studio/hooks/use-studio-workspace.test.tsx` — lesson restoration, switching sources without leaking files, flush-before-switch, rename/change/delete, and fallback to another project.
-- `shared/lib/backup.test.ts` — backup v3 round-trips timestamped notes and sources, counts them in previews, adopts notes from v1/v2 files, replaces stale note buckets, and merges the newest copy per note.
+- `shared/lib/backup.test.ts` — backup v3 round-trips timestamped notes, sources and the certificate name, counts them in previews, adopts notes from v1/v2 files, replaces stale note buckets, and merges the newest copy per note.
 - `features/notes/lib/note-search.test.ts` — note source/link inference, legacy-note lookup, full-text search and playlist/course filters.
 - `features/notes/components/notes-view.test.tsx` — the `/notes` page renders search results, filters, empty states and exact jump links.
 - `features/studio/lib/studio-backup.test.ts` — Studio backup collection and replace/merge restore, including multiple projects sharing one lesson.
 - `features/studio/components/studio-lesson-panel.test.tsx` — the full-size sheet, first-visit form, closing without leaving the lesson, and restoring the right workspace per lesson.
 - `features/analytics/lib/analytics.test.ts` — activity aggregation, streaks, period comparison, goals, insights, progress snapshots, persistence, and backup merge/replace.
 - `features/analytics/lib/activity-tracker.test.ts` — active-second tracking, hidden-tab exclusion, session thresholds, duplicate-event prevention, and overlap rules.
+- `features/certificates/lib/certificate.test.ts` — certificate completion checks, stable local references, landscape/portrait image generation, escaping, file names, name backup/restore, and the locally saved name.
+- `features/certificates/components/certificates-gallery-view.test.tsx` — the gallery lists only completed courses, links each certificate, and has an empty state.
 
 ---
 

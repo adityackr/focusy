@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Award } from "lucide-react";
 import type { Course } from "@/shared/lib/types";
 import VideoDescription from "@/shared/components/video-description";
-import { Button } from "@/shared/ui/button";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { Label } from "@/shared/ui/label";
 import { Progress } from "@/shared/ui/progress";
@@ -55,6 +56,15 @@ export default function CourseFooter({
           <Button variant="outline" size="sm" onClick={() => setEditing((v) => !v)}>
             {editing ? "Done editing" : "Edit lessons"}
           </Button>
+          {pct === 100 && (
+            <Link
+              href={`/course/${course.id}/certificate`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <Award className="size-3.5" />
+              Certificate
+            </Link>
+          )}
         </div>
       </div>
       <Progress value={pct} className="mt-2 [&>div]:bg-success" />

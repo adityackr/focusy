@@ -84,7 +84,7 @@ export default function RootLayout({
 				<link rel="preconnect" href="https://www.youtube.com" />
 				<ThemeProvider>
 					{children}
-					<Toaster richColors position="top-center" />
+					<Toaster richColors position="top-center" className="print:hidden" />
 					<Analytics />
 					<ServiceWorkerRegister />
 				</ThemeProvider>

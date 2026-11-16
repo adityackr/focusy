@@ -193,6 +193,13 @@
   }
 }
 
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+}
+
 @layer utilities {
   .line-clamp-2 {
     display: -webkit-box;

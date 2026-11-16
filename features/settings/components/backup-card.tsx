@@ -9,6 +9,10 @@ import {
 	collectAnalyticsBackup,
 	restoreAnalyticsBackup,
 } from '@/features/analytics';
+import {
+	collectCertificateBackup,
+	restoreCertificateBackup,
+} from '@/features/certificates';
 import { useLibrary } from '@/shared/store/library';
 import {
 	applyBackup,
@@ -76,7 +80,11 @@ export function BackupCard() {
 				});
 				return;
 			}
-			const name = downloadBackup(studio.value, collectAnalyticsBackup());
+			const name = downloadBackup(
+				studio.value,
+				collectAnalyticsBackup(),
+				collectCertificateBackup(),
+			);
 			setMessage({ text: `Saved ${name}`, error: false });
 		} catch {
 			setMessage({ text: "Couldn't create the backup file.", error: true });
@@ -133,15 +141,30 @@ export function BackupCard() {
 				analyticsDays = analytics.daysImported;
 			}
 
+			const certificateRestored = restoreCertificateBackup(
+				pending.certificate,
+				mode,
+			);
+
 			if (mode === 'merge') {
 				setMessage({
-					text: mergeMessage(mergeBackup(pending), studioReport, analyticsDays),
+					text: mergeMessage(
+						mergeBackup(pending),
+						studioReport,
+						analyticsDays,
+						certificateRestored,
+					),
 					error: false,
 				});
 			} else {
 				applyBackup(pending);
 				setMessage({
-					text: replaceMessage(pending, studioReport, analyticsDays),
+					text: replaceMessage(
+						pending,
+						studioReport,
+						analyticsDays,
+						certificateRestored,
+					),
 					error: false,
 				});
 			}
@@ -162,8 +185,9 @@ export function BackupCard() {
 					</CardTitle>
 					<CardDescription>
 						Move your playlists, videos, folders, progress, timestamped Markdown
-						notes and Studio projects to another browser or device with one JSON
-						file. Your API key and player settings stay on this device.
+						notes, Studio projects, learning history and certificate name to
+						another browser or device with one JSON file. Your API key and player
+						settings stay on this device.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -319,6 +343,15 @@ function BackupContents({ preview }: { preview: BackupPreview }) {
 				)}
 			</div>
 
+			{preview.certificateName && (
+				<p className="text-xs text-muted-foreground">
+					Certificate name:{' '}
+					<span className="font-medium text-foreground">
+						{preview.certificateName}
+					</span>
+				</p>
+			)}
+
 			{groups.length > 0 && (
 				<ul className="space-y-1 text-xs text-muted-foreground">
 					{groups.map((group) => (
@@ -355,23 +388,26 @@ function replaceMessage(
 	backup: Backup,
 	studio: StudioRestoreReport | null,
 	analyticsDays: number,
+	certificateRestored: boolean,
 ): string {
 	const base = `Replaced this browser's data with ${backupSummary(backup)}.`;
 	const analytics =
 		analyticsDays > 0 ? ` ${analyticsDays} day${analyticsDays === 1 ? '' : 's'} of learning history imported.` : '';
+	const certificate = certificateRestored ? ' Certificate name restored.' : '';
 	if (!backup.studio) {
-		return `${base}${analytics} Your Studio projects were left unchanged because this older backup has no Studio data.`;
+		return `${base}${analytics}${certificate} Your Studio projects were left unchanged because this older backup has no Studio data.`;
 	}
 	if (studio && studio.projectsSkipped > 0) {
-		return `${base}${analytics} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
+		return `${base}${analytics}${certificate} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
 	}
-	return `${base}${analytics}`;
+	return `${base}${analytics}${certificate}`;
 }
 
 function mergeMessage(
 	report: MergeReport,
 	studio: StudioRestoreReport | null,
 	analyticsDays: number,
+	certificateRestored: boolean,
 ): string {
 	const parts: string[] = [];
 	if (report.playlistsAdded > 0) {
@@ -398,6 +434,9 @@ function mergeMessage(
 		parts.push(
 			`${analyticsDays} day${analyticsDays === 1 ? '' : 's'} of learning history`
 		);
+	}
+	if (certificateRestored) {
+		parts.push('certificate name');
 	}
 	if (parts.length === 0) {
 		return 'Merged — everything in that file was already saved here.';

@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Folder, FolderPlus, Heart, ListVideo, Play } from "lucide-react";
+import { Award, Folder, FolderPlus, Heart, ListVideo, Play } from "lucide-react";
 import { toast } from "sonner";
 import type { Course } from "@/shared/lib/types";
 import { getProgress } from "@/shared/lib/storage";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Badge } from "@/shared/ui/badge";
 import { Progress } from "@/shared/ui/progress";
-import { Button } from "@/shared/ui/button";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import { useLibrary } from "@/shared/store/library";
 import { DeleteCourseButton } from "@/features/videos/components/delete-course-dialog";
 import { CategoryDialog } from "@/shared/components/category-dialog";
@@ -20,6 +20,7 @@ import { cn } from "@/shared/lib/utils";
 export function CourseCard({ course }: { course: Course }) {
   const {
     done,
+    certificateReady,
     pct,
     fav,
     href,
@@ -97,6 +98,19 @@ export function CourseCard({ course }: { course: Course }) {
           {course.chapters.length} lessons
         </span>
         <div className="flex items-center gap-1">
+          {certificateReady && (
+            <Link
+              href={`/course/${course.id}/certificate`}
+              aria-label="View course certificate"
+              title="View course certificate"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "icon" }),
+                "h-8 w-8 text-muted-foreground hover:text-primary"
+              )}
+            >
+              <Award />
+            </Link>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -143,7 +157,7 @@ export function CourseCard({ course }: { course: Course }) {
 
 /** Card state + actions for `CourseCard` — kept out of the JSX. */
 function useCourseCard(course: Course) {
-  const [done, setDone] = useState(0);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const favorites = useLibrary((s) => s.courseFavorites);
   const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
@@ -156,14 +170,18 @@ function useCourseCard(course: Course) {
 
   useEffect(() => {
     // Progress lives in localStorage — read after mount to avoid hydration drift.
-    setDone(getProgress(course.id).completedIds.length);
+    setCompletedIds(getProgress(course.id).completedIds);
     // Courses saved before creator support: fetch their channel names lazily
     // so the card can show the video creator like playlist cards do.
     void useLibrary.getState().backfillCourseChannels();
   }, [course.id]);
 
+  const done = completedIds.length;
   const pct =
     course.chapters.length === 0 ? 0 : Math.round((done / course.chapters.length) * 100);
+  const certificateReady =
+    course.chapters.length > 0 &&
+    course.chapters.every((chapter) => completedIds.includes(chapter.id));
 
   function handleSetCategory(categoryId?: string) {
     setCourseCategory(course.id, categoryId ?? null);
@@ -172,6 +190,7 @@ function useCourseCard(course: Course) {
 
   return {
     done,
+    certificateReady,
     pct,
     fav,
     href: `/course/${course.id}`,

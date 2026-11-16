@@ -1,6 +1,7 @@
 import { describe, expect, test, beforeEach, mock } from "bun:test";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Course } from "@/shared/lib/types";
+import { setProgress } from "@/shared/lib/storage";
 
 // The card tree contains `<Link>`s — provide a minimal app-router stand-in
 // since no Next router is mounted in jsdom.
@@ -52,6 +53,29 @@ describe("CourseCard creator (mirrors the playlist card)", () => {
     // The rest of the card still renders normally.
     expect(screen.getByText("My course")).toBeTruthy();
     expect(screen.getByText("0/2 done")).toBeTruthy();
+  });
+});
+
+describe("CourseCard certificate shortcut", () => {
+  test("appears only when every lesson is complete", () => {
+    const { unmount } = render(<CourseCard course={COURSE} />);
+    expect(
+      screen.queryByRole("link", { name: "View course certificate" })
+    ).toBeNull();
+    unmount();
+
+    setProgress("c1", {
+      completedIds: ["c1-1", "c1-2"],
+      lastChapterId: null,
+      updatedAt: 1,
+      positions: {},
+    });
+    render(<CourseCard course={COURSE} />);
+    expect(
+      screen
+        .getByRole("link", { name: "View course certificate" })
+        .getAttribute("href")
+    ).toBe("/course/c1/certificate");
   });
 });
 
