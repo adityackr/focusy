@@ -1,8 +1,13 @@
 "use client";
 
+import { useEffect, type RefObject } from "react";
 import { useVideoPlayer } from "@/features/playlists/hooks/use-video-player";
 import type { Chapter } from "@/shared/lib/types";
-import { PlayerChrome, type SeekRequest } from "@/shared/player/player-chrome";
+import {
+  PlayerChrome,
+  type PlayerTimeControls,
+  type SeekRequest,
+} from "@/shared/player/player-chrome";
 
 export type { SeekRequest };
 
@@ -18,6 +23,8 @@ interface Props {
   onChapterChange?: (index: number) => void;
   /** Throttled playback reports (~every 5s, and at the end) for resume tracking. */
   onProgress?: (time: number, duration: number) => void;
+  /** Filled with live time/seek access for the notes panel. */
+  controlsRef?: RefObject<PlayerTimeControls | null>;
 }
 
 /**
@@ -31,8 +38,21 @@ export function VideoPlayer({
   seekRequest,
   onChapterChange,
   onProgress,
+  controlsRef,
 }: Props) {
   const player = useVideoPlayer({ videoId, startAt });
+
+  useEffect(() => {
+    if (!controlsRef) return;
+    controlsRef.current = {
+      getCurrentTime: player.getCurrentTime,
+      seekTo: player.seekTo,
+    };
+    return () => {
+      controlsRef.current = null;
+    };
+  }, [controlsRef, player.getCurrentTime, player.seekTo]);
+
   return (
     <PlayerChrome
       videoId={videoId}

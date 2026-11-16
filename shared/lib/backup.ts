@@ -4,6 +4,14 @@ import {
   useLibrary,
   type LibrarySnapshot,
 } from "@/shared/store/library";
+import {
+  allNotesByVideo,
+  mergeNotesByVideo,
+  normalizeNotesByVideo,
+  replaceNotesByVideo,
+  type LearningNote,
+  type LearningNotesByVideo,
+} from "./learning-notes";
 import type {
   Category,
   Chapter,
@@ -25,7 +33,9 @@ import type {
  */
 
 export const BACKUP_APP = "focusy";
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
+/** Version 2 files predate timestamped learning notes and remain readable. */
+export const PREVIOUS_BACKUP_VERSION = 2;
 /** Version 1 files predate Studio projects and remain readable. */
 export const LEGACY_BACKUP_VERSION = 1;
 export const STUDIO_BACKUP_SECTION_VERSION = 1;
@@ -67,8 +77,10 @@ export interface Backup {
   playlistProgress: Record<string, WatchProgress>;
   /** courseId → chapter progress */
   courseProgress: Record<string, CourseProgress>;
-  /** videoId → note */
+  /** videoId → legacy note, retained for reading v1/v2 backup files. */
   notes: Record<string, StoredNote>;
+  /** videoId → timestamped Markdown notes (v2 storage). */
+  learningNotes: LearningNotesByVideo;
   /** Null for legacy backups that never contained Studio projects. */
   studio: StudioBackupSection | null;
 }
@@ -227,6 +239,47 @@ function normalizeNote(raw: unknown): StoredNote | null {
   };
 }
 
+/**
+ * Fold legacy one-note-per-video entries into the v2 buckets. Files written by
+ * older builds only have `notes`; restoring one should still show those notes
+ * immediately without waiting for a reload to run the storage migration.
+ */
+function withLegacyNotes(
+  buckets: LearningNotesByVideo,
+  legacy: Record<string, StoredNote>,
+): LearningNotesByVideo {
+  const out: LearningNotesByVideo = {};
+  for (const [videoId, notes] of Object.entries(buckets)) {
+    out[videoId] = [...notes];
+  }
+
+  for (const [videoId, note] of Object.entries(legacy)) {
+    const text = note.text.trim();
+    if (!videoId || !text) continue;
+    const existing = out[videoId] ?? [];
+    const id = `legacy:${videoId}`;
+    if (existing.some((entry) => entry.id === id)) continue;
+    const converted: LearningNote = {
+      id,
+      videoId,
+      source: null,
+      timeSeconds: null,
+      markdown: text,
+      createdAt: note.updatedAt,
+      updatedAt: note.updatedAt,
+    };
+    out[videoId] = [...existing, converted];
+  }
+  return out;
+}
+
+function learningNoteCount(buckets: LearningNotesByVideo): number {
+  return Object.values(buckets).reduce(
+    (total, notes) => total + notes.length,
+    0,
+  );
+}
+
 /** Validate the envelope of a Studio backup section, not each project. */
 export function normalizeStudioBackupSection(
   raw: unknown,
@@ -316,6 +369,7 @@ function storedValues<T>(
 export function collectBackup(
   studio: StudioBackupSection | null = null,
 ): Backup {
+  const notes = storedValues(NOTE_PREFIX, normalizeNote);
   return {
     app: BACKUP_APP,
     version: BACKUP_VERSION,
@@ -329,7 +383,8 @@ export function collectBackup(
       COURSE_PROGRESS_PREFIX,
       normalizeCourseProgress,
     ),
-    notes: storedValues(NOTE_PREFIX, normalizeNote),
+    notes,
+    learningNotes: allNotesByVideo(),
     studio,
   };
 }
@@ -533,11 +588,12 @@ export function parseBackup(text: string): BackupParseResult {
   }
   if (
     raw.version !== LEGACY_BACKUP_VERSION &&
+    raw.version !== PREVIOUS_BACKUP_VERSION &&
     raw.version !== BACKUP_VERSION
   ) {
     return {
       ok: false,
-      error: `Unsupported backup version (${String(raw.version)}). This app reads versions ${LEGACY_BACKUP_VERSION} and ${BACKUP_VERSION}.`,
+      error: `Unsupported backup version (${String(raw.version)}). This app reads versions ${LEGACY_BACKUP_VERSION}, ${PREVIOUS_BACKUP_VERSION} and ${BACKUP_VERSION}.`,
     };
   }
   const library = normalizeLibrary(raw.library);
@@ -545,7 +601,7 @@ export function parseBackup(text: string): BackupParseResult {
     return { ok: false, error: "The backup is missing its library data." };
   }
   let studio: StudioBackupSection | null = null;
-  if (raw.version === BACKUP_VERSION && raw.studio != null) {
+  if (raw.version !== LEGACY_BACKUP_VERSION && raw.studio != null) {
     studio = normalizeStudioBackupSection(raw.studio);
     if (!studio) {
       return {
@@ -554,6 +610,17 @@ export function parseBackup(text: string): BackupParseResult {
       };
     }
   }
+  const notes = mapRecord(raw.notes, (r) => {
+    const note = normalizeNote(r);
+    return note && note.text.trim() ? note : null;
+  });
+  // v1/v2 had only the legacy note map. v3 carries the v2 buckets, which are
+  // authoritative: converting a stale legacy key there could resurrect a note
+  // the user migrated and then deleted.
+  const learningNotes =
+    raw.version === BACKUP_VERSION && isRecord(raw.learningNotes)
+      ? normalizeNotesByVideo(raw.learningNotes)
+      : withLegacyNotes(normalizeNotesByVideo(raw.learningNotes), notes);
   return {
     ok: true,
     backup: {
@@ -567,10 +634,8 @@ export function parseBackup(text: string): BackupParseResult {
       courseProgress: mapRecord(raw.courseProgress, (r) =>
         normalizeCourseProgress(r),
       ),
-      notes: mapRecord(raw.notes, (r) => {
-        const note = normalizeNote(r);
-        return note && note.text.trim() ? note : null;
-      }),
+      notes,
+      learningNotes,
       studio,
     },
   };
@@ -621,9 +686,9 @@ export function applyBackup(backup: Backup): void {
       JSON.stringify(progress),
     );
   }
-  for (const [videoId, note] of Object.entries(backup.notes)) {
-    localStorage.setItem(NOTE_PREFIX + videoId, JSON.stringify(note));
-  }
+  // Legacy keys are cleared but not rewritten: v2 buckets are authoritative,
+  // and a retained legacy key would be re-adopted on the next page load.
+  replaceNotesByVideo(backup.learningNotes);
 }
 
 /** What a merge added or refreshed, for the message shown in Settings. */
@@ -746,16 +811,8 @@ export function mergeBackup(backup: Backup): MergeReport {
     );
   }
 
-  // Notes are timestamped too: whichever was edited last wins.
-  let notesUpdated = 0;
-  for (const [videoId, incoming] of Object.entries(backup.notes)) {
-    const key = NOTE_PREFIX + videoId;
-    const local = readStored(key, normalizeNote);
-    const localUsable = local && local.text.trim() ? local : null;
-    if (localUsable && localUsable.updatedAt > incoming.updatedAt) continue;
-    localStorage.setItem(key, JSON.stringify(incoming));
-    notesUpdated++;
-  }
+  // Notes are timestamped too: whichever was edited last wins per note id.
+  const notesUpdated = mergeNotesByVideo(backup.learningNotes);
 
   return { playlistsAdded, coursesAdded, notesUpdated };
 }
@@ -797,7 +854,7 @@ export function backupPreview(backup: Backup): BackupPreview {
     ),
     playlistProgress: Object.keys(backup.playlistProgress).length,
     courseProgress: Object.keys(backup.courseProgress).length,
-    notes: Object.keys(backup.notes).length,
+    notes: learningNoteCount(backup.learningNotes),
     studioProjects: backup.studio
       ? backup.studio.workspaces.length
       : null,
@@ -826,7 +883,7 @@ function orderedLabels<T>(
 export function backupSummary(backup: Backup): string {
   const playlists = Object.keys(backup.library.playlists).length;
   const videos = Object.keys(backup.library.courses).length;
-  const notes = Object.keys(backup.notes).length;
+  const notes = learningNoteCount(backup.learningNotes);
   const studioProjects = backup.studio?.workspaces.length ?? 0;
   const parts = [
     `${playlists} playlist${playlists === 1 ? "" : "s"}`,

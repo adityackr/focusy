@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
+import type { PlayerTimeControls } from "@/shared/player/player-chrome";
 import { VideoPlayer, type SeekRequest } from "@/features/playlists/components/watch/video-player";
 import { chaptersForVideo } from "@/shared/lib/chapters";
+import { NotesPanel } from "@/shared/components/notes/notes-panel";
 import VideoDescription from "@/shared/components/video-description";
 import type { Playlist, PlaylistVideo } from "@/shared/lib/types";
 
@@ -39,6 +41,15 @@ export function NowPlaying({
     activeIndex,
     watched,
   });
+  const controlsRef = useRef<PlayerTimeControls | null>(null);
+  const getCurrentTime = useCallback(
+    () => controlsRef.current?.getCurrentTime() ?? null,
+    [],
+  );
+  const seekTo = useCallback(
+    (seconds: number) => controlsRef.current?.seekTo(seconds),
+    [],
+  );
 
   return (
     <>
@@ -49,6 +60,7 @@ export function NowPlaying({
           chapters={chapters}
           startAt={startAt ?? null}
           seekRequest={seekRequest}
+          controlsRef={controlsRef}
           onChapterChange={onChapterChange}
           onProgress={onProgress}
         />
@@ -58,6 +70,19 @@ export function NowPlaying({
           Lesson {activeIndex + 1} of {playlist.videos.length}
         </Badge>
         <Badge variant="secondary">{progress}% completed</Badge>
+        <NotesPanel
+          key={activeVideo.videoId}
+          videoId={activeVideo.videoId}
+          title={activeVideo.title}
+          source={{
+            kind: "playlist",
+            playlistId: playlist.playlistId,
+            videoId: activeVideo.videoId,
+            title: activeVideo.title,
+          }}
+          getCurrentTime={getCurrentTime}
+          onSeek={seekTo}
+        />
         {nextVideo && (
           <Button size="sm" className="ml-auto" onClick={goNext}>
             Next lesson <ArrowRight className="size-4" />

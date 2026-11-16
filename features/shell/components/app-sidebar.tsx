@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronsLeft, Folder, Heart, History, LayoutGrid, Plus, Search, Settings, Star } from "lucide-react";
+import { ChevronsLeft, Folder, Heart, History, LayoutGrid, NotebookPen, Plus, Search, Settings, Star } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/shared/lib/utils";
 import { Button, buttonVariants } from "@/shared/ui/button";
@@ -12,6 +12,7 @@ import { Separator } from "@/shared/ui/separator";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { useLibrary, selectPlaylistList, selectCourseList } from "@/shared/store/library";
+import { useAllNotes } from "@/shared/lib/learning-notes";
 import { AddPlaylistDialog, DeletePlaylistButton } from "@/features/playlists";
 import { DeleteCourseButton } from "@/features/videos";
 import { LogoMark } from "@/features/shell/components/logo";
@@ -20,6 +21,7 @@ import { ThemeToggle } from "@/features/shell/components/theme-toggle";
 const NAV = [
   { href: "/library", label: "Library", icon: LayoutGrid },
   { href: "/recent", label: "Recent", icon: History },
+  { href: "/notes", label: "Notes", icon: NotebookPen },
   { href: "/categories", label: "Categories", icon: Folder },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -47,6 +49,7 @@ export function AppSidebar({
     courseList,
     list,
     favCount,
+    notesCount,
     favorites,
     courseFavorites,
     toggleFavorite,
@@ -118,6 +121,11 @@ export function AppSidebar({
               {!collapsed && n.href === "/favorites" && favCount > 0 && (
                 <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
                   {favCount}
+                </span>
+              )}
+              {!collapsed && n.href === "/notes" && notesCount > 0 && (
+                <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-bold text-primary">
+                  {notesCount}
                 </span>
               )}
             </Link>
@@ -398,6 +406,7 @@ function useAppSidebar(onNavigate?: () => void) {
   const pushRecent = useLibrary((s) => s.pushRecent);
   const toggleCourseFavorite = useLibrary((s) => s.toggleCourseFavorite);
   const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
+  const notesCount = useAllNotes().length;
   const [tab, setTab] = useState("videos");
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -460,6 +469,7 @@ function useAppSidebar(onNavigate?: () => void) {
     courseList,
     list,
     favCount,
+    notesCount,
     favorites,
     courseFavorites,
     toggleFavorite,

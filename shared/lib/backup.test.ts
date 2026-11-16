@@ -2,6 +2,15 @@ import { describe, expect, test, beforeEach } from "bun:test";
 import { useLibrary, LIBRARY_STORAGE_KEY } from "../store/library";
 import { getApiKey, setApiKey } from "./storage";
 import {
+  addNote,
+  allNotes,
+  invalidateNotesCache,
+  LEGACY_NOTE_STORAGE_PREFIX,
+  migrateLegacyNotes,
+  NOTES_STORAGE_PREFIX,
+  type NoteSource,
+} from "./learning-notes";
+import {
   applyBackup,
   BACKUP_VERSION,
   backupFileName,
@@ -13,6 +22,7 @@ import {
   downloadBackup,
   mergeBackup,
   parseBackup,
+  PREVIOUS_BACKUP_VERSION,
   readLastBackup,
   recordLastBackup,
   serializeBackup,
@@ -103,10 +113,13 @@ function seed() {
     "focustube:note:PL1-v1",
     JSON.stringify({ text: "# Idea", updatedAt: 456 })
   );
+  // Production migrates on module load; tests seed after that, so do it here.
+  migrateLegacyNotes();
 }
 
 beforeEach(() => {
   localStorage.clear();
+  invalidateNotesCache();
   resetLibrary();
 });
 
@@ -145,10 +158,87 @@ describe("backup export", () => {
     expect(
       JSON.parse(localStorage.getItem("yt-course:progress:C1")!).positions
     ).toEqual({ "C1-c1": 12 });
-    expect(JSON.parse(localStorage.getItem("focustube:note:PL1-v1")!)).toEqual({
-      text: "# Idea",
-      updatedAt: 456,
+    expect(localStorage.getItem("focustube:note:PL1-v1")).toBeNull();
+    expect(allNotes()).toMatchObject([
+      {
+        id: "legacy:PL1-v1",
+        videoId: "PL1-v1",
+        markdown: "# Idea",
+        timeSeconds: null,
+        source: null,
+      },
+    ]);
+  });
+
+  test("round-trips timestamped Markdown notes with their sources", () => {
+    const source: NoteSource = {
+      kind: "playlist",
+      playlistId: "PL1",
+      videoId: "PL1-v1",
+      title: "Lesson one",
+    };
+    const added = addNote({
+      videoId: "PL1-v1",
+      markdown: "# Deep note\n\n```ts\nconst x = 1;\n```",
+      timeSeconds: 42.8,
+      source,
     });
+    expect(added.ok).toBe(true);
+    if (!added.ok) return;
+
+    const backup = collectBackup();
+    expect(backup.version).toBe(BACKUP_VERSION);
+    expect(backup.learningNotes["PL1-v1"]).toHaveLength(1);
+
+    const json = serializeBackup(backup);
+    localStorage.clear();
+    invalidateNotesCache();
+    resetLibrary();
+
+    const parsed = parseBackup(json);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    applyBackup(parsed.backup);
+
+    expect(allNotes()).toMatchObject([
+      {
+        id: added.value.id,
+        videoId: "PL1-v1",
+        markdown: added.value.markdown,
+        timeSeconds: 42,
+        source,
+        createdAt: added.value.createdAt,
+        updatedAt: added.value.updatedAt,
+      },
+    ]);
+  });
+
+  test("does not resurrect deleted notes from stale legacy keys", () => {
+    localStorage.setItem(
+      LEGACY_NOTE_STORAGE_PREFIX + "vid-1",
+      JSON.stringify({ text: "deleted after migration", updatedAt: 1 })
+    );
+    addNote({ videoId: "vid-1", markdown: "current note", timeSeconds: 5 });
+
+    const backup = collectBackup();
+    expect(backup.learningNotes["vid-1"]).toHaveLength(1);
+
+    const parsed = parseBackup(serializeBackup(backup));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    applyBackup(parsed.backup);
+
+    expect(allNotes().map((note) => note.markdown)).toEqual(["current note"]);
+    expect(localStorage.getItem(LEGACY_NOTE_STORAGE_PREFIX + "vid-1")).toBeNull();
+  });
+
+  test("counts timestamped notes in the preview and summary", () => {
+    addNote({ videoId: "v1", markdown: "First note", timeSeconds: 5 });
+    addNote({ videoId: "v2", markdown: "Second note", timeSeconds: 9 });
+
+    const backup = collectBackup();
+    expect(backupPreview(backup).notes).toBe(2);
+    expect(backupSummary(backup)).toContain("2 notes");
   });
 
   test("never includes the API key or player settings", () => {
@@ -245,12 +335,14 @@ describe("backup import", () => {
       "focustube:note:PL2-v1",
       JSON.stringify({ text: "later note", updatedAt: 1 })
     );
+    addNote({ videoId: "PL2-v1", markdown: "later timestamped note" });
 
     applyBackup(parsed.backup);
 
     expect(Object.keys(useLibrary.getState().playlists)).toEqual(["PL1"]);
     expect(localStorage.getItem("focustube:progress:PL2")).toBeNull();
     expect(localStorage.getItem("focustube:note:PL2-v1")).toBeNull();
+    expect(localStorage.getItem(NOTES_STORAGE_PREFIX + "PL2-v1")).toBeNull();
   });
 
   test("tolerates junk entries without losing the good ones", () => {
@@ -258,14 +350,58 @@ describe("backup import", () => {
     const raw = JSON.parse(serializeBackup(collectBackup()));
     raw.playlistProgress["broken"] = "nope";
     raw.notes["broken"] = { text: "   " };
+    raw.learningNotes = {
+      "PL1-v1": [
+        { id: "", markdown: "no id" },
+        { id: "blank", markdown: "   " },
+        {
+          id: "fine",
+          videoId: "somewhere-else",
+          markdown: "kept",
+          timeSeconds: 2,
+          createdAt: 5,
+          updatedAt: 6,
+        },
+      ],
+      broken: "nope",
+    };
 
     const parsed = parseBackup(JSON.stringify(raw));
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.backup.playlistProgress.broken).toBeUndefined();
     expect(parsed.backup.notes.broken).toBeUndefined();
+    expect(parsed.backup.learningNotes.broken).toBeUndefined();
+    expect(parsed.backup.learningNotes["PL1-v1"].map((note) => note.id)).toEqual([
+      "fine",
+    ]);
     expect(parsed.backup.playlistProgress.PL1.watched).toEqual(["PL1-v1"]);
     expect(parsed.backup.notes["PL1-v1"].text).toBe("# Idea");
+  });
+
+  test("restores version 2 files by adopting their legacy notes", () => {
+    seed();
+    const { learningNotes: _learningNotes, ...older } = collectBackup();
+
+    const parsed = parseBackup(
+      JSON.stringify({ ...older, version: PREVIOUS_BACKUP_VERSION })
+    );
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    localStorage.clear();
+    invalidateNotesCache();
+    resetLibrary();
+    applyBackup(parsed.backup);
+
+    expect(allNotes()).toMatchObject([
+      {
+        id: "legacy:PL1-v1",
+        markdown: "# Idea",
+        timeSeconds: null,
+      },
+    ]);
+    expect(localStorage.getItem(LEGACY_NOTE_STORAGE_PREFIX + "PL1-v1")).toBeNull();
   });
 
   test("reads version 1 backups without Studio data", () => {
@@ -279,6 +415,24 @@ describe("backup import", () => {
     expect(parsed.backup.studio).toBeNull();
     expect(backupPreview(parsed.backup).studioProjects).toBeNull();
     expect(backupSummary(parsed.backup)).not.toContain("Studio");
+  });
+
+  test("keeps version 2 Studio sections readable", () => {
+    seed();
+    const studio = {
+      version: STUDIO_BACKUP_SECTION_VERSION,
+      activeWorkspaceId: "ws-1",
+      order: ["ws-1"],
+      workspaces: [{ id: "ws-1" }],
+    };
+    const current = collectBackup(studio);
+
+    const parsed = parseBackup(
+      JSON.stringify({ ...current, version: PREVIOUS_BACKUP_VERSION })
+    );
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.backup.studio?.workspaces).toEqual([{ id: "ws-1" }]);
   });
 
   test("rejects unreadable Studio sections instead of dropping them", () => {
@@ -368,10 +522,20 @@ describe("backup merge", () => {
     const backup = collectBackup();
 
     // Locally the note is newer than the file's, while its course progress is older.
-    localStorage.setItem(
-      "focustube:note:PL1-v1",
-      JSON.stringify({ text: "local draft", updatedAt: 900 })
-    );
+    const local = addNote({
+      videoId: "PL1-v1",
+      markdown: "local draft",
+      timeSeconds: 3,
+    });
+    expect(local.ok).toBe(true);
+    if (!local.ok) return;
+    backup.learningNotes["PL1-v1"] = [
+      {
+        ...local.value,
+        markdown: "from file",
+        updatedAt: local.value.updatedAt - 1,
+      },
+    ];
     localStorage.setItem(
       "yt-course:progress:C1",
       JSON.stringify({
@@ -391,14 +555,54 @@ describe("backup merge", () => {
 
     mergeBackup(backup);
 
-    expect(JSON.parse(localStorage.getItem("focustube:note:PL1-v1")!)).toEqual({
-      text: "local draft",
-      updatedAt: 900,
-    });
+    const note = allNotes().find((entry) => entry.id === local.value.id);
+    expect(note?.markdown).toBe("local draft");
+    expect(note?.timeSeconds).toBe(3);
     const course = JSON.parse(localStorage.getItem("yt-course:progress:C1")!);
     expect(course.lastChapterId).toBe("C1-c2");
     expect(course.positions).toEqual({ "C1-c2": 30 });
     expect(course.completedIds.sort()).toEqual(["C1-c1", "C1-c2"]);
+  });
+
+  test("adds a newer timestamped note from the file", () => {
+    const local = addNote({
+      videoId: "vid-shared",
+      markdown: "local version",
+      timeSeconds: 10,
+    });
+    expect(local.ok).toBe(true);
+    if (!local.ok) return;
+    const backup = collectBackup();
+
+    backup.learningNotes["vid-shared"] = [
+      {
+        ...local.value,
+        markdown: "newer from file",
+        timeSeconds: 20,
+        updatedAt: local.value.updatedAt + 1000,
+      },
+    ];
+    backup.learningNotes["vid-new"] = [
+      {
+        id: "incoming-note",
+        videoId: "vid-new",
+        source: null,
+        timeSeconds: null,
+        markdown: "brand new",
+        createdAt: 1,
+        updatedAt: 2,
+      },
+    ];
+
+    const report = mergeBackup(backup);
+
+    expect(report.notesUpdated).toBe(2);
+    expect(allNotes().find((n) => n.id === local.value.id)?.markdown).toBe(
+      "newer from file"
+    );
+    expect(allNotes().find((n) => n.id === "incoming-note")?.markdown).toBe(
+      "brand new"
+    );
   });
 
   test("never removes data that is only in this browser", () => {

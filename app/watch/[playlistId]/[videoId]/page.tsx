@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { WatchView } from "@/features/playlists";
+import { parseStartAt } from "@/shared/lib/start-at";
 
 /**
  * The active lesson is picked from the visitor's own library client-side, so
@@ -15,15 +16,6 @@ export function generateMetadata(): Metadata {
     description: DESCRIPTION,
     robots: { index: false, follow: true },
   };
-}
-
-/** `?t=` start time in seconds (chapter deep links), or undefined. */
-function parseStartAt(raw: string | string[] | undefined): number | undefined {
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  if (!value) return undefined;
-  const seconds = Number(value);
-  if (!Number.isFinite(seconds) || seconds <= 0) return undefined;
-  return Math.floor(seconds);
 }
 
 export default async function VideoWatchPage({

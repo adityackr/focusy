@@ -38,6 +38,8 @@ export function useVideoPlayer({
   const readyRef = useRef(false);
   const cueAtRef = useRef<number>(startAt ?? 0);
   const autoPlayRef = useRef(autoPlay);
+  // Last known time, used by `getCurrentTime` before the iframe is ready.
+  const currentTimeRef = useRef<number>(startAt ?? 0);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRateState] = useState(1);
@@ -178,6 +180,7 @@ export function useVideoPlayer({
         syncCaptions();
       }
       wasPlayingRef.current = playing;
+      currentTimeRef.current = t;
       setCurrentTime(t);
       try {
         const d = p.getDuration?.() ?? 0;
@@ -207,6 +210,7 @@ export function useVideoPlayer({
     try {
       const t = Math.max(0, p.getCurrentTime() + by);
       p.seekTo(t, true);
+      currentTimeRef.current = t;
       setCurrentTime(t);
     } catch {
       /* noop */
@@ -217,14 +221,33 @@ export function useVideoPlayer({
    *  identity so it can be used inside effects. */
   const seekTo = useCallback((seconds: number) => {
     const p = playerRef.current;
-    if (!p) return;
     const t = Math.max(0, seconds);
-    try {
-      p.seekTo(t, true);
-    } catch {
-      /* noop */
+    currentTimeRef.current = t;
+    if (p) {
+      try {
+        p.seekTo(t, true);
+      } catch {
+        /* noop */
+      }
     }
     setCurrentTime(t);
+  }, []);
+
+  /** Live playback time for notes — stable and safe before the iframe is ready. */
+  const getCurrentTime = useCallback(() => {
+    const p = playerRef.current;
+    if (p && readyRef.current) {
+      try {
+        const time = p.getCurrentTime();
+        if (Number.isFinite(time)) {
+          currentTimeRef.current = time;
+          return time;
+        }
+      } catch {
+        /* fall through to the cached time */
+      }
+    }
+    return currentTimeRef.current;
   }, []);
 
   // The stored resume position loads in an effect one commit after mount, so
@@ -320,6 +343,7 @@ export function useVideoPlayer({
     playbackRate,
     availableRates,
     currentTime,
+    getCurrentTime,
     duration,
     volume,
     muted,

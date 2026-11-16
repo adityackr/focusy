@@ -26,6 +26,8 @@ export interface UseVideoPlayerOptions {
   pauseAtEnd?: boolean;
   /** Absolute video time to resume from (within the chapter). Falls back to startSeconds. */
   startAt?: number | null;
+  /** Cue exactly at `startAt` (explicit deep links) instead of applying resume guards. */
+  exactStart?: boolean;
   /** Fired when the chapter ends through natural playback (not scrubbing). */
   onEnded?: () => void;
   /** Fired when the user scrubs to a time — parent follows by switching chapters. */
@@ -48,6 +50,7 @@ export function useVideoPlayer({
   autoPlay = true,
   pauseAtEnd = false,
   startAt = null,
+  exactStart = false,
   onEnded,
   onSeek,
   onProgress,
@@ -59,6 +62,7 @@ export function useVideoPlayer({
   const endedFiredFor = useRef<string>("");
   const boundsRef = useRef({ startSeconds, endSeconds });
   const startAtRef = useRef<number | null>(startAt);
+  const exactStartRef = useRef(exactStart);
   const onEndedRef = useRef(onEnded);
   const onSeekRef = useRef(onSeek);
   const onProgressRef = useRef(onProgress);
@@ -67,11 +71,12 @@ export function useVideoPlayer({
   useEffect(() => {
     boundsRef.current = { startSeconds, endSeconds };
     startAtRef.current = startAt;
+    exactStartRef.current = exactStart;
     onEndedRef.current = onEnded;
     onSeekRef.current = onSeek;
     onProgressRef.current = onProgress;
     pauseAtEndRef.current = pauseAtEnd;
-  }, [startSeconds, endSeconds, startAt, onEnded, onSeek, onProgress, pauseAtEnd]);
+  }, [startSeconds, endSeconds, startAt, exactStart, onEnded, onSeek, onProgress, pauseAtEnd]);
 
   const [rateIdx, setRateIdx] = useState(3); // PLAYBACK_RATES[3] === 1
   const [playbackRate, setPlaybackRateState] = useState(1);
@@ -95,6 +100,8 @@ export function useVideoPlayer({
     const e = boundsRef.current.endSeconds;
     const r = startAtRef.current;
     if (r == null || !Number.isFinite(r)) return s;
+    // Explicit deep links are exact, even near the chapter end.
+    if (exactStartRef.current) return r;
     // Ignore stale/tiny resumes and resumes past (or at) the chapter end.
     if (r < s + 1) return s;
     if (e != null && r >= e - 2) return s;
@@ -356,17 +363,35 @@ export function useVideoPlayer({
 
   /** Absolute seek (e.g. restart the current chapter from the chip). The
    *  poll loop detects the jump and notifies the parent via onSeek. */
-  function seekTo(seconds: number) {
+  const seekTo = useCallback((seconds: number) => {
+    const t = Math.max(0, seconds);
+    lastTimeRef.current = t;
+    setCurrentTime(t);
     const p = playerRef.current;
     if (!p) return;
     try {
-      const t = Math.max(0, seconds);
       p.seekTo(t, true);
-      setCurrentTime(t);
     } catch {
       /* noop */
     }
-  }
+  }, []);
+
+  /** Live playback time for notes — stable and safe before the iframe is ready. */
+  const getCurrentTime = useCallback(() => {
+    const p = playerRef.current;
+    if (p && readyRef.current) {
+      try {
+        const time = p.getCurrentTime();
+        if (Number.isFinite(time)) {
+          lastTimeRef.current = time;
+          return time;
+        }
+      } catch {
+        /* fall through to the cached time */
+      }
+    }
+    return lastTimeRef.current ?? boundsRef.current.startSeconds;
+  }, []);
 
   function togglePlay() {
     const p = playerRef.current;
@@ -462,6 +487,7 @@ export function useVideoPlayer({
     playbackRate,
     availableRates,
     currentTime,
+    getCurrentTime,
     duration,
     volume,
     muted,

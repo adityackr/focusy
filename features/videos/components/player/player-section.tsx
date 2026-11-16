@@ -1,10 +1,14 @@
+"use client";
+
+import { useCallback, useRef } from "react";
 import { PanelLeftOpen } from "lucide-react";
 import type { Course } from "@/shared/lib/types";
 import { formatTimestamp } from "@/shared/lib/chapters";
 import VideoPlayer from "@/features/videos/components/player/video-player";
 import ChapterEditor from "@/features/videos/components/player/chapter-editor";
+import { NotesPanel } from "@/shared/components/notes/notes-panel";
+import type { PlayerTimeControls } from "@/shared/player/player-chrome";
 import { Button } from "@/shared/ui/button";
-import { NoteButton } from "@/shared/components/note-dialog";
 
 interface Props {
   course: Course;
@@ -14,6 +18,8 @@ interface Props {
   editing: boolean;
   sidebarOpen: boolean;
   resumeAt: number | null;
+  /** `resumeAt` is an explicit deep link — cue exactly there. */
+  resumeExact: boolean;
   resumedFrom: number | null;
   restartNonce: number;
   toggleSidebar: () => void;
@@ -34,6 +40,7 @@ export default function PlayerSection({
   editing,
   sidebarOpen,
   resumeAt,
+  resumeExact,
   resumedFrom,
   restartNonce,
   toggleSidebar,
@@ -46,6 +53,19 @@ export default function PlayerSection({
   handleChaptersChange,
 }: Props) {
   const active = activeIndex >= 0 ? course.chapters[activeIndex] : null;
+  const controlsRef = useRef<PlayerTimeControls | null>(null);
+  const getCurrentTime = useCallback(
+    () => controlsRef.current?.getCurrentTime() ?? null,
+    [],
+  );
+  // A timestamp can sit in another chapter: follow it first, then seek once.
+  const seekFromNote = useCallback(
+    (seconds: number) => {
+      handleSeek(seconds);
+      controlsRef.current?.seekTo(seconds);
+    },
+    [handleSeek],
+  );
 
   return (
     <section className="min-w-0">
@@ -64,7 +84,9 @@ export default function PlayerSection({
             chapterKey={active.id}
             chapters={course.chapters}
             startAt={resumeAt}
+            exactStart={resumeExact}
             pauseAtEnd={!autoAdvance}
+            controlsRef={controlsRef}
             onEnded={handleEnded}
             onSeek={handleSeek}
             onProgress={handleProgress}
@@ -91,7 +113,20 @@ export default function PlayerSection({
               <h2 className="truncate text-base font-semibold">{active.title}</h2>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <NoteButton videoId={course.videoId} title={course.title} as="labeled" />
+              <NotesPanel
+                key={course.videoId}
+                videoId={course.videoId}
+                title={course.title}
+                source={{
+                  kind: "course",
+                  courseId: course.id,
+                  videoId: course.videoId,
+                  chapterId: active.id,
+                  title: course.title,
+                }}
+                getCurrentTime={getCurrentTime}
+                onSeek={seekFromNote}
+              />
               <Button
                 size="sm"
                 variant={completedIds.includes(active.id) ? "success" : "default"}

@@ -32,6 +32,7 @@ const PLAYLIST: Playlist = {
 
 beforeEach(() => {
   cleanup();
+  localStorage.clear();
 });
 
 describe("NowPlaying with the custom player", () => {
@@ -42,6 +43,10 @@ describe("NowPlaying with the custom player", () => {
     // Custom chrome: play overlay + control bar (no native YouTube controls).
     expect(screen.getByLabelText("Play")).toBeTruthy();
     expect(screen.getByLabelText("Fullscreen (f)")).toBeTruthy();
+    // Smart notes open in a sheet from the controls row.
+    fireEvent.click(screen.getByRole("button", { name: "Open lesson notes" }));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByText("No notes yet")).toBeTruthy();
   });
 
   test("surfaces chapters parsed from the description in the player menu", () => {

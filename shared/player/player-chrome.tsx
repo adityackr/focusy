@@ -41,6 +41,8 @@ export interface PlayerHandle {
 	playbackRate: number;
 	availableRates: number[];
 	currentTime: number;
+	/** Live player time — stable, reads the iframe directly (no re-renders). */
+	getCurrentTime: () => number | null;
 	duration: number;
 	volume: number;
 	muted: boolean;
@@ -53,6 +55,12 @@ export interface PlayerHandle {
 	setVolumeLevel: (level: number) => void;
 	toggleMute: () => void;
 	toggleCaptions: () => void;
+}
+
+/** Time access a notes panel needs from whichever player is on screen. */
+export interface PlayerTimeControls {
+	getCurrentTime: () => number | null;
+	seekTo: (seconds: number) => void;
 }
 
 interface Props {

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
+import { lockBodyScroll, unlockBodyScroll } from "@/shared/ui/scroll-lock";
 
 interface DialogContextValue {
   open: boolean;
@@ -91,10 +92,10 @@ function useDialogSurface(open: boolean, setOpen: (v: boolean) => void) {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      unlockBodyScroll();
     };
   }, [open, setOpen]);
 

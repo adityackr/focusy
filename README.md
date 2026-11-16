@@ -73,7 +73,7 @@ Marketing-style homepage with a hero (live-feel classroom mock), stats, feature 
 
 - **No API key lives in env vars or on the server.** The key is entered in the app, stored only in that browser's `localStorage`, and used directly from the client against the YouTube Data API.
 - Step-by-step tutorial with links (Cloud Console → enable API → create key → restrict → paste), a **Test key** button, and quota notes.
-- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, notes, and Studio projects with their files and dependencies) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win), with the file's contents previewed, the mode chosen and confirmed before anything changes. The library page nudges you when new playlists or videos have landed since a backup that is already over a week old, or when the library has never been backed up at all. Older backups without Studio data remain compatible. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
+- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, timestamped Markdown notes, and Studio projects with their files and dependencies) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win per note), with the file's contents previewed, the mode chosen and confirmed before anything changes. Backup format **version 3** carries per-video note buckets; version 1 and 2 files remain readable, with their legacy notes adopted as untimed notes on restore. The library page nudges you when new playlists or videos have landed since a backup that is already over a week old, or when the library has never been backed up at all. Older backups without Studio data remain compatible. The API key and player preferences are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
 
 ### App sidebar
 
@@ -103,6 +103,14 @@ Available on Library / Recent / Favorites. Collapses to a slim icon rail, works 
 - **Lesson editor**: rename, retime, add, delete, reorder chapters (with derived end times).
 - Footer with `auto-advance` toggle, overall `%`, and the cleaned video description (timestamp lines stripped, links auto-linked).
 - Chapterly's progress and sidebar state keys (`yt-course:*`) are kept so existing Chapterly users keep their data after the merge.
+
+### Smart learning notes (notes sheet + `/notes`)
+
+- **Timestamped notes while watching.** Both playlist lessons and courses have a notes trigger that opens a right-side sheet (three-quarters width on desktop, full width on mobile); `Shift+N` opens it too. Saving stamps the note with the player's current video time.
+- **Markdown and code.** Notes are written in a Tiptap editor with official Markdown support, so headings, lists, links, quotes and fenced code blocks survive a refresh and render in the notes panel, search results, and exported backups.
+- **Jump back to the moment.** Timed notes link to `/watch/<playlistId>/<videoId>?t=<seconds>` or `/course/<courseId>?t=<seconds>`; untimed notes open the lesson from the start. A note can switch chapters because the course player resolves the timestamp exactly.
+- **Search across the library.** `/notes` lists every note newest-edit-first, searches note Markdown plus lesson/playlist/course titles, filters by playlists or courses, and shows the source, timestamp, edited date and jump action. The sidebar shows a live notes count.
+- **Storage and migration.** Notes live under `focustube:notes:v2:<videoId>` (one bucket per video, so a video keeps its notes wherever it appears). Legacy `focustube:note:<videoId>` entries are adopted once as untimed `legacy:<videoId>` notes; the old key is intentionally left in place so older builds and files keep reading it.
 
 ### Focusy Studio
 
@@ -240,6 +248,7 @@ Open Studio (a lesson's "Open Studio" button)
 | `/library`                      | Static + client | Videos + Playlists tabs, drag-to-reorder grids   |
 | `/recent`                       | Static + client | Last opened videos & playlists (up to 12 each)   |
 | `/favorites`                    | Static + client | Pinned videos & playlists                        |
+| `/notes`                        | Static + client | Search, filter and jump back to every note       |
 | `/add`                          | Static + client | Add a video: fetch chapters or paste manually    |
 | `/settings`                     | Static + client | User-provided YouTube API key + tutorial         |
 | `/course/[id]`                  | Dynamic         | Chapter-based course player (Chapterly port)     |
@@ -265,7 +274,8 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   ├── layout.tsx            # → AppShell (features/shell)
 │   │   ├── library/page.tsx      # → LibraryView (features/library)
 │   │   ├── recent/page.tsx       # → RecentView
-│   │   └── favorites/page.tsx    # → FavoritesView
+│   │   ├── favorites/page.tsx    # → FavoritesView
+│   │   └── notes/page.tsx        # → NotesView (features/notes)
 │   ├── add/                      # /add → AddVideoView (features/videos)
 │   ├── settings/                 # /settings → SettingsView (features/settings)
 │   ├── course/[id]/              # → CoursePlayerView (features/videos)
@@ -386,6 +396,9 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 - `features/playlists/components/watch/now-playing.test.tsx` — custom player chrome renders, chapters surface in the player menu, timestamp lines stripped from the description.
 - `features/studio/lib/workspaces.test.ts` — project creation, linked-source reuse, explicit duplicate projects, rename/delete, template replacement, and IndexedDB round-trips.
 - `features/studio/hooks/use-studio-workspace.test.tsx` — lesson restoration, switching sources without leaking files, flush-before-switch, rename/change/delete, and fallback to another project.
+- `shared/lib/backup.test.ts` — backup v3 round-trips timestamped notes and sources, counts them in previews, adopts notes from v1/v2 files, replaces stale note buckets, and merges the newest copy per note.
+- `features/notes/lib/note-search.test.ts` — note source/link inference, legacy-note lookup, full-text search and playlist/course filters.
+- `features/notes/components/notes-view.test.tsx` — the `/notes` page renders search results, filters, empty states and exact jump links.
 - `features/studio/lib/studio-backup.test.ts` — Studio backup collection and replace/merge restore, including multiple projects sharing one lesson.
 - `features/studio/components/studio-lesson-panel.test.tsx` — the full-size sheet, first-visit form, closing without leaving the lesson, and restoring the right workspace per lesson.
 

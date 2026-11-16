@@ -11,7 +11,7 @@ import {
   studioSourceForCourse,
 } from "@/features/studio";
 
-export function CoursePlayerView() {
+export function CoursePlayerView({ startAt }: { startAt?: number }) {
   const {
     course,
     loaded,
@@ -20,6 +20,7 @@ export function CoursePlayerView() {
     pct,
     completedIds,
     resumeAt,
+    resumeExact,
     resumedFrom,
     restartNonce,
     autoAdvance,
@@ -36,7 +37,7 @@ export function CoursePlayerView() {
     handleProgress,
     clearResume,
     handleChaptersChange,
-  } = useCoursePlayer();
+  } = useCoursePlayer(startAt);
 
   if (!loaded) return <CourseSkeleton />;
 
@@ -53,6 +54,7 @@ export function CoursePlayerView() {
           editing={editing}
           sidebarOpen={sidebarOpen}
           resumeAt={resumeAt}
+          resumeExact={resumeExact}
           resumedFrom={resumedFrom}
           restartNonce={restartNonce}
           toggleSidebar={toggleSidebar}

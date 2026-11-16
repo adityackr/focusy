@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { CheckCircle2, ChevronDown, Circle, ListVideo, Play } from "lucide-react";
 import { Button } from "@/shared/ui/button";
-import { NoteButton } from "@/shared/components/note-dialog";
 import { cn } from "@/shared/lib/utils";
 import { chapterKey, chaptersForVideo, formatTimestamp } from "@/shared/lib/chapters";
 import type { PlaylistVideo } from "@/shared/lib/types";
@@ -122,7 +121,6 @@ export function VideoList({
                 >
                   {done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
                 </Button>
-                <NoteButton videoId={video.videoId} title={video.title} reveal />
               </div>
             </div>
 

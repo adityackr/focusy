@@ -144,9 +144,9 @@ export function BackupCard() {
 						<HardDriveDownload className="size-4" /> Backup &amp; restore
 					</CardTitle>
 					<CardDescription>
-						Move your playlists, videos, folders, progress, notes and Studio
-						projects to another browser or device with one JSON file. Your API
-						key and player settings stay on this device.
+						Move your playlists, videos, folders, progress, timestamped Markdown
+						notes and Studio projects to another browser or device with one JSON
+						file. Your API key and player settings stay on this device.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">

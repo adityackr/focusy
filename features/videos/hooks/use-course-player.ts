@@ -13,6 +13,18 @@ const SIDEBAR_KEY = "yt-course:sidebar-open";
 const RESUME_LEAD_IN = 1;
 const RESUME_TAIL = 2;
 
+/** Chapter containing `time`; before the first chapter start, use the first. */
+function chapterAt(
+  chapters: Course["chapters"],
+  time: number,
+): Course["chapters"][number] | null {
+  let found: Course["chapters"][number] | null = null;
+  for (const chapter of chapters) {
+    if (time >= chapter.startSeconds - 0.5) found = chapter;
+  }
+  return found ?? chapters[0] ?? null;
+}
+
 function isResumable(
   saved: number | undefined,
   chapter: { startSeconds: number; endSeconds: number | null } | null | undefined
@@ -23,7 +35,7 @@ function isResumable(
   return true;
 }
 
-export function useCoursePlayer() {
+export function useCoursePlayer(startAt?: number | null) {
   const params = useParams<{ id: string }>();
   // Courses live in the shared library store (same data the tabs render).
   const course = useLibrary((s) => s.courses[params.id]) ?? null;
@@ -35,6 +47,9 @@ export function useCoursePlayer() {
   const [positions, setPositions] = useState<Record<string, number>>({});
   const [restartNonce, setRestartNonce] = useState(0);
   const [openedResume, setOpenedResume] = useState<number | null>(null);
+  // Explicit `?t=` position from a note/deep link. Cleared by navigation so it
+  // can never re-seek after the viewer has moved on.
+  const [deepLinkAt, setDeepLinkAt] = useState<number | null>(null);
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [editing, setEditing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -56,17 +71,25 @@ export function useCoursePlayer() {
       const p = getProgress(c.id);
       setCompletedIds(p.completedIds);
       setPositions(p.positions ?? {});
-      const initial = p.lastChapterId ?? c.chapters[0]?.id ?? null;
+      const deepLink =
+        typeof startAt === "number" && Number.isFinite(startAt) && startAt > 0
+          ? Math.floor(startAt)
+          : null;
+      const initialChapter = deepLink != null ? chapterAt(c.chapters, deepLink) : null;
+      const initial = initialChapter?.id ?? p.lastChapterId ?? c.chapters[0]?.id ?? null;
       setActiveId(initial);
+      setDeepLinkAt(deepLink);
       const ch = c.chapters.find((x) => x.id === initial);
       const saved = ch ? p.positions?.[ch.id] : undefined;
       setOpenedResume(
-        ch && !p.completedIds.includes(ch.id) && isResumable(saved, ch) ? saved : null
+        deepLink == null && ch && !p.completedIds.includes(ch.id) && isResumable(saved, ch)
+          ? saved
+          : null
       );
     }
     setLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [params.id, startAt]);
 
   const activeIndex = useMemo(
     () => course?.chapters.findIndex((c) => c.id === activeId) ?? -1,
@@ -81,10 +104,16 @@ export function useCoursePlayer() {
   // Live resume point for the active chapter (follows progress saves).
   const resumeAt = useMemo(() => {
     if (!active || !activeId) return null;
+    if (deepLinkAt != null) {
+      const insideChapter =
+        deepLinkAt >= active.startSeconds - 0.5 &&
+        (active.endSeconds == null || deepLinkAt < active.endSeconds);
+      if (insideChapter) return deepLinkAt;
+    }
     if (completedIds.includes(activeId)) return null;
     const saved = positions[activeId];
     return isResumable(saved, active) ? saved : null;
-  }, [positions, active, activeId, completedIds]);
+  }, [positions, active, activeId, completedIds, deepLinkAt]);
 
   const positionsRef = useRef(positions);
   useEffect(() => {
@@ -188,6 +217,7 @@ export function useCoursePlayer() {
   /** Forget the active chapter's resume point and restart it from the top. */
   function clearResume() {
     if (!course || !activeId) return;
+    setDeepLinkAt(null);
     const next = dropPositions([activeId], positionsRef.current);
     positionsRef.current = next;
     setPositions(next);
@@ -198,6 +228,7 @@ export function useCoursePlayer() {
 
   function select(id: string) {
     if (!course) return;
+    setDeepLinkAt(null);
     const currentIdx = course.chapters.findIndex((c) => c.id === activeId);
     const targetIdx = course.chapters.findIndex((c) => c.id === id);
     if (targetIdx < 0) return;
@@ -221,6 +252,7 @@ export function useCoursePlayer() {
   }
 
   function toggleComplete(id: string) {
+    setDeepLinkAt(null);
     const markingComplete = !completedIds.includes(id);
     const next = markingComplete
       ? [...completedIds, id]
@@ -239,6 +271,7 @@ export function useCoursePlayer() {
 
   function go(dir: -1 | 1) {
     if (!course) return;
+    setDeepLinkAt(null);
     const j = activeIndex + dir;
     if (j < 0 || j >= course.chapters.length) return;
     if (dir === 1) {
@@ -266,6 +299,7 @@ export function useCoursePlayer() {
 
   function handleSeek(t: number) {
     if (!course) return;
+    setDeepLinkAt(null);
     // Follow the user: highlight whichever chapter contains the scrubbed-to time.
     let idx = 0;
     course.chapters.forEach((c, i) => {
@@ -343,6 +377,8 @@ export function useCoursePlayer() {
     pct,
     completedIds,
     resumeAt,
+    // True only while `resumeAt` comes from an explicit `?t=` deep link.
+    resumeExact: deepLinkAt != null && resumeAt === deepLinkAt,
     resumedFrom: openedResume,
     restartNonce,
     autoAdvance,

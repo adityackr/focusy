@@ -4,6 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
+import { lockBodyScroll, unlockBodyScroll } from "@/shared/ui/scroll-lock";
 
 interface AlertDialogContextValue {
   open: boolean;
@@ -164,10 +165,10 @@ function useAlertDialogSurface(open: boolean, setOpen: (v: boolean) => void) {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      unlockBodyScroll();
     };
   }, [open, setOpen]);
 
