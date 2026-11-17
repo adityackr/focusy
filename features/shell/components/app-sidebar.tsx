@@ -1,6 +1,6 @@
 'use client';
 
-import { useInbox, selectQueuedInboxCount } from '@/features/inbox';
+import { selectQueuedInboxCount, useInbox } from '@/features/inbox';
 import { AddPlaylistDialog } from '@/features/playlists';
 import { openGlobalSearch } from '@/features/search';
 import { LogoMark } from '@/features/shell/components/logo';
@@ -69,9 +69,7 @@ export function AppSidebar({
 			aria-label="Search everything"
 			className={cn(
 				'flex items-center gap-2 rounded-xl border bg-background text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-				collapsed
-					? 'w-full justify-center px-0 py-2'
-					: 'w-full px-3 py-2',
+				collapsed ? 'w-full justify-center px-0 py-2' : 'w-full px-3 py-2',
 			)}
 		>
 			<Search className="size-4 shrink-0" />
@@ -138,9 +136,7 @@ export function AppSidebar({
 				</Button>
 			</div>
 
-			<div className="px-3 pb-3">
-				{searchButton}
-			</div>
+			<div className="px-3 pb-3">{searchButton}</div>
 
 			<nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3">
 				{NAV.map((n) => {
