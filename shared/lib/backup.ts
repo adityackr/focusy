@@ -858,6 +858,8 @@ export interface BackupPreview {
   studioProjects: number | null;
   /** Name chosen for printable certificates, when the file carries one. */
   certificateName: string | null;
+  /** Null when the file has no inbox section (older backups). */
+  inboxLinks: number | null;
 }
 
 /**
@@ -887,9 +889,14 @@ export function backupPreview(backup: Backup): BackupPreview {
     notes: learningNoteCount(backup.learningNotes),
     studioProjects: backup.studio
       ? backup.studio.workspaces.length
-      : null,
-    certificateName: optionalCertificateName(backup.certificate),
+      : null,    certificateName: optionalCertificateName(backup.certificate),
+    inboxLinks: optionalInboxCount(backup.inbox),
   };
+}
+
+function optionalInboxCount(raw: unknown): number | null {
+  if (!isRecord(raw) || !Array.isArray(raw.items)) return null;
+  return raw.items.length;
 }
 
 function optionalCertificateName(raw: unknown): string | null {

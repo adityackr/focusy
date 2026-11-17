@@ -196,9 +196,9 @@ export function BackupCard() {
 					</CardTitle>
 					<CardDescription>
 						Move your playlists, videos, folders, progress, timestamped Markdown
-						notes, Studio projects, learning history and certificate name to
-						another browser or device with one JSON file. Your API key and player
-						settings stay on this device.
+						notes, Studio projects, learning history, saved inbox links and
+						certificate name to another browser or device with one JSON file.
+						Your API key and player settings stay on this device.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -302,8 +302,8 @@ export function BackupCard() {
 								? 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Studio projects already linked here are kept as they are.'
 								: 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Your existing Studio projects are left unchanged because this backup has no Studio data.'
 							: pending.studio
-								? 'This overwrites the playlists, videos, progress, notes and Studio projects saved here. Download a backup first if you want to keep them.'
-								: 'This overwrites the playlists, videos, progress and notes saved here. Your existing Studio projects are left unchanged because this backup has no Studio data.'}
+								? 'This overwrites the playlists, videos, progress, notes, saved inbox links and Studio projects saved here. Download a backup first if you want to keep them.'
+								: 'This overwrites the playlists, videos, progress, notes and saved inbox links here. Your existing Studio projects are left unchanged because this backup has no Studio data.'}
 						</p>
 
 						<DialogFooter>
@@ -351,6 +351,9 @@ function BackupContents({ preview }: { preview: BackupPreview }) {
 				<PreviewStat value={preview.notes} label="notes" />
 				{preview.studioProjects !== null && (
 					<PreviewStat value={preview.studioProjects} label="Studio projects" />
+				)}
+				{preview.inboxLinks !== null && (
+					<PreviewStat value={preview.inboxLinks} label="inbox links" />
 				)}
 			</div>
 
@@ -405,13 +408,17 @@ function replaceMessage(
 	const analytics =
 		analyticsDays > 0 ? ` ${analyticsDays} day${analyticsDays === 1 ? '' : 's'} of learning history imported.` : '';
 	const certificate = certificateRestored ? ' Certificate name restored.' : '';
+	const inbox =
+		backup.inbox == null
+			? ' Saved inbox links were left unchanged because this older backup has no inbox data.'
+			: '';
 	if (!backup.studio) {
-		return `${base}${analytics}${certificate} Your Studio projects were left unchanged because this older backup has no Studio data.`;
+		return `${base}${analytics}${certificate}${inbox} Your Studio projects were left unchanged because this older backup has no Studio data.`;
 	}
 	if (studio && studio.projectsSkipped > 0) {
-		return `${base}${analytics}${certificate} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
+		return `${base}${analytics}${certificate}${inbox} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
 	}
-	return `${base}${analytics}${certificate}`;
+	return `${base}${analytics}${certificate}${inbox}`;
 }
 
 /** ` 3 inbox links restored.` — nothing when the file had no inbox links. */

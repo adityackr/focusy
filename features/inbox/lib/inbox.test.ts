@@ -8,6 +8,12 @@ import {
 } from "./inbox";
 import { useInbox } from "./inbox-store";
 import { collectInboxBackup, restoreInboxBackup } from "./inbox-backup";
+import {
+  backupPreview,
+  collectBackup,
+  parseBackup,
+  serializeBackup,
+} from "@/shared/lib/backup";
 
 function makeItem(overrides: Partial<InboxItem> = {}): InboxItem {
   return {
@@ -238,5 +244,35 @@ describe("inbox backup", () => {
   test("rejects an unreadable section", () => {
     const result = restoreInboxBackup({ version: 99, items: [] }, "replace");
     expect(result.ok).toBe(false);
+  });
+
+  test("travels through a downloadable backup file and its preview", () => {
+    useInbox.getState().addItem({
+      videoId: "abcdefghijk",
+      title: "Read later",
+      tags: ["css"],
+    });
+    const json = serializeBackup(
+      collectBackup(null, null, null, collectInboxBackup())
+    );
+
+    resetInbox();
+    const parsed = parseBackup(json);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    expect(backupPreview(parsed.backup).inboxLinks).toBe(1);
+    expect(
+      restoreInboxBackup(parsed.backup.inbox, "replace")
+    ).toEqual({ ok: true, itemsAdded: 0, itemsRestored: 1 });
+    expect(useInbox.getState().items[0]).toMatchObject({
+      videoId: "abcdefghijk",
+      title: "Read later",
+      tags: ["css"],
+    });
+  });
+
+  test("older backups without inbox data preview as null", () => {
+    expect(backupPreview(collectBackup()).inboxLinks).toBeNull();
   });
 });
