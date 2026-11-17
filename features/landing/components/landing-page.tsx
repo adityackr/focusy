@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/features/shell";
 import { HeroSection } from "@/features/landing/components/hero";
 import { FeaturesSection } from "@/features/landing/components/features";
+import { LearningToolkitSection } from "@/features/landing/components/learning-toolkit";
 import { SpotlightSection } from "@/features/landing/components/spotlight";
 import { HowItWorksSection } from "@/features/landing/components/how-it-works";
 import { FaqSection } from "@/features/landing/components/faq";
@@ -63,8 +64,11 @@ const STRUCTURED_DATA = {
 				"Turn a YouTube video's timestamps into chapter lessons",
 				"Import a full YouTube playlist as a classroom",
 				"Distraction-free player with no recommendations, Shorts or comments",
+				"Timestamped Markdown notes and lesson bookmarks",
+				"Learning inbox for saving YouTube links with tags and notes",
+				"Local analytics, study goals, streaks and daily reminders",
+				"Completion certificates and a built-in coding workspace",
 				"Per-lesson progress, resume points and completion tracking",
-				"Favorites, recents and drag-to-reorder library",
 				"Everything stored locally in the browser — no account, no tracking",
 			],
 			publisher: { "@id": `${SITE_URL}/#organization` },
@@ -85,6 +89,7 @@ export function LandingPage() {
 					<HeroSection />
 					<Marquee />
 					<FeaturesSection />
+					<LearningToolkitSection />
 					<SpotlightSection />
 					<HowItWorksSection />
 					<FaqSection />

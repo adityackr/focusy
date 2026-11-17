@@ -19,7 +19,7 @@ export const SITE = {
 	/** Short strapline used in headers, cards and the OG image. */
 	tagline: "distraction-free YouTube learning",
 	description:
-		"Turn any YouTube video or playlist into a focused, course-style classroom — no recommendations, no shorts, no rabbit holes.",
+		"Turn any YouTube video or playlist into a focused, course-style classroom — with notes, bookmarks, a learning inbox, analytics, reminders and a coding workspace. No recommendations, no rabbit holes.",
 	url: SITE_URL,
 	locale: "en_US",
 	lang: "en",
@@ -41,6 +41,11 @@ export const KEYWORDS = [
 	"course style YouTube classroom",
 	"learn from YouTube playlists",
 	"watch tutorials start to finish",
+	"YouTube note taking app",
+	"bookmark YouTube video moments",
+	"save YouTube videos for later",
+	"YouTube study tracker",
+	"learn to code from YouTube",
 ] as const;
 
 /** Absolute URL for a path on the production origin. */

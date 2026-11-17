@@ -17,11 +17,17 @@ export function CtaSection() {
 					<div className="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
 						<div>
 							<h2 className="max-w-xl text-3xl font-extrabold tracking-tight sm:text-4xl">
-								Ready to learn without getting sidetracked?
+								Turn watch time into finished skills.
 							</h2>
 							<p className="mt-3 max-w-xl text-zinc-400">
-								Add a video or import a playlist now. It stays in your browser
-								library — ready whenever you are.
+								Start with any link. Keep notes and bookmarks, save what&apos;s next,
+								build a streak, and finish with a certificate — all without an account.
+							</p>
+							<p className="mt-4 flex items-center gap-2 text-xs font-medium text-zinc-400">
+								<span className="relative flex size-2 rounded-full bg-emerald-400">
+									<span aria-hidden className="ping-ring text-emerald-400" />
+								</span>
+								Free to use · No sign-up · Everything stays in your browser
 							</p>
 						</div>
 						<div className="flex flex-col sm:flex-row gap-3">
@@ -58,6 +64,7 @@ export function CtaSection() {
 				<nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:justify-start">
 					{[
 						{ href: '/#features', label: 'Features' },
+						{ href: '/#toolkit', label: 'Learning toolkit' },
 						{ href: '/#how', label: 'How it works' },
 						{ href: '/#faq', label: 'FAQ' },
 						{ href: '/add', label: 'Add video' },
@@ -74,7 +81,7 @@ export function CtaSection() {
 					))}
 				</nav>
 				<div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-					<p>Focusy · distraction-free YouTube learning</p>
+					<p>Focusy · a calmer way to learn from YouTube</p>
 					<div>
 						&copy; {new Date().getFullYear()} · All rights reserved ·{' '}
 						<Link

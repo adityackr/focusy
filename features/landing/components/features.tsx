@@ -1,10 +1,13 @@
 import {
+  Award,
+  BarChart3,
+  BellRing,
+  Code2,
   EyeOff,
-  Heart,
+  Inbox,
   ListVideo,
+  NotebookPen,
   ShieldCheck,
-  Timer,
-  Zap,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/ui/card";
 import { SectionHeading } from "@/features/landing/components/section-heading";
@@ -14,32 +17,47 @@ const features = [
   {
     icon: EyeOff,
     title: "Zero distractions",
-    text: "No recommended videos, shorts, comments or autoplay rabbit holes. Just the videos and playlists you chose.",
+    text: "No recommended videos, Shorts, comments or autoplay rabbit holes. Just the videos and playlists you chose.",
   },
   {
     icon: ListVideo,
     title: "Course-style player",
-    text: "Chapter-by-chapter lessons with a clean sidebar — split any long video or playlist into a proper course.",
+    text: "Chapter-by-chapter lessons, a collapsible sidebar and resume points turn any long video or playlist into a course.",
   },
   {
-    icon: Zap,
-    title: "Two ways to add content",
-    text: "Import a whole playlist, or add a single video and let its timestamps become lessons. Your key, your browser.",
+    icon: NotebookPen,
+    title: "Notes & bookmarks",
+    text: "Write timestamped Markdown notes or bookmark an exact second. Every note and moment links straight back to the player.",
   },
   {
-    icon: Heart,
-    title: "Favorites & recents",
-    text: "Videos and playlists each get their own tab — pin what you love and keep track of what you watched last.",
+    icon: Inbox,
+    title: "Learning inbox",
+    text: "Save YouTube links you're not ready for, tag them, add a note and mark them watched — without cluttering your library.",
+  },
+  {
+    icon: BarChart3,
+    title: "Progress you can see",
+    text: "Actual study time, completion trends, a 12-month activity map, streaks and daily or weekly learning goals.",
+  },
+  {
+    icon: BellRing,
+    title: "Gentle daily reminders",
+    text: "One optional local notification when lessons or today's goal are still waiting. No push server, no spam.",
+  },
+  {
+    icon: Award,
+    title: "Completion certificates",
+    text: "Finish every lesson and download a printable certificate with the course, completion date and your name.",
+  },
+  {
+    icon: Code2,
+    title: "Practice in Studio",
+    text: "Open a Monaco editor and live preview beside any lesson, so you can try the code while the tutorial is fresh.",
   },
   {
     icon: ShieldCheck,
     title: "Private by design",
-    text: "Everything is stored in your own browser. No account, no tracking, no server-side watch history.",
-  },
-  {
-    icon: Timer,
-    title: "Pick up where you left off",
-    text: "Per-lesson progress, resume pointers and completion tracking make long videos easy to finish.",
+    text: "Notes, links, streaks and projects stay in your own browser. No account, no tracking, no server-side history.",
   },
 ];
 
@@ -48,7 +66,8 @@ export function FeaturesSection() {
     <section id="features" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-14 sm:px-6">
       <SectionHeading
         kicker="Features"
-        title="Everything you need to actually finish what you start"
+        title="Everything you need to go from saved link to finished skill"
+        subtitle="A distraction-free player is just the start. Focusy keeps the notes, moments, momentum and practice around it."
       />
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((f, i) => (

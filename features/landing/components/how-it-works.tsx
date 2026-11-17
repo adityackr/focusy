@@ -7,9 +7,10 @@ import { buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import {
 	ArrowRight,
-	Clapperboard,
+	Award,
 	History,
 	MousePointerClick,
+	NotebookPen,
 	Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -18,17 +19,22 @@ const steps = [
 	{
 		icon: MousePointerClick,
 		title: 'Paste a link or ID',
-		text: 'Any YouTube video URL (its timestamps become lessons) or a whole playlist link.',
+		text: 'Any YouTube video, full playlist, or a link you just want to save for later in your inbox.',
 	},
 	{
 		icon: Sparkles,
 		title: 'We build your classroom',
-		text: 'Titles, thumbnails, order and chapters are imported automatically with your free API key.',
+		text: 'Titles, thumbnails, order and chapters arrive automatically with your free API key — or manually, your way.',
 	},
 	{
-		icon: Clapperboard,
-		title: 'Watch distraction-free',
-		text: 'Learn lesson by lesson — the sidebar keeps every chapter and video one click away.',
+		icon: NotebookPen,
+		title: 'Learn with your toolkit',
+		text: 'Take timestamped notes, bookmark exact moments, and let gentle daily reminders keep the momentum going.',
+	},
+	{
+		icon: Award,
+		title: 'Practice, finish, certify',
+		text: 'Apply the lesson in Studio, watch your streak grow, and unlock a certificate when the course is complete.',
 	},
 ];
 
@@ -36,10 +42,10 @@ const steps = [
 const HOW_TO_JSON_LD = {
 	"@context": "https://schema.org",
 	"@type": "HowTo",
-	name: "How to watch YouTube playlists and videos as a focused course",
+	name: "How to turn YouTube into a focused course you actually finish",
 	description:
-		"Paste a YouTube link into Focusy, import it as a classroom, and watch lesson by lesson without recommendations or distractions.",
-	totalTime: "PT2M",
+		"Paste a YouTube link into Focusy, import it as a classroom, learn with notes and bookmarks, then practice in Studio and earn a completion certificate.",
+	totalTime: "PT5M",
 	step: steps.map((s, i) => ({
 		"@type": "HowToStep",
 		position: i + 1,
@@ -55,9 +61,10 @@ export function HowItWorksSection() {
 			<div className="mx-auto max-w-7xl scroll-mt-20 px-4 py-14 sm:px-6">
 				<SectionHeading
 					kicker="How it works"
-					title="From link to classroom in seconds"
+					title="From link to finished skill"
+					subtitle="Four small steps — no account, no setup marathon, no new place to upload your data."
 				/>
-				<div className="mt-8 grid gap-4 md:grid-cols-3">
+				<div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 					{steps.map((s, i) => (
 						<Reveal key={s.title} delay={i * 100}>
 							<Card className="group card-sweep relative h-full transition-all hover:-translate-y-1 hover:shadow-lg">
@@ -98,8 +105,8 @@ export function HowItWorksSection() {
 						className="w-full sm:w-auto"
 					/>
 					<span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-						<History className="size-4" /> Recents and favorites are saved
-						automatically
+						<History className="size-4" /> Notes, bookmarks and certificates
+						stay in your browser
 					</span>
 				</div>
 			</div>

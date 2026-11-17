@@ -345,6 +345,16 @@
     to { width: 64%; }
   }
 
+  /* Analytics bars growing up when their toolkit card reveals */
+  .bar-rise {
+    transform-origin: bottom;
+    animation: bar-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes bar-rise {
+    from { opacity: 0.35; transform: scaleY(0.12); }
+    to { opacity: 1; transform: scaleY(1); }
+  }
+
   /* Slow drifting glow blobs */
   .animate-orb {
     animation: orb-drift 14s ease-in-out infinite;
@@ -462,6 +472,7 @@
     .typewriter-caret,
     .ping-ring,
     .progress-fill,
+    .bar-rise,
     .sheen::after,
     .card-sweep::after,
     .group:hover .icon-wiggle,

@@ -10,21 +10,22 @@ import { AddPlaylistButton } from '@/features/playlists';
 import { cn } from '@/shared/lib/utils';
 import { Badge } from '@/shared/ui/badge';
 import { buttonVariants } from '@/shared/ui/button';
-import { ArrowRight, Clapperboard, LibraryBig } from 'lucide-react';
+import { ArrowRight, Bookmark, Clapperboard, Flame, LibraryBig } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 /** Rotating phrases typed into the second line of the headline. */
 const HEADLINE_PHRASES = [
 	'without the rabbit hole.',
-	'one lesson at a time.',
-	'with zero distractions.',
+	'with notes and streaks.',
+	'from saved link to certificate.',
 ];
 
 const stats: Array<[string, string]> = [
-	['100%', 'distraction-free'],
+	['100%', 'local & private'],
 	['0', 'accounts needed'],
 	['1-click', 'video & playlist import'],
+	['7', 'built-in learning tools'],
 ];
 
 const mockLessons = [
@@ -84,9 +85,10 @@ function HeroCopy() {
 				</span>
 			</h1>
 			<p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-				Paste a video or a playlist link and get a calm, course-style classroom:
-				chapter-by-chapter lessons, a collapsible sidebar, and nothing else
-				competing for your attention.
+				Paste a video or playlist link and get a calm, course-style classroom —
+				then take timestamped notes, bookmark exact moments, save links for later,
+				track your streak and practice what you learn. Nothing else competing for
+				your attention.
 			</p>
 			<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
 				<Link
@@ -202,6 +204,36 @@ function HeroVisual() {
 						))}
 					</div>
 				</div>
+			</div>
+			<div
+				aria-hidden
+				className="animate-float absolute -left-5 top-24 z-20 hidden items-center gap-2.5 rounded-xl border bg-card/95 px-3 py-2 shadow-xl shadow-primary/10 backdrop-blur sm:flex"
+				style={{ animationDelay: '-2.2s' }}
+			>
+				<span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+					<Bookmark className="size-4" />
+				</span>
+				<span>
+					<span className="block text-[11px] font-bold">Bookmark saved</span>
+					<span className="block text-[10px] text-muted-foreground">
+						12:42 · Core concepts
+					</span>
+				</span>
+			</div>
+			<div
+				aria-hidden
+				className="animate-float absolute -right-4 bottom-16 z-20 hidden items-center gap-2.5 rounded-xl border bg-card/95 px-3 py-2 shadow-xl shadow-primary/10 backdrop-blur sm:flex"
+				style={{ animationDelay: '-4.6s' }}
+			>
+				<span className="flex size-8 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+					<Flame className="size-4" />
+				</span>
+				<span>
+					<span className="block text-[11px] font-bold">12-day streak</span>
+					<span className="block text-[10px] text-muted-foreground">
+						+18% this week
+					</span>
+				</span>
 			</div>
 			<div
 				aria-hidden
