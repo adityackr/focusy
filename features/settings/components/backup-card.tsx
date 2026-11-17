@@ -13,6 +13,7 @@ import {
 	collectCertificateBackup,
 	restoreCertificateBackup,
 } from '@/features/certificates';
+import { collectInboxBackup, restoreInboxBackup } from '@/features/inbox';
 import { useLibrary } from '@/shared/store/library';
 import {
 	applyBackup,
@@ -84,6 +85,7 @@ export function BackupCard() {
 				studio.value,
 				collectAnalyticsBackup(),
 				collectCertificateBackup(),
+				collectInboxBackup(),
 			);
 			setMessage({ text: `Saved ${name}`, error: false });
 		} catch {
@@ -146,25 +148,34 @@ export function BackupCard() {
 				mode,
 			);
 
+			const inbox = restoreInboxBackup(pending.inbox, mode);
+			if (!inbox.ok) {
+				setMessage({
+					text: `Couldn't restore inbox links: ${inbox.error}`,
+					error: true,
+				});
+				return;
+			}
+
 			if (mode === 'merge') {
 				setMessage({
-					text: mergeMessage(
+					text: `${mergeMessage(
 						mergeBackup(pending),
 						studioReport,
 						analyticsDays,
 						certificateRestored,
-					),
+					)}${inboxMessage(inbox.itemsAdded, 'added')}`,
 					error: false,
 				});
 			} else {
 				applyBackup(pending);
 				setMessage({
-					text: replaceMessage(
+					text: `${replaceMessage(
 						pending,
 						studioReport,
 						analyticsDays,
 						certificateRestored,
-					),
+					)}${inboxMessage(inbox.itemsRestored, 'restored')}`,
 					error: false,
 				});
 			}
@@ -401,6 +412,12 @@ function replaceMessage(
 		return `${base}${analytics}${certificate} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
 	}
 	return `${base}${analytics}${certificate}`;
+}
+
+/** ` 3 inbox links restored.` — nothing when the file had no inbox links. */
+function inboxMessage(count: number, verb: 'added' | 'restored'): string {
+	if (count <= 0) return '';
+	return ` ${count} inbox link${count === 1 ? '' : 's'} ${verb}.`;
 }
 
 function mergeMessage(

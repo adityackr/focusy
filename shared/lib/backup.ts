@@ -94,6 +94,11 @@ export interface Backup {
    * builds keep reading these files; the certificate feature validates it.
    */
   certificate?: unknown | null;
+  /**
+   * Saved learning-inbox links. Additive and optional so older Focusy builds
+   * keep reading these files; the inbox feature validates and restores it.
+   */
+  inbox?: unknown | null;
 }
 
 export type BackupParseResult =
@@ -381,6 +386,7 @@ export function collectBackup(
   studio: StudioBackupSection | null = null,
   analytics: unknown | null = null,
   certificate: unknown | null = null,
+  inbox: unknown | null = null,
 ): Backup {
   const notes = storedValues(NOTE_PREFIX, normalizeNote);
   return {
@@ -401,6 +407,7 @@ export function collectBackup(
     studio,
     analytics,
     certificate,
+    inbox,
   };
 }
 
@@ -567,9 +574,10 @@ export function downloadBackup(
   studio: StudioBackupSection | null = null,
   analytics: unknown | null = null,
   certificate: unknown | null = null,
+  inbox: unknown | null = null,
 ): string {
   const fileName = backupFileName();
-  const backup = collectBackup(studio, analytics, certificate);
+  const backup = collectBackup(studio, analytics, certificate, inbox);
   const blob = new Blob([serializeBackup(backup)], {
     type: "application/json",
   });
@@ -656,6 +664,7 @@ export function parseBackup(text: string): BackupParseResult {
       studio,
       analytics: raw.analytics ?? null,
       certificate: raw.certificate ?? null,
+      inbox: raw.inbox ?? null,
     },
   };
 }
