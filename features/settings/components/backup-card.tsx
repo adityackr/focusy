@@ -14,6 +14,10 @@ import {
 	restoreCertificateBackup,
 } from '@/features/certificates';
 import { collectInboxBackup, restoreInboxBackup } from '@/features/inbox';
+import {
+	collectBookmarksBackup,
+	restoreBookmarksBackup,
+} from '@/features/bookmarks';
 import { useLibrary } from '@/shared/store/library';
 import {
 	applyBackup,
@@ -86,6 +90,7 @@ export function BackupCard() {
 				collectAnalyticsBackup(),
 				collectCertificateBackup(),
 				collectInboxBackup(),
+				collectBookmarksBackup(),
 			);
 			setMessage({ text: `Saved ${name}`, error: false });
 		} catch {
@@ -157,6 +162,15 @@ export function BackupCard() {
 				return;
 			}
 
+			const bookmarks = restoreBookmarksBackup(pending.bookmarks, mode);
+			if (!bookmarks.ok) {
+				setMessage({
+					text: `Couldn't restore bookmarks: ${bookmarks.error}`,
+					error: true,
+				});
+				return;
+			}
+
 			if (mode === 'merge') {
 				setMessage({
 					text: `${mergeMessage(
@@ -164,7 +178,10 @@ export function BackupCard() {
 						studioReport,
 						analyticsDays,
 						certificateRestored,
-					)}${inboxMessage(inbox.itemsAdded, 'added')}`,
+					)}${inboxMessage(inbox.itemsAdded, 'added')}${bookmarkMessage(
+						bookmarks.bookmarksAdded,
+						'added'
+					)}`,
 					error: false,
 				});
 			} else {
@@ -175,7 +192,10 @@ export function BackupCard() {
 						studioReport,
 						analyticsDays,
 						certificateRestored,
-					)}${inboxMessage(inbox.itemsRestored, 'restored')}`,
+					)}${inboxMessage(inbox.itemsRestored, 'restored')}${bookmarkMessage(
+						bookmarks.bookmarksRestored,
+						'restored'
+					)}`,
 					error: false,
 				});
 			}
@@ -196,8 +216,9 @@ export function BackupCard() {
 					</CardTitle>
 					<CardDescription>
 						Move your playlists, videos, folders, progress, timestamped Markdown
-						notes, Studio projects, learning history, saved inbox links and
-						certificate name to another browser or device with one JSON file.
+						notes, Studio projects, learning history, saved inbox links,
+						bookmarks and certificate name to another browser or device with one
+						JSON file.
 						Your API key and player settings stay on this device.
 					</CardDescription>
 				</CardHeader>
@@ -302,8 +323,8 @@ export function BackupCard() {
 								? 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Studio projects already linked here are kept as they are.'
 								: 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Your existing Studio projects are left unchanged because this backup has no Studio data.'
 							: pending.studio
-								? 'This overwrites the playlists, videos, progress, notes, saved inbox links and Studio projects saved here. Download a backup first if you want to keep them.'
-								: 'This overwrites the playlists, videos, progress, notes and saved inbox links here. Your existing Studio projects are left unchanged because this backup has no Studio data.'}
+								? 'This overwrites the playlists, videos, progress, notes, bookmarks, saved inbox links and Studio projects saved here. Download a backup first if you want to keep them.'
+								: 'This overwrites the playlists, videos, progress, notes, bookmarks and saved inbox links here. Your existing Studio projects are left unchanged because this backup has no Studio data.'}
 						</p>
 
 						<DialogFooter>
@@ -354,6 +375,9 @@ function BackupContents({ preview }: { preview: BackupPreview }) {
 				)}
 				{preview.inboxLinks !== null && (
 					<PreviewStat value={preview.inboxLinks} label="inbox links" />
+				)}
+				{preview.bookmarks !== null && (
+					<PreviewStat value={preview.bookmarks} label="bookmarks" />
 				)}
 			</div>
 
@@ -412,19 +436,29 @@ function replaceMessage(
 		backup.inbox == null
 			? ' Saved inbox links were left unchanged because this older backup has no inbox data.'
 			: '';
+	const bookmarks =
+		backup.bookmarks == null
+			? ' Saved bookmarks were left unchanged because this older backup has no bookmark data.'
+			: '';
 	if (!backup.studio) {
-		return `${base}${analytics}${certificate}${inbox} Your Studio projects were left unchanged because this older backup has no Studio data.`;
+		return `${base}${analytics}${certificate}${inbox}${bookmarks} Your Studio projects were left unchanged because this older backup has no Studio data.`;
 	}
 	if (studio && studio.projectsSkipped > 0) {
-		return `${base}${analytics}${certificate}${inbox} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
+		return `${base}${analytics}${certificate}${inbox}${bookmarks} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
 	}
-	return `${base}${analytics}${certificate}${inbox}`;
+	return `${base}${analytics}${certificate}${inbox}${bookmarks}`;
 }
 
 /** ` 3 inbox links restored.` — nothing when the file had no inbox links. */
 function inboxMessage(count: number, verb: 'added' | 'restored'): string {
 	if (count <= 0) return '';
 	return ` ${count} inbox link${count === 1 ? '' : 's'} ${verb}.`;
+}
+
+/** ` 2 bookmarks restored.` — nothing when the file had no bookmarks. */
+function bookmarkMessage(count: number, verb: 'added' | 'restored'): string {
+	if (count <= 0) return '';
+	return ` ${count} bookmark${count === 1 ? '' : 's'} ${verb}.`;
 }
 
 function mergeMessage(

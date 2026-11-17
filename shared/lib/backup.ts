@@ -99,6 +99,11 @@ export interface Backup {
    * keep reading these files; the inbox feature validates and restores it.
    */
   inbox?: unknown | null;
+  /**
+   * Timestamped lesson bookmarks. Additive and optional so older Focusy
+   * builds keep reading these files; the bookmarks feature validates it.
+   */
+  bookmarks?: unknown | null;
 }
 
 export type BackupParseResult =
@@ -387,6 +392,7 @@ export function collectBackup(
   analytics: unknown | null = null,
   certificate: unknown | null = null,
   inbox: unknown | null = null,
+  bookmarks: unknown | null = null,
 ): Backup {
   const notes = storedValues(NOTE_PREFIX, normalizeNote);
   return {
@@ -408,6 +414,7 @@ export function collectBackup(
     analytics,
     certificate,
     inbox,
+    bookmarks,
   };
 }
 
@@ -575,9 +582,16 @@ export function downloadBackup(
   analytics: unknown | null = null,
   certificate: unknown | null = null,
   inbox: unknown | null = null,
+  bookmarks: unknown | null = null,
 ): string {
   const fileName = backupFileName();
-  const backup = collectBackup(studio, analytics, certificate, inbox);
+  const backup = collectBackup(
+    studio,
+    analytics,
+    certificate,
+    inbox,
+    bookmarks,
+  );
   const blob = new Blob([serializeBackup(backup)], {
     type: "application/json",
   });
@@ -665,6 +679,7 @@ export function parseBackup(text: string): BackupParseResult {
       analytics: raw.analytics ?? null,
       certificate: raw.certificate ?? null,
       inbox: raw.inbox ?? null,
+      bookmarks: raw.bookmarks ?? null,
     },
   };
 }
@@ -860,6 +875,8 @@ export interface BackupPreview {
   certificateName: string | null;
   /** Null when the file has no inbox section (older backups). */
   inboxLinks: number | null;
+  /** Null when the file has no bookmarks section (older backups). */
+  bookmarks: number | null;
 }
 
 /**
@@ -889,14 +906,21 @@ export function backupPreview(backup: Backup): BackupPreview {
     notes: learningNoteCount(backup.learningNotes),
     studioProjects: backup.studio
       ? backup.studio.workspaces.length
-      : null,    certificateName: optionalCertificateName(backup.certificate),
+      : null,
+    certificateName: optionalCertificateName(backup.certificate),
     inboxLinks: optionalInboxCount(backup.inbox),
+    bookmarks: optionalBookmarkCount(backup.bookmarks),
   };
 }
 
 function optionalInboxCount(raw: unknown): number | null {
   if (!isRecord(raw) || !Array.isArray(raw.items)) return null;
   return raw.items.length;
+}
+
+function optionalBookmarkCount(raw: unknown): number | null {
+  if (!isRecord(raw) || !Array.isArray(raw.bookmarks)) return null;
+  return raw.bookmarks.length;
 }
 
 function optionalCertificateName(raw: unknown): string | null {
@@ -928,12 +952,18 @@ export function backupSummary(backup: Backup): string {
   const playlists = Object.keys(backup.library.playlists).length;
   const videos = Object.keys(backup.library.courses).length;
   const notes = learningNoteCount(backup.learningNotes);
+  const bookmarkTotal = optionalBookmarkCount(backup.bookmarks) ?? 0;
   const studioProjects = backup.studio?.workspaces.length ?? 0;
   const parts = [
     `${playlists} playlist${playlists === 1 ? "" : "s"}`,
     `${videos} video${videos === 1 ? "" : "s"}`,
   ];
   if (notes > 0) parts.push(`${notes} note${notes === 1 ? "" : "s"}`);
+  if (bookmarkTotal > 0) {
+    parts.push(
+      `${bookmarkTotal} bookmark${bookmarkTotal === 1 ? "" : "s"}`,
+    );
+  }
   if (studioProjects > 0) {
     parts.push(
       `${studioProjects} Studio project${studioProjects === 1 ? "" : "s"}`,

@@ -7,6 +7,7 @@ import { formatTimestamp } from "@/shared/lib/chapters";
 import VideoPlayer from "@/features/videos/components/player/video-player";
 import ChapterEditor from "@/features/videos/components/player/chapter-editor";
 import { NotesPanel } from "@/shared/components/notes/notes-panel";
+import { BookmarksPanel } from "@/features/bookmarks";
 import type { PlayerTimeControls } from "@/shared/player/player-chrome";
 import { usePresenceActivity } from "@/features/analytics";
 import { Button } from "@/shared/ui/button";
@@ -138,6 +139,20 @@ export default function PlayerSection({
                 getCurrentTime={getCurrentTime}
                 onSeek={seekFromNote}
                 onOpenChange={setNotesOpen}
+              />
+              <BookmarksPanel
+                key={`${course.videoId}:${active.id}`}
+                videoId={course.videoId}
+                title={active.title}
+                source={{
+                  kind: "course",
+                  courseId: course.id,
+                  videoId: course.videoId,
+                  title: course.title,
+                  collectionTitle: course.title,
+                }}
+                getCurrentTime={getCurrentTime}
+                onSeek={seekFromNote}
               />
               <Button
                 size="sm"

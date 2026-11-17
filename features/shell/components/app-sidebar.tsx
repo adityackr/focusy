@@ -1,5 +1,6 @@
 'use client';
 
+import { useAllBookmarks } from '@/features/bookmarks';
 import { selectQueuedInboxCount, useInbox } from '@/features/inbox';
 import { AddPlaylistDialog } from '@/features/playlists';
 import { openGlobalSearch } from '@/features/search';
@@ -12,6 +13,7 @@ import { Button, buttonVariants } from '@/shared/ui/button';
 import {
 	Award,
 	BarChart3,
+	Bookmark,
 	ChevronsLeft,
 	Folder,
 	Heart,
@@ -32,6 +34,7 @@ const NAV = [
 	{ href: '/inbox', label: 'Inbox', icon: Inbox },
 	{ href: '/recent', label: 'Recent', icon: History },
 	{ href: '/notes', label: 'Notes', icon: NotebookPen },
+	{ href: '/bookmarks', label: 'Bookmarks', icon: Bookmark },
 	{ href: '/analytics', label: 'Analytics', icon: BarChart3 },
 	{ href: '/certificates', label: 'Certificates', icon: Award },
 	{ href: '/categories', label: 'Categories', icon: Folder },
@@ -48,13 +51,15 @@ export function AppSidebar({
 	onToggle: () => void;
 	onNavigate?: () => void;
 }) {
-	const { pathname, favCount, notesCount, inboxCount } = useAppSidebar();
+	const { pathname, favCount, notesCount, inboxCount, bookmarkCount } =
+		useAppSidebar();
 	const [dialogOpen, setDialogOpen] = useState(false);
 
 	const counts: Record<string, number> = {
 		'/favorites': favCount,
 		'/notes': notesCount,
 		'/inbox': inboxCount,
+		'/bookmarks': bookmarkCount,
 	};
 
 	const searchButton = (
@@ -221,6 +226,7 @@ function useAppSidebar() {
 	);
 	const notesCount = useAllNotes().length;
 	const inboxCount = useInbox(selectQueuedInboxCount);
+	const bookmarkCount = useAllBookmarks().length;
 
-	return { pathname, favCount, notesCount, inboxCount };
+	return { pathname, favCount, notesCount, inboxCount, bookmarkCount };
 }

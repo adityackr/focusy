@@ -9,6 +9,7 @@ import type { PlayerTimeControls } from "@/shared/player/player-chrome";
 import { VideoPlayer, type SeekRequest } from "@/features/playlists/components/watch/video-player";
 import { chaptersForVideo } from "@/shared/lib/chapters";
 import { NotesPanel } from "@/shared/components/notes/notes-panel";
+import { BookmarksPanel } from "@/features/bookmarks";
 import VideoDescription from "@/shared/components/video-description";
 import type { Playlist, PlaylistVideo } from "@/shared/lib/types";
 import { usePresenceActivity } from "@/features/analytics";
@@ -95,6 +96,20 @@ export function NowPlaying({
           getCurrentTime={getCurrentTime}
           onSeek={seekTo}
           onOpenChange={setNotesOpen}
+        />
+        <BookmarksPanel
+          key={activeVideo.videoId}
+          videoId={activeVideo.videoId}
+          title={activeVideo.title}
+          source={{
+            kind: "playlist",
+            playlistId: playlist.playlistId,
+            videoId: activeVideo.videoId,
+            title: activeVideo.title,
+            collectionTitle: playlist.playlistTitle,
+          }}
+          getCurrentTime={getCurrentTime}
+          onSeek={seekTo}
         />
         {nextVideo && (
           <Button size="sm" className="ml-auto" onClick={goNext}>
