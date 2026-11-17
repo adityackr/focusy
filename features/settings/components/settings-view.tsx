@@ -28,6 +28,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BackupCard } from './backup-card';
+import { StorageCard } from './storage-card';
 import { RemindersCard } from '@/features/reminders';
 
 const CONSOLE = 'https://console.cloud.google.com';
@@ -130,6 +131,9 @@ export function SettingsView() {
 
 			{/* backup & restore */}
 			<BackupCard />
+
+			{/* storage usage & backup status */}
+			<StorageCard />
 
 			{/* optional learning reminders */}
 			<RemindersCard />

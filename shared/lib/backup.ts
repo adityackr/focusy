@@ -514,8 +514,9 @@ export interface BackupReminder {
 
 /**
  * Whether the library page should nudge for a backup: there is content saved,
- * and it was either never backed up or grew since a backup that is now over a
- * week old. A dismissed nudge stays quiet until the content changes again.
+ * and it was either never backed up or grew since a backup taken at least a
+ * day ago, so the nudge can appear daily. A dismissed nudge stays quiet until
+ * the content changes again.
  */
 export function backupReminder(now = Date.now()): BackupReminder | null {
   if (typeof window === "undefined") return null;

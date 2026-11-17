@@ -640,9 +640,20 @@ describe("backup reminder", () => {
     });
   });
 
-  test("stays quiet for a week after a backup", () => {
+  test("nudges again the day after a backup when the library grew", () => {
     seed();
-    recordLastBackup(2, NOW - 2 * DAY);
+    recordLastBackup(2, NOW - DAY);
+    useLibrary.getState().addPlaylist(makePlaylist("PL2", "2024-05-01"));
+
+    const reminder = backupReminder(NOW);
+
+    expect(reminder?.itemsSince).toBe(1);
+    expect(reminder?.daysSince).toBe(1);
+  });
+
+  test("stays quiet for the rest of the day after a backup", () => {
+    seed();
+    recordLastBackup(2, NOW);
     useLibrary.getState().addPlaylist(makePlaylist("PL2", "2024-05-01"));
     expect(backupReminder(NOW)).toBeNull();
   });
