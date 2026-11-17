@@ -5,6 +5,12 @@ export {
   usePresenceActivity,
   useStudioAnalytics,
 } from "./hooks/use-analytics";
+export { continueLearning } from "./lib/progress-snapshot";
+export type {
+  ContinueCourse,
+  ContinueLearning,
+  ContinuePlaylist,
+} from "./lib/progress-snapshot";
 export {
   saveLearningGoals,
   startPresenceActivity,

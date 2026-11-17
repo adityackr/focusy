@@ -432,7 +432,7 @@ export function backupFileName(date = new Date()): string {
 /* -------------------------------------------------------------------------- */
 
 /** How stale a backup gets before the library page nudges for a new one. */
-export const BACKUP_REMINDER_AFTER_DAYS = 7;
+export const BACKUP_REMINDER_AFTER_DAYS = 1;
 
 const LAST_BACKUP_KEY = "focustube:last-backup";
 const REMINDER_DISMISSED_KEY = "focustube:backup-reminder-dismissed";

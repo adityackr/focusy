@@ -7,11 +7,13 @@ import { AppSidebar } from "@/features/shell/components/app-sidebar";
 import { ThemeToggle, useThemeShortcut } from "@/features/shell/components/theme-toggle";
 import { LogoMark } from "@/features/shell/components/logo";
 import { GlobalSearchDialog } from "@/features/search";
+import { useLearningReminders } from "@/features/reminders";
 import { cn } from "@/shared/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed, toggleCollapsed, mobileOpen, openMobile, closeMobile } = useAppShell();
   useThemeShortcut();
+  useLearningReminders();
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-background print:static print:block print:h-auto print:overflow-visible print:bg-white">

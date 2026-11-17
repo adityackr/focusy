@@ -28,6 +28,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BackupCard } from './backup-card';
+import { RemindersCard } from '@/features/reminders';
 
 const CONSOLE = 'https://console.cloud.google.com';
 const API_LIBRARY =
@@ -129,6 +130,9 @@ export function SettingsView() {
 
 			{/* backup & restore */}
 			<BackupCard />
+
+			{/* optional learning reminders */}
+			<RemindersCard />
 
 			{/* tutorial */}
 			<Card className="mt-4">
