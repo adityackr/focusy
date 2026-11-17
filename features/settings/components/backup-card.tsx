@@ -18,6 +18,10 @@ import {
 	collectBookmarksBackup,
 	restoreBookmarksBackup,
 } from '@/features/bookmarks';
+import {
+	collectResourcesBackup,
+	restoreResourcesBackup,
+} from '@/features/resources';
 import { useLibrary } from '@/shared/store/library';
 import {
 	applyBackup,
@@ -91,6 +95,7 @@ export function BackupCard() {
 				collectCertificateBackup(),
 				collectInboxBackup(),
 				collectBookmarksBackup(),
+				await collectResourcesBackup(),
 			);
 			setMessage({ text: `Saved ${name}`, error: false });
 		} catch {
@@ -171,6 +176,18 @@ export function BackupCard() {
 				return;
 			}
 
+			const resources = await restoreResourcesBackup(
+				pending.resources,
+				mode,
+			);
+			if (!resources.ok) {
+				setMessage({
+					text: `Couldn't restore attachments: ${resources.error}`,
+					error: true,
+				});
+				return;
+			}
+
 			if (mode === 'merge') {
 				setMessage({
 					text: `${mergeMessage(
@@ -181,6 +198,9 @@ export function BackupCard() {
 					)}${inboxMessage(inbox.itemsAdded, 'added')}${bookmarkMessage(
 						bookmarks.bookmarksAdded,
 						'added'
+					)}${resourceMessage(
+						resources.value.resourcesAdded,
+						'added',
 					)}`,
 					error: false,
 				});
@@ -195,6 +215,9 @@ export function BackupCard() {
 					)}${inboxMessage(inbox.itemsRestored, 'restored')}${bookmarkMessage(
 						bookmarks.bookmarksRestored,
 						'restored'
+					)}${resourceMessage(
+						resources.value.resourcesRestored,
+						'restored',
 					)}`,
 					error: false,
 				});
@@ -217,8 +240,8 @@ export function BackupCard() {
 					<CardDescription>
 						Move your playlists, videos, folders, progress, timestamped Markdown
 						notes, Studio projects, learning history, saved inbox links,
-						bookmarks and certificate name to another browser or device with one
-						JSON file.
+						bookmarks, course attachments and certificate name to another
+						browser or device with one JSON file.
 						Your API key and player settings stay on this device.
 					</CardDescription>
 				</CardHeader>
@@ -323,8 +346,8 @@ export function BackupCard() {
 								? 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Studio projects already linked here are kept as they are.'
 								: 'These are added to what is already saved here. Nothing is removed, and the newest progress and notes win. Your existing Studio projects are left unchanged because this backup has no Studio data.'
 							: pending.studio
-								? 'This overwrites the playlists, videos, progress, notes, bookmarks, saved inbox links and Studio projects saved here. Download a backup first if you want to keep them.'
-								: 'This overwrites the playlists, videos, progress, notes, bookmarks and saved inbox links here. Your existing Studio projects are left unchanged because this backup has no Studio data.'}
+								? 'This overwrites the playlists, videos, progress, notes, bookmarks, attachments, saved inbox links and Studio projects saved here. Download a backup first if you want to keep them.'
+								: 'This overwrites the playlists, videos, progress, notes, bookmarks, attachments and saved inbox links here. Your existing Studio projects are left unchanged because this backup has no Studio data.'}
 						</p>
 
 						<DialogFooter>
@@ -375,10 +398,12 @@ function BackupContents({ preview }: { preview: BackupPreview }) {
 				)}
 				{preview.inboxLinks !== null && (
 					<PreviewStat value={preview.inboxLinks} label="inbox links" />
-				)}
-				{preview.bookmarks !== null && (
-					<PreviewStat value={preview.bookmarks} label="bookmarks" />
-				)}
+				)}								{preview.bookmarks !== null && (
+									<PreviewStat value={preview.bookmarks} label="bookmarks" />
+								)}
+								{preview.resources !== null && (
+									<PreviewStat value={preview.resources} label="attachments" />
+								)}
 			</div>
 
 			{preview.certificateName && (
@@ -440,13 +465,17 @@ function replaceMessage(
 		backup.bookmarks == null
 			? ' Saved bookmarks were left unchanged because this older backup has no bookmark data.'
 			: '';
+	const resources =
+		backup.resources == null
+			? ' Attachments were left unchanged because this older backup has no attachment data.'
+			: '';
 	if (!backup.studio) {
-		return `${base}${analytics}${certificate}${inbox}${bookmarks} Your Studio projects were left unchanged because this older backup has no Studio data.`;
+		return `${base}${analytics}${certificate}${inbox}${bookmarks}${resources} Your Studio projects were left unchanged because this older backup has no Studio data.`;
 	}
 	if (studio && studio.projectsSkipped > 0) {
-		return `${base}${analytics}${certificate}${inbox}${bookmarks} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
+		return `${base}${analytics}${certificate}${inbox}${bookmarks}${resources} ${studio.projectsSkipped} unreadable Studio project${studio.projectsSkipped === 1 ? ' was' : 's were'} skipped.`;
 	}
-	return `${base}${analytics}${certificate}${inbox}${bookmarks}`;
+	return `${base}${analytics}${certificate}${inbox}${bookmarks}${resources}`;
 }
 
 /** ` 3 inbox links restored.` — nothing when the file had no inbox links. */
@@ -459,6 +488,12 @@ function inboxMessage(count: number, verb: 'added' | 'restored'): string {
 function bookmarkMessage(count: number, verb: 'added' | 'restored'): string {
 	if (count <= 0) return '';
 	return ` ${count} bookmark${count === 1 ? '' : 's'} ${verb}.`;
+}
+
+/** ` 3 attachments restored.` — nothing when the file had no attachments. */
+function resourceMessage(count: number, verb: 'added' | 'restored'): string {
+	if (count <= 0) return '';
+	return ` ${count} attachment${count === 1 ? '' : 's'} ${verb}.`;
 }
 
 function mergeMessage(

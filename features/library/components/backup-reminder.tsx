@@ -6,6 +6,7 @@ import {
 	downloadBackup,
 	type BackupReminder as Reminder,
 } from '@/shared/lib/backup';
+import { collectResourcesBackup } from '@/features/resources';
 import { useLibrary } from '@/shared/store/library';
 import { Button } from '@/shared/ui/button';
 import { DatabaseBackup, X } from 'lucide-react';
@@ -32,9 +33,18 @@ export function BackupReminder() {
 
 	if (!reminder) return null;
 
-	function handleDownload() {
+	async function handleDownload() {
 		try {
-			downloadBackup();
+			// Keep attachments in the quick backup too; they live in IndexedDB.
+			const resources = await collectResourcesBackup();
+			downloadBackup(
+				null,
+				null,
+				null,
+				null,
+				null,
+				resources,
+			);
 			setReminder(null);
 		} catch {
 			toast.error("Couldn't create the backup file.");
@@ -69,7 +79,11 @@ export function BackupReminder() {
 			</p>
 			{/* Full-width action row on phones; inline with the text from sm up. */}
 			<div className="flex w-full items-center gap-2 sm:w-auto">
-				<Button size="sm" onClick={handleDownload} className="flex-1 sm:flex-none">
+				<Button
+					size="sm"
+					onClick={() => void handleDownload()}
+					className="flex-1 sm:flex-none"
+				>
 					Download backup
 				</Button>
 				<Button

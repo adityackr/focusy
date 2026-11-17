@@ -10,9 +10,13 @@ import {
   Bookmark,
   CheckCircle2,
   Code2,
+  Download,
+  FileText,
   Flame,
   Inbox,
+  Link2,
   NotebookPen,
+  Paperclip,
   Tags,
   type LucideIcon,
 } from "lucide-react";
@@ -179,6 +183,66 @@ function ReminderMock() {
   );
 }
 
+const RESOURCE_ITEMS = [
+  {
+    icon: FileText,
+    title: "useMemo cheat sheet",
+    meta: "PDF · 1.2 MB",
+    action: "Open",
+  },
+  {
+    icon: Link2,
+    title: "React docs — useMemo",
+    meta: "react.dev",
+    action: "Open",
+  },
+  {
+    icon: Code2,
+    title: "Memoized selectors",
+    meta: "TypeScript snippet",
+    action: "Copy",
+  },
+  {
+    icon: Download,
+    title: "Starter files",
+    meta: "ZIP · 480 KB",
+    action: "Download",
+  },
+];
+
+function ResourcesMock() {
+  return (
+    <div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {RESOURCE_ITEMS.map((item, i) => (
+          <div
+            key={item.title}
+            className="animate-pop flex items-center gap-2.5 rounded-xl border bg-background/80 p-2.5"
+            style={{ animationDelay: `${120 + i * 90}ms` }}
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <item.icon className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold">{item.title}</p>
+              <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                {item.meta}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold text-muted-foreground">
+              {item.action}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+        <Paperclip className="size-3" /> Attach to a whole course or one lesson ·
+        included in your backup
+      </div>
+    </div>
+  );
+}
+
 function CertificateMock() {
   return (
     <div className="relative overflow-hidden rounded-2xl border bg-linear-to-br from-primary/12 via-card to-[#5B78F0]/10 p-4 text-center">
@@ -316,6 +380,17 @@ export function LearningToolkitSection() {
             className="lg:col-span-4"
           >
             <CertificateMock />
+          </ToolkitCard>
+
+          <ToolkitCard
+            icon={Paperclip}
+            kicker="Course resources"
+            title="The lesson, with everything attached"
+            text="Keep the PDF, reference link, code snippet, documentation page or download right beside the lesson it belongs to. Open it in the player, or come back to it later — every attachment is included in your backup."
+            delay={0}
+            className="lg:col-span-12"
+          >
+            <ResourcesMock />
           </ToolkitCard>
         </div>
 

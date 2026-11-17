@@ -8,6 +8,7 @@ import VideoPlayer from "@/features/videos/components/player/video-player";
 import ChapterEditor from "@/features/videos/components/player/chapter-editor";
 import { NotesPanel } from "@/shared/components/notes/notes-panel";
 import { BookmarksPanel } from "@/features/bookmarks";
+import { ResourcesPanel } from "@/features/resources";
 import type { PlayerTimeControls } from "@/shared/player/player-chrome";
 import { usePresenceActivity } from "@/features/analytics";
 import { Button } from "@/shared/ui/button";
@@ -124,7 +125,7 @@ export default function PlayerSection({
               </div>
               <h2 className="truncate text-base font-semibold">{active.title}</h2>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
               <NotesPanel
                 key={course.videoId}
                 videoId={course.videoId}
@@ -153,6 +154,12 @@ export default function PlayerSection({
                 }}
                 getCurrentTime={getCurrentTime}
                 onSeek={seekFromNote}
+              />
+              <ResourcesPanel
+                courseId={course.id}
+                courseTitle={course.title}
+                chapterId={active.id}
+                chapterTitle={active.title}
               />
               <Button
                 size="sm"

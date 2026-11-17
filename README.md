@@ -2,7 +2,7 @@
 
 **Focusy turns YouTube videos and playlists into calm, course-style classrooms — no recommendations, no Shorts, no comments, no autoplay rabbit holes. Just the lessons you chose, in order.**
 
-Paste a video link and Focusy splits it into chapter-based lessons using its timestamps, or paste a playlist link (or ID) and it imports every video — titles, thumbnails, order, channel info — then lets you watch it like a proper online course, with a collapsible lesson sidebar, per-video progress tracking, favorites, and recents. Save links you're not ready for in the **Learning Inbox**, bookmark exact moments while watching, and get optional local reminders for unfinished lessons and daily goals. **Focusy Studio** adds a coding workspace to that experience, so you can follow a programming tutorial and practice its code without switching tabs. Library data, projects, progress, notes, bookmarks and saved links stay in your browser: no account, no tracking, no server-side watch history.
+Paste a video link and Focusy splits it into chapter-based lessons using its timestamps, or paste a playlist link (or ID) and it imports every video — titles, thumbnails, order, channel info — then lets you watch it like a proper online course, with a collapsible lesson sidebar, per-video progress tracking, favorites, and recents. Save links you're not ready for in the **Learning Inbox**, bookmark exact moments while watching, attach PDFs, reference links, code snippets or downloads to a course or lesson, and get optional local reminders for unfinished lessons and daily goals. **Focusy Studio** adds a coding workspace to that experience, so you can follow a programming tutorial and practice its code without switching tabs. Library data, projects, progress, notes, bookmarks, attachments and saved links stay in your browser: no account, no tracking, no server-side watch history.
 
 ---
 
@@ -52,7 +52,7 @@ Focusy solves exactly one problem: **watch YouTube start-to-finish without getti
 
 ### Landing page (`/`)
 
-Marketing-style homepage with a hero (live-feel classroom mock), stats, feature grid, a two-card "two ways to learn" spotlight (video→course vs playlist→classroom), 3-step "how it works", an FAQ, and a call-to-action panel with footer links — all in small section components under `features/landing/components/`.
+Marketing-style homepage with a hero (live-feel classroom mock), stats, feature grid, a learning-toolkit section (notes, inbox, analytics, reminders, certificates and course attachments), a two-card "two ways to learn" spotlight (video→course vs playlist→classroom), 3-step "how it works", an FAQ, and a call-to-action panel with footer links — all in small section components under `features/landing/components/`.
 
 ### Library (`/library`), Recent (`/recent`), Favorites (`/favorites`)
 
@@ -74,7 +74,7 @@ Marketing-style homepage with a hero (live-feel classroom mock), stats, feature 
 
 - **No API key lives in env vars or on the server.** The key is entered in the app, stored only in that browser's `localStorage`, and used directly from the client against the YouTube Data API.
 - Step-by-step tutorial with links (Cloud Console → enable API → create key → restrict → paste), a **Test key** button, and quota notes.
-- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, timestamped Markdown notes, Studio projects with their files and dependencies, learning history, saved inbox links, timestamped lesson bookmarks, and the saved certificate name) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win per note), with the file's contents previewed, the mode chosen and confirmed before anything changes. Backup format **version 3** carries per-video note buckets; version 1 and 2 files remain readable, with their legacy notes adopted as untimed notes on restore. The library page nudges you daily when new playlists, videos or Studio projects have landed since a backup taken at least a day ago, or when the library has never been backed up at all. Older backups without Studio data remain compatible. The API key, player preferences and reminder settings are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
+- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, timestamped Markdown notes, Studio projects with their files and dependencies, learning history, saved inbox links, timestamped lesson bookmarks, course and lesson attachments with their uploaded files, and the saved certificate name) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win per note), with the file's contents previewed, the mode chosen and confirmed before anything changes. Backup format **version 3** carries per-video note buckets and an optional `resources` section (attachments with base64 file contents); version 1 and 2 files remain readable, with their legacy notes adopted as untimed notes on restore. The library page nudges you daily when new playlists, videos, Studio projects or attachments have landed since a backup taken at least a day ago, or when the library has never been backed up at all. Older backups without Studio or attachment data remain compatible; restoring one leaves local attachments untouched. The API key, player preferences and reminder settings are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
 - **Learning reminders** and **data & storage**: optional browser notifications and a read-only storage/backup dashboard, both described below under Features.
 
 ### App sidebar
@@ -150,6 +150,13 @@ One command palette for the whole library — no dedicated route.
 - **A library of moments.** `/bookmarks` groups every bookmark by lesson, shows a course/playlist badge, searches descriptions and lesson titles, and deep-links each timestamp with `?t=` (or opens the lesson from the start). The sidebar carries a live bookmark count.
 - **Local and portable.** Bookmarks live under `focusy-bookmarks:v1`, survive library changes (orphaned sources are shown but not navigable), and are included in backup/restore and the preview (`features/bookmarks/`).
 
+### Course & lesson resources (player)
+
+- **Everything the lesson needs, attached.** The course player has a **Resources** button beside Notes and Bookmarks. Add a PDF, reference link, code snippet, documentation page or downloadable file, and choose whether it belongs to the whole course or just the current lesson.
+- **Read, open, download, delete.** The right-side panel groups course-wide and lesson attachments, opens links in a new tab, opens or downloads uploaded files, copies snippets, and confirms before deleting.
+- **Local storage, split by size.** Metadata lives under `focusy-resources:v1`; uploaded file bytes live in IndexedDB (`focusy-resources` / `files`, keyed by resource id) so PDFs of a few MB fit. Uploads are capped at 25 MB and links must be HTTP(S).
+- **Portable with your backup.** Attachments are embedded in the backup as an optional `resources` section with base64 file contents. Merge keeps local copies on id conflicts and adds only new resources; restoring an older backup without that section leaves local attachments untouched. Every restored file can be opened or downloaded again (`features/resources/`).
+
 ### Learning reminders
 
 - **Optional, local browser notifications** for unfinished lessons and an unmet daily study goal. Nothing is pushed from a server and no account is needed; the card lives in Settings below Backup & restore (`features/reminders/`).
@@ -160,8 +167,8 @@ One command palette for the whole library — no dedicated route.
 ### Data storage manager
 
 - **See what Focusy is using.** The Settings card reports origin storage usage against the browser quota from `navigator.storage.estimate()`, with a usage bar, percent and persistent-storage status (`features/settings/lib/storage-usage.ts`).
-- **localStorage by feature.** A key/byte breakdown for Library, watch progress, notes, bookmarks, inbox, analytics, Studio metadata, preferences/API key, backup metadata and unrecognized keys — no values are displayed.
-- **IndexedDB usage.** Enumerates databases with `indexedDB.databases()` and reports each database's stores, record counts and approximate bytes, including the `focusy-studio` workspace contents. Browsers that don't expose per-database sizes say so instead of guessing.
+- **localStorage by feature.** A key/byte breakdown for Library, watch progress, notes, bookmarks, course attachments, inbox, analytics, Studio metadata, preferences/API key, backup metadata and unrecognized keys — no values are displayed.
+- **IndexedDB usage.** Enumerates databases with `indexedDB.databases()` and reports each database's stores, record counts and approximate bytes, including the `focusy-studio` workspace contents and uploaded course attachments in `focusy-resources`. Browsers that don't expose per-database sizes say so instead of guessing.
 - **Backup status and refresh.** Compares the last recorded backup (`focustube:last-backup`) with the current library item count to show *Nothing saved yet*, *No backup yet*, *No new items* or *N new items*, plus the backup age and exact time. Everything is read-only, measured on mount and refreshable in place.
 
 ### Focusy Studio
@@ -199,7 +206,7 @@ One command palette for the whole library — no dedicated route.
 | [shadcn/ui](https://ui.shadcn.com/) (New York)                   | vendored             | `button, card, dialog, alert-dialog, sheet, input, badge, skeleton, separator` in `shared/ui/`                    |
 | [Monaco Editor](https://microsoft.github.io/monaco-editor/)      | 0.57                 | Studio code editor (`@monaco-editor/react`)                                                                      |
 | [Sandpack](https://sandpack.codesandbox.io/)                     | 2.20                 | Studio previews, compilation/runtime errors, and dependency resolution (`@codesandbox/sandpack-react`)           |
-| IndexedDB                                                        | browser API          | Studio project files and dependencies; metadata stays in Zustand/localStorage                                     |
+| IndexedDB                                                        | browser API          | Studio project files/dependencies and uploaded course attachments; metadata stays in localStorage                 |
 | [Zustand](https://zustand.docs.pmnd.rs/) + `persist`             | 5                    | Library and Studio metadata stores persisted to `localStorage`                                                   |
 | [dnd-kit](https://dndkit.com/) (`core`, `sortable`, `utilities`) | 6 / 10               | Drag-and-drop playlist reordering                                                                                |
 | [Lucide](https://lucide.dev/)                                    | —                    | Icons (including the custom `LogoMark` SVG in `features/shell/components/logo.tsx`)                              |
@@ -280,12 +287,20 @@ Open Studio (a lesson's "Open Studio" button)
   → files and dependencies come from IndexedDB
   → Monaco edits update workspace state → debounced IndexedDB save
   → Sandpack rebuilds the preview from the same files and dependencies
+
+Attach a course resource (player → Resources)
+  → metadata saved to localStorage under focusy-resources:v1
+  → uploaded PDFs/downloads saved as ArrayBuffers in IndexedDB
+      (focusy-resources / files, keyed by resource id)
+  → backup export base64-encodes each file into the optional resources section
+  → restore rebuilds both the metadata and the IndexedDB file records
 ```
 
 - **IDs accepted**: raw IDs (`PL…`), `youtube.com/playlist?list=…` / `watch?v=…&list=…`, `youtu.be/…?list=…`.
 - **No server proxy**: both fetch paths run in the browser with the user's own key (entered in Settings); there is no env var and no API route.
 - **Watch progress** (`features/playlists/hooks/use-watch-progress.ts`) stores `{ watched[], lastWatched, completedChapters[], positions{} }` per playlist in `localStorage`. Mutations go through a ref mirror so mount-time auto-marking can never clobber previously saved progress (this exact race is covered by a regression test). Playback position per video is reported by the player every ~5s, so reopening a lesson cues it where you left off — an explicit `?t=` deep link wins, and watching to the end drops the resume point.
 - **Studio projects** are keyed by `sourceKeyForSource()` for videos, courses, and playlist lessons. A project's metadata is indexed in `localStorage`; its files and dependencies live in IndexedDB. The lesson route opens the workspace in a full-size sheet. Opening a lesson restores its project without creating a new one; using **New project** explicitly creates another project linked to the same lesson.
+- **Course resources** are split the same way: small metadata (kind, scope, title, description, link or snippet) lives in `localStorage`, while uploaded file bytes live in IndexedDB keyed by resource id. A resource belongs to a course and may also point at one lesson (`chapterId`). Deleting a resource removes both records, and restore validates every entry before writing.
 
 ---
 
@@ -412,6 +427,10 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 │   │   ├── index.ts               # BookmarksView, BookmarksPanel + store/backup API
 │   │   ├── components/            # bookmarks-view, bookmarks-panel
 │   │   └── lib/                   # bookmark helpers (+test), store, backup
+│   ├── resources/                 # Course & lesson attachments (player sheet)
+│   │   ├── index.ts               # ResourcesPanel + store/backup API
+│   │   ├── components/            # resources-panel
+│   │   └── lib/                   # resource helpers (+test), store, IndexedDB, backup
 │   ├── reminders/                 # Optional local learning reminders
 │   │   ├── index.ts               # RemindersCard + AppShell hook
 │   │   ├── components/            # reminders-card
@@ -509,6 +528,7 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 - `features/certificates/components/certificates-gallery-view.test.tsx` — the gallery lists only completed courses, links each certificate, and has an empty state.
 - `features/inbox/lib/inbox.test.ts` — tag normalization, every-word search and status/tag filters, newest-first saves with duplicate rejection, watched/edit/remove round-trips, corrupt-data tolerance, and inbox backup round-trip/merge/preview.
 - `features/bookmarks/lib/bookmark.test.ts` — deep links for playlist and course moments, grouping/sorting, search, validation and corrupt-data tolerance, store edits, and bookmark backup round-trip/merge/newest-copy-wins.
+- `features/resources/lib/resource.test.ts` — resource validation (uploads, sizes, links, snippets), add/remove/merge, and a backup round-trip that restores a PDF's exact bytes; older backups without the section leave local attachments alone.
 - `features/reminders/lib/reminders.test.ts` — settings normalization and persistence, the once-a-day/after-the-chosen-time schedule, include toggles, today's activity totals, and reminder messages for lessons, goals, both or neither.
 - `features/settings/lib/storage-usage.test.ts` — byte formatting, localStorage feature grouping, quota percentages, backup-state transitions (empty/never/current/changed), and IndexedDB record/byte measurement with `fake-indexeddb`.
 

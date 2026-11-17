@@ -104,6 +104,12 @@ export interface Backup {
    * builds keep reading these files; the bookmarks feature validates it.
    */
   bookmarks?: unknown | null;
+  /**
+   * Course/lesson attachments (metadata plus base64 file bytes). Additive and
+   * optional so older Focusy builds keep reading these files; the resources
+   * feature validates and restores it.
+   */
+  resources?: unknown | null;
 }
 
 export type BackupParseResult =
@@ -393,6 +399,7 @@ export function collectBackup(
   certificate: unknown | null = null,
   inbox: unknown | null = null,
   bookmarks: unknown | null = null,
+  resources: unknown | null = null,
 ): Backup {
   const notes = storedValues(NOTE_PREFIX, normalizeNote);
   return {
@@ -415,6 +422,7 @@ export function collectBackup(
     certificate,
     inbox,
     bookmarks,
+    resources,
   };
 }
 
@@ -447,6 +455,8 @@ export interface LastBackup {
 
 /** Studio's persisted metadata index, read without importing its feature code. */
 const STUDIO_METADATA_KEY = "focusy-studio:workspaces";
+/** Course attachment metadata (uploaded file bytes live in IndexedDB). */
+const RESOURCES_METADATA_KEY = "focusy-resources:v1";
 
 function studioProjectCount(): number {
   try {
@@ -462,13 +472,30 @@ function studioProjectCount(): number {
   }
 }
 
-/** What the library is worth backing up for: playlists, videos and projects. */
+function resourceAttachmentCount(): number {
+  try {
+    const raw = localStorage.getItem(RESOURCES_METADATA_KEY);
+    if (!raw) return 0;
+    const parsed: unknown = JSON.parse(raw);
+    return isRecord(parsed) && Array.isArray(parsed.resources)
+      ? parsed.resources.length
+      : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * What the library is worth backing up for: playlists, videos, Studio projects
+ * and course attachments.
+ */
 export function libraryItemCount(): number {
   const snapshot = selectLibrarySnapshot(useLibrary.getState());
   return (
     Object.keys(snapshot.playlists).length +
     Object.keys(snapshot.courses).length +
-    studioProjectCount()
+    studioProjectCount() +
+    resourceAttachmentCount()
   );
 }
 
@@ -584,6 +611,7 @@ export function downloadBackup(
   certificate: unknown | null = null,
   inbox: unknown | null = null,
   bookmarks: unknown | null = null,
+  resources: unknown | null = null,
 ): string {
   const fileName = backupFileName();
   const backup = collectBackup(
@@ -592,6 +620,7 @@ export function downloadBackup(
     certificate,
     inbox,
     bookmarks,
+    resources,
   );
   const blob = new Blob([serializeBackup(backup)], {
     type: "application/json",
@@ -681,6 +710,7 @@ export function parseBackup(text: string): BackupParseResult {
       certificate: raw.certificate ?? null,
       inbox: raw.inbox ?? null,
       bookmarks: raw.bookmarks ?? null,
+      resources: raw.resources ?? null,
     },
   };
 }
@@ -878,6 +908,8 @@ export interface BackupPreview {
   inboxLinks: number | null;
   /** Null when the file has no bookmarks section (older backups). */
   bookmarks: number | null;
+  /** Null when the file has no resources section (older backups). */
+  resources: number | null;
 }
 
 /**
@@ -911,6 +943,7 @@ export function backupPreview(backup: Backup): BackupPreview {
     certificateName: optionalCertificateName(backup.certificate),
     inboxLinks: optionalInboxCount(backup.inbox),
     bookmarks: optionalBookmarkCount(backup.bookmarks),
+    resources: optionalResourceCount(backup.resources),
   };
 }
 
@@ -922,6 +955,11 @@ function optionalInboxCount(raw: unknown): number | null {
 function optionalBookmarkCount(raw: unknown): number | null {
   if (!isRecord(raw) || !Array.isArray(raw.bookmarks)) return null;
   return raw.bookmarks.length;
+}
+
+function optionalResourceCount(raw: unknown): number | null {
+  if (!isRecord(raw) || !Array.isArray(raw.resources)) return null;
+  return raw.resources.length;
 }
 
 function optionalCertificateName(raw: unknown): string | null {
@@ -954,6 +992,7 @@ export function backupSummary(backup: Backup): string {
   const videos = Object.keys(backup.library.courses).length;
   const notes = learningNoteCount(backup.learningNotes);
   const bookmarkTotal = optionalBookmarkCount(backup.bookmarks) ?? 0;
+  const resourceTotal = optionalResourceCount(backup.resources) ?? 0;
   const studioProjects = backup.studio?.workspaces.length ?? 0;
   const parts = [
     `${playlists} playlist${playlists === 1 ? "" : "s"}`,
@@ -963,6 +1002,11 @@ export function backupSummary(backup: Backup): string {
   if (bookmarkTotal > 0) {
     parts.push(
       `${bookmarkTotal} bookmark${bookmarkTotal === 1 ? "" : "s"}`,
+    );
+  }
+  if (resourceTotal > 0) {
+    parts.push(
+      `${resourceTotal} attachment${resourceTotal === 1 ? "" : "s"}`,
     );
   }
   if (studioProjects > 0) {

@@ -6,6 +6,7 @@ const ITEMS = [
   "No comments",
   "Timestamped Markdown notes",
   "Bookmark any moment",
+  "PDFs & links attached to lessons",
   "Save links to your inbox",
   "Streaks & study goals",
   "Daily local reminders",

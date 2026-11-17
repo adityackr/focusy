@@ -86,9 +86,9 @@ function HeroCopy() {
 			</h1>
 			<p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
 				Paste a video or playlist link and get a calm, course-style classroom —
-				then take timestamped notes, bookmark exact moments, save links for later,
-				track your streak and practice what you learn. Nothing else competing for
-				your attention.
+				then take timestamped notes, bookmark exact moments, attach PDFs and
+				reference links to lessons, save links for later, track your streak and
+				practice what you learn. Nothing else competing for your attention.
 			</p>
 			<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
 				<Link

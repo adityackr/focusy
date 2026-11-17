@@ -7,11 +7,13 @@ import {
   Inbox,
   ListVideo,
   NotebookPen,
+  Paperclip,
   ShieldCheck,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/ui/card";
 import { SectionHeading } from "@/features/landing/components/section-heading";
 import { Reveal } from "@/features/landing/components/reveal";
+import { cn } from "@/shared/lib/utils";
 
 const features = [
   {
@@ -59,6 +61,11 @@ const features = [
     title: "Private by design",
     text: "Notes, links, streaks and projects stay in your own browser. No account, no tracking, no server-side history.",
   },
+  {
+    icon: Paperclip,
+    title: "Resources beside the lesson",
+    text: "Attach PDFs, reference links, code snippets, documentation and downloadable files to a whole course or a single lesson.",
+  },
 ];
 
 export function FeaturesSection() {
@@ -71,14 +78,38 @@ export function FeaturesSection() {
       />
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((f, i) => (
-          <Reveal key={f.title} delay={(i % 3) * 80}>
+          <Reveal
+            key={f.title}
+            delay={(i % 3) * 80}
+            className={cn(i === features.length - 1 && "lg:col-span-2")}
+          >
             <Card className="group card-sweep h-full transition-all hover:-translate-y-1 hover:shadow-xl">
-              <CardContent className="p-6">
-                <span className="icon-wiggle mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <CardContent
+                className={cn(
+                  "p-6",
+                  i === features.length - 1 &&
+                    "sm:flex sm:items-center sm:gap-5",
+                )}
+              >
+                <span
+                  className={cn(
+                    "icon-wiggle mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary",
+                    i === features.length - 1 && "sm:mb-0 sm:shrink-0",
+                  )}
+                >
                   <f.icon className="size-5" />
                 </span>
-                <h3 className="font-bold">{f.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{f.text}</p>
+                <div>
+                  <h3 className="font-bold">{f.title}</h3>
+                  <p
+                    className={cn(
+                      "mt-1.5 text-sm leading-relaxed text-muted-foreground",
+                      i === features.length - 1 && "sm:mt-1",
+                    )}
+                  >
+                    {f.text}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </Reveal>

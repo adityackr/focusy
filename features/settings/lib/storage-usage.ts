@@ -50,6 +50,7 @@ export type StorageGroupId =
   | "progress"
   | "notes"
   | "bookmarks"
+  | "resources"
   | "inbox"
   | "analytics"
   | "studio"
@@ -73,6 +74,11 @@ export const STORAGE_GROUPS: StorageGroupDefinition[] = [
   },
   { id: "notes", label: "Notes", detail: "timestamped Markdown notes" },
   { id: "bookmarks", label: "Bookmarks", detail: "saved lesson moments" },
+  {
+    id: "resources",
+    label: "Course attachments",
+    detail: "links and snippets — uploaded files live in IndexedDB",
+  },
   { id: "inbox", label: "Learning inbox", detail: "saved links to study next" },
   {
     id: "analytics",
@@ -136,6 +142,7 @@ export function storageGroupFor(key: string): StorageGroupId {
     return "notes";
   }
   if (key === "focusy-bookmarks:v1") return "bookmarks";
+  if (key === "focusy-resources:v1") return "resources";
   if (key === "focusy-inbox:v1") return "inbox";
   if (key === "focusy-analytics:v1") return "analytics";
   if (key.startsWith("focusy-studio:")) return "studio";
