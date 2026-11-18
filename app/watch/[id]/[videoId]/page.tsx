@@ -22,9 +22,9 @@ export default async function VideoWatchPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ playlistId: string; videoId: string }>;
+  params: Promise<{ id: string; videoId: string }>;
   searchParams: Promise<{ t?: string | string[] }>;
 }) {
-  const [{ playlistId, videoId }, { t }] = await Promise.all([params, searchParams]);
-  return <WatchView playlistId={playlistId} activeVideoId={videoId} startAt={parseStartAt(t)} />;
+  const [{ id, videoId }, { t }] = await Promise.all([params, searchParams]);
+  return <WatchView playlistId={id} activeVideoId={videoId} startAt={parseStartAt(t)} />;
 }

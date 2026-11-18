@@ -160,7 +160,7 @@ function collectionHref(source: BookmarkSource | null): string | null {
     ? `/watch/${encodeURIComponent(source.playlistId)}/${encodeURIComponent(
         source.videoId,
       )}`
-    : `/course/${encodeURIComponent(source.courseId)}`;
+    : `/watch/${encodeURIComponent(source.courseId)}`;
 }
 
 /** Deep link to the bookmarked moment, or null when the lesson is unknown. */

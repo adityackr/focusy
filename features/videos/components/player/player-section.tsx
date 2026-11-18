@@ -99,7 +99,7 @@ export default function PlayerSection({
               kind: "course",
               id: course.id,
               title: course.title,
-              href: `/course/${course.id}`,
+              href: `/watch/${course.id}`,
               videoId: course.videoId,
               lessonTitle: active.title,
             }}

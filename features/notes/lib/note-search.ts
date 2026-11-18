@@ -32,7 +32,7 @@ function watchHref(
 }
 
 function courseHref(courseId: string, note: LearningNote): string {
-  return `/course/${encodeURIComponent(courseId)}${timeSuffix(note)}`;
+  return `/watch/${encodeURIComponent(courseId)}${timeSuffix(note)}`;
 }
 
 /**

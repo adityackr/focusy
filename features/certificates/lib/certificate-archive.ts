@@ -47,7 +47,9 @@ function archiveKey(kind: CertificateKind, sourceId: string): string {
   return `${kind}:${sourceId}`;
 }
 
-function normalizeCertificate(raw: unknown): ArchivedCertificate | null {
+export function normalizeArchivedCertificate(
+  raw: unknown,
+): ArchivedCertificate | null {
   if (!isRecord(raw)) return null;
 
   const kind: CertificateKind | null =
@@ -101,7 +103,7 @@ function readRaw(): ArchivedCertificate[] {
     if (!Array.isArray(parsed.certificates)) return [];
     const seen = new Set<string>();
     return parsed.certificates
-      .map(normalizeCertificate)
+      .map(normalizeArchivedCertificate)
       .filter((certificate): certificate is ArchivedCertificate => {
         if (!certificate) return false;
         const key = archiveKey(certificate.kind, certificate.sourceId);
@@ -225,7 +227,7 @@ export function archiveCertificate(
 ): ArchivedCertificate | null {
   if (typeof window === "undefined") return null;
 
-  const certificate = normalizeCertificate(input);
+  const certificate = normalizeArchivedCertificate(input);
   if (!certificate) return null;
 
   const existing = readRaw().filter(
@@ -248,6 +250,54 @@ export function removeArchivedCertificate(
     (entry) => archiveKey(entry.kind, entry.sourceId) !== archiveKey(kind, sourceId),
   );
   if (writeRaw(next)) invalidate();
+}
+
+/** Replace the archived certificates with backup data (replace restore). */
+export function replaceArchivedCertificates(
+  raw: unknown[],
+): { ok: boolean; count: number } {
+  if (typeof window === "undefined") return { ok: false, count: 0 };
+  const certificates = dedupeCertificates(raw);
+  if (!writeRaw(certificates)) return { ok: false, count: 0 };
+  invalidate();
+  return { ok: true, count: certificates.length };
+}
+
+/** Add certificates missing from this browser (merge restore). */
+export function mergeArchivedCertificates(
+  raw: unknown[],
+): { ok: boolean; count: number } {
+  if (typeof window === "undefined") return { ok: false, count: 0 };
+  const existing = readRaw();
+  const seen = new Set(
+    existing.map((certificate) => archiveKey(certificate.kind, certificate.sourceId)),
+  );
+  const added: ArchivedCertificate[] = [];
+  for (const certificate of dedupeCertificates(raw)) {
+    const key = archiveKey(certificate.kind, certificate.sourceId);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    added.push(certificate);
+  }
+  if (added.length > 0 && !writeRaw([...existing, ...added])) {
+    return { ok: false, count: 0 };
+  }
+  if (added.length > 0) invalidate();
+  return { ok: true, count: added.length };
+}
+
+function dedupeCertificates(raw: unknown[]): ArchivedCertificate[] {
+  const seen = new Set<string>();
+  const certificates: ArchivedCertificate[] = [];
+  for (const entry of raw) {
+    const certificate = normalizeArchivedCertificate(entry);
+    if (!certificate) continue;
+    const key = archiveKey(certificate.kind, certificate.sourceId);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    certificates.push(certificate);
+  }
+  return certificates;
 }
 
 if (typeof window !== "undefined") {

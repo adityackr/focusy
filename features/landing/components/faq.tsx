@@ -40,8 +40,12 @@ export const FAQS = [
     a: "Yes. The whole app is responsive: grids collapse to single columns, sidebars become stacked lists or slide-in drawers, and the player chrome adapts to touch. Focusy is installable as a PWA too, though video playback and imports still need a network connection.",
   },
   {
+    q: "Can I move Focusy to another device?",
+    a: "Yes. Settings can export everything in this browser to one JSON file and restore it on another device or browser. The backup includes your library, progress, notes, bookmarks, inbox, attachments, Studio projects and completion certificates — including certificates for courses or playlists you have since deleted. The app and lesson sidebar preferences are saved per device.",
+  },
+  {
     q: "What if I clear my browser data?",
-    a: "Clearing site data resets the local app. Export a backup first from Settings — it includes your library, notes, bookmarks, inbox and Studio projects. The Data & storage card shows exactly what is using space and when you last backed up.",
+    a: "Clearing site data resets the local app. Export a backup first from Settings — it includes your library, notes, bookmarks, inbox, Studio projects, attachments and saved certificates. The Data & storage card shows exactly what is using space and when you last backed up.",
   },
 ];
 

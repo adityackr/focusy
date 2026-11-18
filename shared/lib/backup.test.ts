@@ -739,4 +739,33 @@ describe("optional certificate backups", () => {
       expect(backupPreview(parsed.backup).certificateName).toBe("Ada Lovelace");
     }
   });
+
+  test("round-trips archived certificates and counts them in the preview", () => {
+    const certificate = {
+      version: 1,
+      name: "Ada Lovelace",
+      certificates: [
+        {
+          kind: "course",
+          sourceId: "deleted-course",
+          title: "Deleted course",
+          channelTitle: "Focusy Academy",
+          thumbnail: "",
+          completed: 4,
+          total: 4,
+          completedAt: 123,
+        },
+      ],
+    };
+    const backup = collectBackup(null, null, certificate);
+    const parsed = parseBackup(serializeBackup(backup));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.backup.certificate).toEqual(certificate);
+      const preview = backupPreview(parsed.backup);
+      expect(preview.certificateName).toBe("Ada Lovelace");
+      expect(preview.certificates).toBe(1);
+      expect(backupSummary(parsed.backup)).toContain("1 archived certificate");
+    }
+  });
 });

@@ -48,7 +48,7 @@ function input(overrides: Partial<GlobalSearchInput> = {}): GlobalSearchInput {
         markdown: "Use **memo** to keep renders cheap",
         lessonTitle: "Hooks overview",
         collectionTitle: "React fundamentals",
-        href: "/course/course-1?t=42",
+        href: "/watch/course-1?t=42",
         timeSeconds: 42,
       },
     ],
@@ -57,7 +57,7 @@ function input(overrides: Partial<GlobalSearchInput> = {}): GlobalSearchInput {
         id: "project-1",
         name: "Hooks playground",
         subtitle: "React + TypeScript",
-        href: "/course/course-1",
+        href: "/watch/course-1",
       },
     ],
     courseFavorites: ["course-1"],
@@ -95,7 +95,7 @@ describe("buildGlobalSearchResults", () => {
 
     expect(byGroup("videos").items[0]).toMatchObject({
       title: "React fundamentals",
-      href: "/course/course-1",
+      href: "/watch/course-1",
       thumbnail: "https://i.ytimg.com/vi/vid-course/mqdefault.jpg",
     });
     expect(byGroup("playlists").items[0]).toMatchObject({
@@ -103,21 +103,21 @@ describe("buildGlobalSearchResults", () => {
       href: "/watch/PL1",
     });
     expect(byGroup("lessons").items.map((item) => item.href).sort()).toEqual([
-      "/course/course-1?t=0",
-      "/course/course-1?t=90",
       "/watch/PL1/vid-effect",
+      "/watch/course-1?t=0",
+      "/watch/course-1?t=90",
     ]);
     expect(byGroup("notes").items[0]).toMatchObject({
       title: "Hooks overview",
-      href: "/course/course-1?t=42",
+      href: "/watch/course-1?t=42",
     });
     expect(byGroup("bookmarks").items.map((item) => item.href).sort()).toEqual([
-      "/course/course-1",
       "/watch/PL1",
+      "/watch/course-1",
     ]);
     expect(byGroup("projects").items[0]).toMatchObject({
       title: "Hooks playground",
-      href: "/course/course-1",
+      href: "/watch/course-1",
     });
     expect(items.length).toBe(results.total);
   });

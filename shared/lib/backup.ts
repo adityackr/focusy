@@ -904,6 +904,8 @@ export interface BackupPreview {
   studioProjects: number | null;
   /** Name chosen for printable certificates, when the file carries one. */
   certificateName: string | null;
+  /** Archived certificates, including those whose source was deleted. */
+  certificates: number | null;
   /** Null when the file has no inbox section (older backups). */
   inboxLinks: number | null;
   /** Null when the file has no bookmarks section (older backups). */
@@ -941,6 +943,7 @@ export function backupPreview(backup: Backup): BackupPreview {
       ? backup.studio.workspaces.length
       : null,
     certificateName: optionalCertificateName(backup.certificate),
+    certificates: optionalCertificateCount(backup.certificate),
     inboxLinks: optionalInboxCount(backup.inbox),
     bookmarks: optionalBookmarkCount(backup.bookmarks),
     resources: optionalResourceCount(backup.resources),
@@ -968,6 +971,11 @@ function optionalCertificateName(raw: unknown): string | null {
   return name || null;
 }
 
+function optionalCertificateCount(raw: unknown): number | null {
+  if (!isRecord(raw) || !Array.isArray(raw.certificates)) return null;
+  return raw.certificates.length;
+}
+
 function orderedLabels<T>(
   order: string[],
   items: Record<string, T>,
@@ -993,6 +1001,7 @@ export function backupSummary(backup: Backup): string {
   const notes = learningNoteCount(backup.learningNotes);
   const bookmarkTotal = optionalBookmarkCount(backup.bookmarks) ?? 0;
   const resourceTotal = optionalResourceCount(backup.resources) ?? 0;
+  const certificateTotal = optionalCertificateCount(backup.certificate) ?? 0;
   const studioProjects = backup.studio?.workspaces.length ?? 0;
   const parts = [
     `${playlists} playlist${playlists === 1 ? "" : "s"}`,
@@ -1012,6 +1021,11 @@ export function backupSummary(backup: Backup): string {
   if (studioProjects > 0) {
     parts.push(
       `${studioProjects} Studio project${studioProjects === 1 ? "" : "s"}`,
+    );
+  }
+  if (certificateTotal > 0) {
+    parts.push(
+      `${certificateTotal} archived certificate${certificateTotal === 1 ? "" : "s"}`,
     );
   }
   return parts.join(" · ");

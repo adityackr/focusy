@@ -100,7 +100,7 @@ describe("activity aggregation", () => {
       kind: "course",
       id: "c1",
       title: "Course",
-      href: "/course/c1",
+      href: "/watch/c1",
     });
     recordActiveSeconds(data, "studio", 60, NOW.getTime());
     const day = data.days["2026-11-16"];
@@ -181,7 +181,7 @@ describe("event tracking and duplicate prevention", () => {
       courseTitle: "Course",
       lessonId: "c1-1",
       lessonTitle: "One",
-      href: "/course/c1",
+      href: "/watch/c1",
     };
     recordLessonCompleted(data, input, NOW.getTime());
     recordLessonCompleted(data, input, NOW.getTime());
@@ -208,14 +208,14 @@ describe("event tracking and duplicate prevention", () => {
     expect(
       recordCourseCompleted(
         data,
-        { courseId: "c1", courseTitle: "Course", href: "/course/c1" },
+        { courseId: "c1", courseTitle: "Course", href: "/watch/c1" },
         NOW.getTime()
       )
     ).toBe(true);
     expect(
       recordCourseCompleted(
         data,
-        { courseId: "c1", courseTitle: "Course", href: "/course/c1" },
+        { courseId: "c1", courseTitle: "Course", href: "/watch/c1" },
         NOW.getTime() + 10_000
       )
     ).toBe(false);
@@ -351,7 +351,7 @@ describe("course progress and continue learning", () => {
       kind: "course",
       id: "c1",
       title: "Course c1",
-      href: "/course/c1",
+      href: "/watch/c1",
     });
 
     const items = buildProgressItems({

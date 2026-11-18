@@ -13,7 +13,13 @@ import {
 } from "@/features/studio";
 import { usePresenceActivity } from "@/features/analytics";
 
-export function CoursePlayerView({ startAt }: { startAt?: number }) {
+export function CoursePlayerView({
+  courseId,
+  startAt,
+}: {
+  courseId: string;
+  startAt?: number;
+}) {
   const {
     course,
     loaded,
@@ -39,7 +45,7 @@ export function CoursePlayerView({ startAt }: { startAt?: number }) {
     handleProgress,
     clearResume,
     handleChaptersChange,
-  } = useCoursePlayer(startAt);
+  } = useCoursePlayer(startAt, courseId);
   const [studioOpen, setStudioOpen] = useState(false);
   usePresenceActivity("studio", studioOpen);
 

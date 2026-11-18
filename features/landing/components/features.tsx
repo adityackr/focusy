@@ -24,7 +24,7 @@ const features = [
   {
     icon: ListVideo,
     title: "Course-style player",
-    text: "Chapter-by-chapter lessons, a collapsible sidebar and resume points turn any long video or playlist into a course.",
+    text: "One player for long videos and playlists: chapter-by-chapter lessons, a collapsible sidebar that remembers its state, and resume points.",
   },
   {
     icon: NotebookPen,
@@ -49,7 +49,7 @@ const features = [
   {
     icon: Award,
     title: "Completion certificates",
-    text: "Finish every lesson and download a printable certificate with the course, completion date and your name.",
+    text: "Finish every lesson and download a printable certificate with the course, completion date and your name — even if you delete the course later.",
   },
   {
     icon: Code2,

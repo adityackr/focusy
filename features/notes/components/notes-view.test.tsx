@@ -90,7 +90,7 @@ describe("NotesView", () => {
     expect(playlistJump.getAttribute("href")).toBe("/watch/PL1/vid-1?t=42");
 
     const courseJump = screen.getByRole("link", { name: /Open at 5:00/ });
-    expect(courseJump.getAttribute("href")).toBe("/course/course-1?t=300");
+    expect(courseJump.getAttribute("href")).toBe("/watch/course-1?t=300");
   });
 
   test("searches note text and metadata, then clears back to everything", () => {

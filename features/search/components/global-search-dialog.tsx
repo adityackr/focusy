@@ -57,7 +57,7 @@ function projectHref(source: StudioSource | null): string | null {
   if (!source) return null;
   switch (source.kind) {
     case "course":
-      return `/course/${encodeURIComponent(source.courseId)}`;
+      return `/watch/${encodeURIComponent(source.courseId)}`;
     case "playlist-video":
       return `/watch/${encodeURIComponent(source.playlistId)}/${encodeURIComponent(
         source.videoId,

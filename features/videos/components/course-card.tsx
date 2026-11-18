@@ -193,7 +193,7 @@ function useCourseCard(course: Course) {
     certificateReady,
     pct,
     fav,
-    href: `/course/${course.id}`,
+    href: `/watch/${course.id}`,
     pushRecent: () => pushCourseRecent(course.id),
     toggleFavorite: () => toggleCourseFavorite(course.id),
     category,

@@ -6,3 +6,4 @@ export { DeletePlaylistButton } from "./components/delete-playlist-dialog";
 export { deletePlaylistData } from "./lib/delete-playlist";
 export { RefreshAllPlaylistsButton } from "./components/refresh-all-playlists-button";
 export { WatchView } from "./components/watch/watch-view";
+export { WatchEntryView } from "./components/watch/watch-entry-view";

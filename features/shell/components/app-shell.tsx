@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { AppSidebar } from "@/features/shell/components/app-sidebar";
@@ -9,6 +9,9 @@ import { LogoMark } from "@/features/shell/components/logo";
 import { GlobalSearchDialog } from "@/features/search";
 import { useLearningReminders } from "@/features/reminders";
 import { cn } from "@/shared/lib/utils";
+
+/** Remember the desktop sidebar preference between routes and reloads. */
+const SIDEBAR_COLLAPSED_KEY = "focusy-shell:sidebar-collapsed";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed, toggleCollapsed, mobileOpen, openMobile, closeMobile } = useAppShell();
@@ -58,9 +61,30 @@ function useAppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Read after hydration so the server and first client render agree.
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1");
+    } catch {
+      /* private mode — keep the expanded default */
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((current) => {
+      const next = !current;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      } catch {
+        /* private mode or quota — keep the in-memory state */
+      }
+      return next;
+    });
+  }
+
   return {
     collapsed,
-    toggleCollapsed: () => setCollapsed((v) => !v),
+    toggleCollapsed,
     mobileOpen,
     openMobile: () => setMobileOpen(true),
     closeMobile: () => setMobileOpen(false),

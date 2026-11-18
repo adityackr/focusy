@@ -85,7 +85,7 @@ describe("resolveNoteContext", () => {
       PLAYLISTS,
       COURSES,
     );
-    expect(course.href).toBe("/course/course-1");
+    expect(course.href).toBe("/watch/course-1");
     expect(course.kind).toBe("course");
     expect(course.collectionTitle).toBe("TypeScript deep dive");
   });

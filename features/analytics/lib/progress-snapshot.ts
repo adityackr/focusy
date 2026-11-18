@@ -121,7 +121,7 @@ export function buildProgressItems({
       completed,
       percent: total === 0 ? 0 : Math.round((completed / total) * 100),
       status: statusOf(completed, total),
-      href: `/course/${course.id}`,
+      href: `/watch/${course.id}`,
       learningSeconds: learningSecondsFor(data, "course", course.id),
       recentIndex: recentIndex >= 0 ? recentIndex : null,
     });
@@ -259,8 +259,8 @@ export function continueLearning(
       percent: Math.round((completed / candidate.chapters.length) * 100),
       href:
         position != null && position >= chapter.startSeconds + 1
-          ? `/course/${candidate.id}?t=${Math.floor(position)}`
-          : `/course/${candidate.id}`,
+          ? `/watch/${candidate.id}?t=${Math.floor(position)}`
+          : `/watch/${candidate.id}`,
     };
     break;
   }

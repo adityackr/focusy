@@ -55,7 +55,7 @@ export function studioSourceHref(
   if (!source) return null;
   if (source.kind === "course") {
     return courses.some((course) => course.id === source.courseId)
-      ? `/course/${source.courseId}`
+      ? `/watch/${source.courseId}`
       : null;
   }
   if (source.kind === "playlist-video") {
@@ -65,7 +65,7 @@ export function studioSourceHref(
       : null;
   }
   const course = courses.find((c) => c.videoId === source.videoId);
-  return course ? `/course/${course.id}` : null;
+  return course ? `/watch/${course.id}` : null;
 }
 
 /**

@@ -218,7 +218,92 @@ describe("certificate name backups", () => {
   test("collects the name only when one is saved", () => {
     expect(collectCertificateBackup()).toBeNull();
     saveCertificateName("Ada");
-    expect(collectCertificateBackup()).toEqual({ name: "Ada" });
+    expect(collectCertificateBackup()).toMatchObject({
+      name: "Ada",
+      certificates: [],
+    });
+  });
+
+  test("round-trips archived certificates whose source was deleted", () => {
+    archiveCertificate({
+      kind: "course",
+      sourceId: "gone",
+      title: "Deleted course",
+      channelTitle: "Focusy Academy",
+      thumbnail: "",
+      completed: 3,
+      total: 3,
+      completedAt: 123,
+    });
+    saveCertificateName("Ada");
+    const section = collectCertificateBackup();
+    expect(section?.certificates).toHaveLength(1);
+
+    localStorage.clear();
+    expect(getArchivedCertificate("course", "gone")).toBeNull();
+
+    expect(restoreCertificateBackup(section, "replace")).toBe(true);
+    expect(readCertificateName()).toBe("Ada");
+    expect(getArchivedCertificate("course", "gone")).toMatchObject({
+      title: "Deleted course",
+      completedAt: 123,
+    });
+  });
+
+  test("merge adds missing certificates without removing local ones", () => {
+    archiveCertificate({
+      kind: "playlist",
+      sourceId: "PL-local",
+      title: "Local playlist",
+      channelTitle: "",
+      thumbnail: "",
+      completed: 2,
+      total: 2,
+      completedAt: 10,
+    });
+
+    expect(
+      restoreCertificateBackup(
+        {
+          version: 1,
+          name: "",
+          certificates: [
+            {
+              kind: "playlist",
+              sourceId: "PL-remote",
+              title: "Remote playlist",
+              channelTitle: "",
+              thumbnail: "",
+              completed: 4,
+              total: 4,
+              completedAt: 20,
+            },
+          ],
+        },
+        "merge"
+      )
+    ).toBe(true);
+
+    expect(getArchivedCertificate("playlist", "PL-local")).not.toBeNull();
+    expect(getArchivedCertificate("playlist", "PL-remote")).not.toBeNull();
+  });
+
+  test("an older name-only backup leaves archived certificates alone", () => {
+    archiveCertificate({
+      kind: "course",
+      sourceId: "kept",
+      title: "Kept course",
+      channelTitle: "",
+      thumbnail: "",
+      completed: 1,
+      total: 1,
+      completedAt: 5,
+    });
+
+    expect(restoreCertificateBackup({ name: "Backup" }, "replace")).toBe(
+      true
+    );
+    expect(getArchivedCertificate("course", "kept")).not.toBeNull();
   });
 
   test("merge keeps this browser's name and fills an empty one", () => {

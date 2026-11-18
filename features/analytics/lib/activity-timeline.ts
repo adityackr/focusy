@@ -43,7 +43,7 @@ function noteHref(note: LearningNote): string | null {
     return `/watch/${source.playlistId}/${source.videoId}${time}`;
   }
   if (source.kind === "course") {
-    return `/course/${source.courseId}${time}`;
+    return `/watch/${source.courseId}${time}`;
   }
   return null;
 }

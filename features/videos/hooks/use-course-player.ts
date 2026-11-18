@@ -39,10 +39,16 @@ function isResumable(
   return true;
 }
 
-export function useCoursePlayer(startAt?: number | null) {
-  const params = useParams<{ id: string }>();
+export function useCoursePlayer(
+  startAt?: number | null,
+  courseId?: string
+) {
+  // The unified `/watch/[id]` route passes the id; keep reading route params as
+  // a fallback for direct course-player renders.
+  const params = useParams<{ id?: string; playlistId?: string }>();
+  const id = courseId ?? params.id ?? params.playlistId ?? "";
   // Courses live in the shared library store (same data the tabs render).
-  const course = useLibrary((s) => s.courses[params.id]) ?? null;
+  const course = useLibrary((s) => s.courses[id]) ?? null;
   const updateCourse = useLibrary((s) => s.updateCourse);
   const pushCourseRecent = useLibrary((s) => s.pushCourseRecent);
   const [loaded, setLoaded] = useState(false);
@@ -69,7 +75,7 @@ export function useCoursePlayer(startAt?: number | null) {
   }
 
   useEffect(() => {
-    const c = useLibrary.getState().courses[params.id];
+    const c = useLibrary.getState().courses[id];
     if (c) {
       pushCourseRecent(c.id);
       const p = getProgress(c.id);
@@ -93,7 +99,7 @@ export function useCoursePlayer(startAt?: number | null) {
     }
     setLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id, startAt]);
+  }, [id, startAt]);
 
   const activeIndex = useMemo(
     () => course?.chapters.findIndex((c) => c.id === activeId) ?? -1,
@@ -150,7 +156,7 @@ export function useCoursePlayer(startAt?: number | null) {
         courseTitle: course.title,
         lessonId: id,
         lessonTitle: chapter?.title,
-        href: `/course/${course.id}`,
+        href: `/watch/${course.id}`,
       });
     }
     trackedCompletedRef.current = current;
@@ -162,7 +168,7 @@ export function useCoursePlayer(startAt?: number | null) {
       trackCourseCompleted({
         courseId: course.id,
         courseTitle: course.title,
-        href: `/course/${course.id}`,
+        href: `/watch/${course.id}`,
       });
     } else if (!complete) {
       trackedCourseDoneRef.current = false;

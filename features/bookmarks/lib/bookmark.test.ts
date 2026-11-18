@@ -71,7 +71,7 @@ describe("bookmark helpers", () => {
       bookmarkHref(
         makeBookmark({ videoId: "vid-2", source: COURSE_SOURCE, timeSeconds: 90 }),
       ),
-    ).toBe("/course/course-1?t=90");
+    ).toBe("/watch/course-1?t=90");
     expect(bookmarkHref(makeBookmark({ source: null }))).toBeNull();
   });
 

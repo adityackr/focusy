@@ -93,7 +93,7 @@ export function useAddVideo() {
     );
     if (existing) {
       toast.info("That video is already in your library.");
-      router.push(`/course/${existing.id}`);
+      router.push(`/watch/${existing.id}`);
       return;
     }
     if (chapters.length === 0) {
@@ -123,7 +123,7 @@ export function useAddVideo() {
     useLibrary.getState().addCourse(course);
     if (categoryId) useLibrary.getState().setCourseCategory(course.id, categoryId);
     setSaveOpen(false);
-    router.push(`/course/${course.id}`);
+    router.push(`/watch/${course.id}`);
   }
 
   return {

@@ -98,7 +98,7 @@ function encode(value: string): string {
 }
 
 function courseHref(courseId: string): string {
-  return `/course/${encode(courseId)}`;
+  return `/watch/${encode(courseId)}`;
 }
 
 function playlistHref(playlistId: string): string {

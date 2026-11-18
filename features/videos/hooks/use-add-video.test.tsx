@@ -86,7 +86,7 @@ describe("useAddVideo duplicate guard", () => {
       result.current.handleSave();
     });
 
-    expect(push).toHaveBeenCalledWith(`/course/${EXISTING_ID}`);
+    expect(push).toHaveBeenCalledWith(`/watch/${EXISTING_ID}`);
     // No second card for the same video.
     expect(courseCount()).toBe(1);
   });
@@ -107,7 +107,7 @@ describe("useAddVideo duplicate guard", () => {
       result.current.handleSave();
     });
 
-    expect(push).toHaveBeenCalledWith(`/course/${EXISTING_ID}`);
+    expect(push).toHaveBeenCalledWith(`/watch/${EXISTING_ID}`);
     expect(courseCount()).toBe(1);
   });
 
@@ -132,7 +132,7 @@ describe("useAddVideo duplicate guard", () => {
     expect(courses[0].videoId).toBe(VIDEO);
     expect(courses[0].categoryId).toBeUndefined();
     expect(result.current.saveOpen).toBe(false);
-    expect(push).toHaveBeenCalledWith(`/course/${courses[0].id}`);
+    expect(push).toHaveBeenCalledWith(`/watch/${courses[0].id}`);
     // Exactly one save: the library is untouched beyond that single course.
     expect(useLibrary.getState().courseOrder).toEqual([courses[0].id]);
   });
@@ -174,7 +174,7 @@ describe("useAddVideo duplicate guard", () => {
     });
 
     // Lands on one of the existing cards rather than creating a third.
-    expect(["/course/copy-a", "/course/copy-b"]).toContain(
+    expect(["/watch/copy-a", "/watch/copy-b"]).toContain(
       (push.mock.calls[0] ?? [])[0]
     );
     expect(courseCount()).toBe(2);

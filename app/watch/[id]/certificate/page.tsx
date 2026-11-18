@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 export default async function PlaylistCertificatePage({
   params,
 }: {
-  params: Promise<{ playlistId: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { playlistId } = await params;
-  return <PlaylistCertificateView playlistId={playlistId} />;
+  const { id } = await params;
+  return <PlaylistCertificateView playlistId={id} />;
 }

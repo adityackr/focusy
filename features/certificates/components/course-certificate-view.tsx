@@ -117,7 +117,7 @@ function CertificateView({
       ? {
           title: course.title,
           channelTitle: course.channelTitle ?? "",
-          href: `/course/${course.id}`,
+          href: `/watch/${course.id}`,
           backLabel: "Back to course",
           continueLabel: "Continue course",
           completedAt:

@@ -18,8 +18,8 @@ Paste a video link and Focusy splits it into chapter-based lessons using its tim
   - [Settings (`/settings`) — user-provided API key](#settings-settings--user-provided-api-key)
   - [App sidebar](#app-sidebar)
   - [Global search](#global-search)
-  - [Watch pages (`/watch/[playlistId]`, `/watch/[playlistId]/[videoId]`)](#watch-pages-watchplaylistid-watchplaylistidvideoid)
-  - [Course pages (`/course/[id]`) — the Chapterly player, exact port](#course-pages-courseid--the-chapterly-player-exact-port)
+  - [Player pages (`/watch/[id]`, `/watch/[id]/[videoId]`)](#player-pages-watchid-watchidvideoid)
+  - [Course playback on `/watch/[id]` — the Chapterly player, exact port](#course-playback-on-watchid--the-chapterly-player-exact-port)
   - [Focusy Studio](#focusy-studio)
     - [Cross-cutting](#cross-cutting)
   - [Tech stack](#tech-stack)
@@ -74,12 +74,12 @@ Marketing-style homepage with a hero (live-feel classroom mock), stats, feature 
 
 - **No API key lives in env vars or on the server.** The key is entered in the app, stored only in that browser's `localStorage`, and used directly from the client against the YouTube Data API.
 - Step-by-step tutorial with links (Cloud Console → enable API → create key → restrict → paste), a **Test key** button, and quota notes.
-- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, timestamped Markdown notes, Studio projects with their files and dependencies, learning history, saved inbox links, timestamped lesson bookmarks, course and lesson attachments with their uploaded files, and the saved certificate name) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win per note), with the file's contents previewed, the mode chosen and confirmed before anything changes. Backup format **version 3** carries per-video note buckets and an optional `resources` section (attachments with base64 file contents); version 1 and 2 files remain readable, with their legacy notes adopted as untimed notes on restore. The library page nudges you daily when new playlists, videos, Studio projects or attachments have landed since a backup taken at least a day ago, or when the library has never been backed up at all. Older backups without Studio or attachment data remain compatible; restoring one leaves local attachments untouched. The API key, player preferences and reminder settings are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
+- **Backup & restore**: downloads everything in this browser (playlists, videos, folders, watch progress, timestamped Markdown notes, Studio projects with their files and dependencies, learning history, saved inbox links, timestamped lesson bookmarks, course and lesson attachments with their uploaded files, saved certificates — including certificates whose course or playlist was deleted — and the certificate name) as one `focusy-backup-YYYY-MM-DD.json`, and restores such a file, either **replacing** this browser's data or **merging** into it (new items are added, local ones are never removed, and the newest watch progress and notes win per note), with the file's contents previewed, the mode chosen and confirmed before anything changes. Backup format **version 3** carries per-video note buckets and an optional `resources` section (attachments with base64 file contents); version 1 and 2 files remain readable, with their legacy notes adopted as untimed notes on restore. The library page nudges you daily when new playlists, videos, Studio projects or attachments have landed since a backup taken at least a day ago, or when the library has never been backed up at all. Older backups without Studio, attachment or archived-certificate data remain compatible; restoring one leaves the local attachments and archived certificates it does not mention untouched. The API key, player preferences and reminder settings are intentionally left out, since they're per-device settings. This is the no-server way to move data between browsers and devices (`shared/lib/backup.ts`).
 - **Learning reminders** and **data & storage**: optional browser notifications and a read-only storage/backup dashboard, both described below under Features.
 
 ### App sidebar
 
-Available on every sidebar page (the `(app)` route group). Collapses to a slim icon rail, works as a slide-in drawer on mobile, and contains:
+Available on every sidebar page (the `(app)` route group). Collapses to a slim icon rail, works as a slide-in drawer on mobile, remembers whether you left it expanded or collapsed, and contains:
 
 - Navigation (Library, Inbox, Recent, Notes, Bookmarks, Analytics, Certificates, Categories, Favorites and Settings), with live count badges for the inbox, notes, bookmarks and favorites.
 - Two CTAs: **Add video** (opens `/add`) and **Playlist** (opens the import dialog).
@@ -96,21 +96,24 @@ One command palette for the whole library — no dedicated route.
 - **Searches all six content types at once**: saved videos (courses), playlists, lessons (course chapters and playlist videos), note text plus lesson metadata, course/playlist bookmarks, and Studio projects.
 - Every search word must match somewhere, and exact/prefix title hits rank first. Results are grouped, with a per-group cap and a full match count so one big category cannot bury the others.
 - **Keyboard-first**: type to search, `↑` / `↓` to move, `↵` to open, `Esc` to close. Mouse and touch work too.
-- Links go straight to the right spot: chapters jump with `?t=`, playlist lessons open `/watch/<playlistId>/<videoId>`, notes keep their recorded lesson/timestamp, and Studio projects open the lesson where they're linked. Standalone projects (no associated lesson) are shown but not navigable.
+- Links go straight to the right spot: chapters jump with `?t=`, playlist lessons open `/watch/<id>/<videoId>`, notes keep their recorded lesson/timestamp, and Studio projects open the lesson where they're linked. Standalone projects (no associated lesson) are shown but not navigable.
 - Matching/ranking is pure and tested (`features/search/lib/global-search.ts`), independent of the dialog and storage.
 
-### Watch pages (`/watch/[playlistId]`, `/watch/[playlistId]/[videoId]`)
+### Player pages (`/watch/[id]`, `/watch/[id]/[videoId]`)
+
+Videos and playlists now share one `/watch` entry point. A saved course and a playlist are both keyed by id, so `/watch/<id>` picks the course player or the playlist overview from your library; `/watch/<id>/<videoId>` opens a playlist lesson directly. Old `/course/<id>` links redirect to `/watch/<id>` with the timestamp intact.
 
 - **Playlist overview**: cinematic hero with thumbnail, lesson count, description, and a "Start watching" button.
 - **Custom course player** (ported from the chapterly app): a chrome over the YouTube IFrame API with native controls hidden — segmented seekbar with chapter dividers, hover preview (thumbnail + time + chapter), floating now-playing chip, keyboard shortcuts (Space/K, J/L, arrows, M, C, F), speed/quality/captions menus, and fullscreen. Lesson counter, completion badge, "Next lesson" button, title and description around it.
 - **Nested chapters in the lesson sidebar**: videos whose description contains YouTube timestamps (`00:00 Intro`) get a collapsible chapter list nested right under the lesson row — click a chapter to seek inside the current video, or jump straight to another lesson deep-linked at that timestamp (`?t=`). The chapter currently playing is highlighted; lesson search matches chapter titles too.
-- **Collapsible lesson sidebar**: progress bar, lesson search, per-lesson watched toggles, active-lesson highlight. Collapses to a single "Show N lessons" button on desktop; a full list below the player on mobile.
+- **Collapsible lesson sidebar**: progress bar, lesson search, per-lesson watched toggles, active-lesson highlight. Collapses to a single "Show N lessons" button on desktop; a full list below the player on mobile. Its expanded/collapsed choice is saved in `localStorage` and survives navigation and reloads.
 - **Watch progress**: opening a video marks it watched; checkmarks toggle manually. Progress survives refreshes (stored per playlist in `localStorage`).
 - Opening a shared `/watch/…` link for a playlist you don't have yet **auto-imports** it.
 - Loading skeletons for both the hydrating and importing states; a proper not-found card otherwise.
 
-### Course pages (`/course/[id]`) — the Chapterly player, exact port
+### Course playback on `/watch/[id]` — the Chapterly player, exact port
 
+- **One player route.** Courses and playlists share `/watch/<id>`; old `/course/<id>` player links redirect there, keeping `?t=` deep links working for existing notes, bookmarks and shares. Course certificates still live at `/course/<id>/certificate`.
 - **Segment playback**: lessons are virtual chapters — each plays only its own segment of one YouTube video, with chapter-end enforcement and optional auto-advance.
 - **Custom chrome** (`features/videos/components/player/video-player.tsx`): native controls hidden; segmented seekbar with chapter dividers, hover preview (thumbnail + time + chapter), now-playing chip, ±10s nudges, prev/next chapter, speed menu (real available rates), captions toggle, fullscreen, auto-hiding controls, keyboard shortcuts (`Space`/`K`, `J`/`L`, `←`/`→`, `↑`/`↓`, `M`, `C`, `F`).
 - **Progress & resume** with the exact Chapterly rules: forward jumps auto-complete skipped lessons, backward never does, scrubbing follows you, and resume points are dropped once a lesson completes.
@@ -123,7 +126,7 @@ One command palette for the whole library — no dedicated route.
 
 - **Timestamped notes while watching.** Both playlist lessons and courses have a notes trigger that opens a right-side sheet (three-quarters width on desktop, full width on mobile); `Shift+N` opens it too. Saving stamps the note with the player's current video time.
 - **Markdown and code.** Notes are written in a Tiptap editor with official Markdown support, so headings, lists, links, quotes and fenced code blocks survive a refresh and render in the notes panel, search results, and exported backups.
-- **Jump back to the moment.** Timed notes link to `/watch/<playlistId>/<videoId>?t=<seconds>` or `/course/<courseId>?t=<seconds>`; untimed notes open the lesson from the start. A note can switch chapters because the course player resolves the timestamp exactly.
+- **Jump back to the moment.** Timed notes link to `/watch/<playlistId>/<videoId>?t=<seconds>` or `/watch/<courseId>?t=<seconds>`; untimed notes open the lesson from the start. A note can switch chapters because the course player resolves the timestamp exactly.
 - **Search across the library.** `/notes` lists every note newest-edit-first, searches note Markdown plus lesson/playlist/course titles, filters by playlists or courses, and shows the source, timestamp, edited date and jump action. The sidebar shows a live notes count.
 - **Storage and migration.** Notes live under `focustube:notes:v2:<videoId>` (one bucket per video, so a video keeps its notes wherever it appears). Legacy `focustube:note:<videoId>` entries are adopted once as untimed `legacy:<videoId>` notes; the old key is intentionally left in place so older builds and files keep reading it.
 
@@ -271,7 +274,7 @@ Add a video (/add)
       (localStorage) against /videos?part=snippet,contentDetails
   → parseChapters(description, duration) turns timestamps into lessons
   → course saved in the Zustand library store → persisted to localStorage
-  → course player opens at /course/[id]
+  → course player opens at /watch/[id]
 
 Add a playlist (dialog)
   → shared/lib/utils.ts `parsePlaylistInput()` extracts the playlist ID
@@ -279,7 +282,7 @@ Add a playlist (dialog)
   → shared/lib/youtube.ts fetchPlaylistFromYouTube() uses
       /playlists (metadata) + /playlistItems (all pages), client-side
   → playlist saved to Zustand store → persisted to localStorage
-  → classroom opens at /watch/[playlistId]
+  → classroom opens at /watch/[id]
 
 Open Studio (a lesson's "Open Studio" button)
   → sourceKeyForSource() links a project to a video, course, or playlist lesson
@@ -324,12 +327,13 @@ Attach a course resource (player → Resources)
 | `/categories/[id]`              | Dynamic         | One category's videos, playlists and dialogs     |
 | `/add`                          | Static + client | Add a video: fetch chapters or paste manually    |
 | `/settings`                     | Static + client | API key, backup & restore, reminders, data & storage |
-| `/course/[id]`                  | Dynamic         | Chapter-based course player (Chapterly port)     |
-| `/course/[id]/certificate`      | Dynamic         | Local printable completion certificate           |
-| `/watch/[playlistId]`           | Dynamic         | Playlist overview + lesson list                  |
-| `/watch/[playlistId]/[videoId]` | Dynamic         | Focused player + lesson sidebar                  |
+| `/watch/[id]`                   | Dynamic         | Course player or playlist overview, chosen from the library |
+| `/watch/[id]/[videoId]`         | Dynamic         | Playlist lesson player + lesson sidebar          |
+| `/watch/[id]/certificate`       | Dynamic         | Playlist completion certificate                  |
+| `/course/[id]`                  | Dynamic         | Legacy course player URL → redirects to `/watch/[id]` |
+| `/course/[id]/certificate`      | Dynamic         | Course completion certificate                    |
 
-`/library`, `/inbox`, `/recent`, `/notes`, `/bookmarks`, `/analytics`, `/certificates`, `/categories` and `/favorites` share the `(app)` route group layout with the collapsible sidebar. The watch, course, add and settings routes use a minimal top-bar layout.
+`/library`, `/inbox`, `/recent`, `/notes`, `/bookmarks`, `/analytics`, `/certificates`, `/categories` and `/favorites` share the `(app)` route group layout with the collapsible sidebar. The watch, legacy course, add and settings routes use a minimal top-bar layout.
 
 ---
 

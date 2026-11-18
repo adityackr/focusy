@@ -21,6 +21,9 @@ import { LessonSidebar } from "@/features/playlists/components/watch/lesson-side
 import { PlaylistNotFound } from "@/features/playlists/components/watch/playlist-not-found";
 import { usePresenceActivity } from "@/features/analytics";
 
+/** Remember the playlist lesson-sidebar preference between routes and reloads. */
+const WATCH_SIDEBAR_KEY = "focusy-watch:sidebar-open";
+
 export function WatchView({
   playlistId,
   activeVideoId,
@@ -178,7 +181,22 @@ function useWatchView({
 
   const playlist = playlists[playlistId];
   const loading = loadingIds.includes(playlistId);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      return localStorage.getItem(WATCH_SIDEBAR_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WATCH_SIDEBAR_KEY, sidebarOpen ? "1" : "0");
+    } catch {
+      /* private mode or quota — keep the in-memory state */
+    }
+  }, [sidebarOpen]);
   // Sidebar chapter click inside the active video → seek the player in place.
   const [seekReq, setSeekReq] = useState<SeekRequest | null>(null);
   // Chapter containing the current playback time (for the sidebar highlight).
