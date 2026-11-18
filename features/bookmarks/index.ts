@@ -4,6 +4,7 @@ export {
   useAllBookmarks,
   useVideoBookmarks,
   bookmarkCount,
+  removeBookmarksForVideo,
   BOOKMARKS_STORAGE_KEY,
 } from "./lib/bookmark-store";
 export {

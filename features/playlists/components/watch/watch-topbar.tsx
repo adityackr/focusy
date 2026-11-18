@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Heart, ListVideo } from "lucide-react";
+import { ArrowLeft, Award, Heart, ListVideo } from "lucide-react";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/utils";
 import { useLibrary } from "@/shared/store/library";
@@ -12,11 +12,14 @@ import { RefreshPlaylistButton } from "@/features/playlists/components/refresh-p
 export function WatchTopbar({
   playlistId,
   playlistTitle,
+  certificateReady,
   sidebarOpen,
   onToggleSidebar,
 }: {
   playlistId: string;
   playlistTitle: string;
+  /** Every lesson is watched, so the playlist certificate is unlocked. */
+  certificateReady: boolean;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
 }) {
@@ -35,6 +38,15 @@ export function WatchTopbar({
           <Heart className={cn("size-4", fav && "fill-primary text-primary")} />
           {fav ? "Favorited" : "Favorite"}
         </Button>
+        {certificateReady && (
+          <Link
+            href={`/watch/${playlistId}/certificate`}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+          >
+            <Award className="size-4" />
+            Certificate
+          </Link>
+        )}
         <RefreshPlaylistButton playlistId={playlistId} iconOnly={false} />
         <DeletePlaylistButton
           playlistId={playlistId}

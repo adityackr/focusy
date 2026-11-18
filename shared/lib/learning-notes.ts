@@ -604,6 +604,23 @@ export function removeNote(
   return { ok: true, value: true };
 }
 
+/**
+ * Remove every note saved for a video, including the legacy one-note entry and
+ * its migration marker. Used when the video is deleted from the library.
+ */
+export function removeNotesForVideo(videoId: string): void {
+  if (typeof window === "undefined" || !videoId) return;
+  try {
+    localStorage.removeItem(NOTES_STORAGE_PREFIX + videoId);
+    localStorage.removeItem(LEGACY_NOTE_STORAGE_PREFIX + videoId);
+    const index = readMigrationIndex();
+    if (index.delete(videoId)) writeMigrationIndex(index);
+  } catch {
+    /* storage unavailable — nothing to clean up */
+  }
+  invalidateNotesCache();
+}
+
 /* -------------------------------------------------------------------------- */
 /* React bindings                                                             */
 /* -------------------------------------------------------------------------- */

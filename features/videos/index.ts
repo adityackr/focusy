@@ -4,3 +4,4 @@ export { CourseCard } from "./components/course-card";
 export { CourseGrid } from "./components/course-grid";
 export { SortableCourseGrid } from "./components/sortable-course-grid";
 export { DeleteCourseButton } from "./components/delete-course-dialog";
+export { deleteCourseData } from "./lib/delete-course";

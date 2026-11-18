@@ -3,5 +3,6 @@ export { PlaylistGrid } from "./components/playlist-grid";
 export { PlaylistGridSkeleton } from "./components/playlist-grid-skeleton";
 export { SortablePlaylistGrid } from "./components/sortable-playlist-grid";
 export { DeletePlaylistButton } from "./components/delete-playlist-dialog";
+export { deletePlaylistData } from "./lib/delete-playlist";
 export { RefreshAllPlaylistsButton } from "./components/refresh-all-playlists-button";
 export { WatchView } from "./components/watch/watch-view";

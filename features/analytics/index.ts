@@ -6,6 +6,7 @@ export {
   useStudioAnalytics,
 } from "./hooks/use-analytics";
 export { continueLearning } from "./lib/progress-snapshot";
+export { getAnalyticsSnapshot } from "./lib/analytics-store";
 export type {
   ContinueCourse,
   ContinueLearning,

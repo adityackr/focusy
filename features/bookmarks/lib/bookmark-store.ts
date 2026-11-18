@@ -234,6 +234,15 @@ export function removeBookmark(id: string): BookmarkResult<true> {
   return { ok: true, value: true };
 }
 
+/** Remove every bookmark saved for a video. Used when the video is deleted. */
+export function removeBookmarksForVideo(videoId: string): boolean {
+  if (typeof window === "undefined") return false;
+  const bookmarks = readRaw();
+  const next = bookmarks.filter((bookmark) => bookmark.videoId !== videoId);
+  if (next.length === bookmarks.length) return true;
+  return persist(next);
+}
+
 /* -------------------------------------------------------------------------- */
 /* backup helpers                                                             */
 /* -------------------------------------------------------------------------- */

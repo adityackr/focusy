@@ -14,7 +14,12 @@ import {
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 import { useLibrary } from "@/shared/store/library";
-import { getProgress } from "@/shared/lib/storage";
+import {
+  getPlaylistCompletedAt,
+  getPlaylistProgress,
+  getProgress,
+  type PlaylistProgress,
+} from "@/shared/lib/storage";
 import type { CourseProgress } from "@/shared/lib/types";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -26,19 +31,61 @@ import { cn } from "@/shared/lib/utils";
 import {
   certificateProgress,
   certificateReference,
+  playlistCertificateProgress,
   readCertificateName,
   saveCertificateName,
+  type CertificateProgress,
 } from "../lib/certificate";
+import {
+  getArchivedCertificate,
+  type ArchivedCertificate,
+  type CertificateKind,
+} from "../lib/certificate-archive";
 import {
   downloadCertificateImage,
   type CertificateOrientation,
 } from "../lib/certificate-image";
 
 export function CourseCertificateView({ courseId }: { courseId: string }) {
+  return <CertificateView kind="course" sourceId={courseId} />;
+}
+
+export function PlaylistCertificateView({
+  playlistId,
+}: {
+  playlistId: string;
+}) {
+  return <CertificateView kind="playlist" sourceId={playlistId} />;
+}
+
+function certificateReferenceFor(
+  kind: CertificateKind,
+  sourceId: string,
+  completedAt: number | null
+): string {
+  return certificateReference(
+    kind === "playlist" ? `playlist:${sourceId}` : sourceId,
+    completedAt
+  );
+}
+
+function CertificateView({
+  kind,
+  sourceId,
+}: {
+  kind: CertificateKind;
+  sourceId: string;
+}) {
   const hydrated = useLibrary((s) => s.hydrated);
-  const course = useLibrary(useShallow((s) => s.courses[courseId]));
+  const course = useLibrary(useShallow((s) => s.courses[sourceId]));
+  const playlist = useLibrary(useShallow((s) => s.playlists[sourceId]));
   const analytics = useAnalyticsData();
   const [progress, setProgress] = useState<CourseProgress | null>(null);
+  const [playlistProgress, setPlaylistProgress] =
+    useState<PlaylistProgress | null>(null);
+  const [archived, setArchived] = useState<
+    ArchivedCertificate | null | undefined
+  >(undefined);
   const [name, setName] = useState("");
   const [issuedAt, setIssuedAt] = useState<number | null>(null);
   const [downloading, setDownloading] = useState<CertificateOrientation | null>(
@@ -48,39 +95,86 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
   useEffect(() => {
     setIssuedAt(Date.now());
     setName(readCertificateName());
-    if (courseId) setProgress(getProgress(courseId));
-  }, [courseId]);
+    setArchived(getArchivedCertificate(kind, sourceId));
+    setProgress(kind === "course" && sourceId ? getProgress(sourceId) : null);
+    setPlaylistProgress(
+      kind === "playlist" && sourceId ? getPlaylistProgress(sourceId) : null
+    );
+  }, [kind, sourceId]);
 
-  if (!hydrated || issuedAt === null || (course && !progress)) {
+  if (
+    !hydrated ||
+    issuedAt === null ||
+    archived === undefined ||
+    (kind === "course" && course && !progress) ||
+    (kind === "playlist" && playlist && !playlistProgress)
+  ) {
     return <CertificateSkeleton />;
   }
 
-  if (!course) {
+  const live =
+    kind === "course" && course && progress
+      ? {
+          title: course.title,
+          channelTitle: course.channelTitle ?? "",
+          href: `/course/${course.id}`,
+          backLabel: "Back to course",
+          continueLabel: "Continue course",
+          completedAt:
+            analytics.completedCourses[course.id] ??
+            (progress.updatedAt > 0 ? progress.updatedAt : null),
+          certificate: certificateProgress(course, progress),
+        }
+      : kind === "playlist" && playlist && playlistProgress
+        ? {
+            title: playlist.playlistTitle,
+            channelTitle: playlist.channelTitle,
+            href: `/watch/${playlist.playlistId}`,
+            backLabel: "Back to playlist",
+            continueLabel: "Continue playlist",
+            completedAt: getPlaylistCompletedAt(playlist.playlistId),
+            certificate: playlistCertificateProgress(playlist, playlistProgress),
+          }
+        : null;
+
+  if (!live && !archived) {
     return (
       <div className="mx-auto w-full max-w-2xl p-8 text-center">
         <h1 className="text-2xl font-extrabold tracking-tight">
-          Course not found
+          {kind === "playlist" ? "Playlist not found" : "Course not found"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           It may have been deleted from this browser.
         </p>
-        <Link href="/library" className={cn(buttonVariants(), "mt-4")}>
-          Back to library
+        <Link href="/certificates" className={cn(buttonVariants(), "mt-4")}>
+          Back to certificates
         </Link>
       </div>
     );
   }
 
-  const certificate = certificateProgress(course, progress);
+  const title = live?.title ?? archived!.title;
+  const channelTitle = live?.channelTitle ?? archived!.channelTitle;
+  const certificate: CertificateProgress = live?.certificate ?? {
+    total: archived!.total,
+    completed: archived!.completed,
+    percent: 100,
+    complete: true,
+  };
+  const completedAt = live?.completedAt ?? (archived!.completedAt || null);
+  const reference = certificateReferenceFor(kind, sourceId, completedAt);
+  const backHref = live?.href ?? "/certificates";
+  const backLabel = live?.backLabel ?? "Back to certificates";
+
   if (!certificate.complete) {
     return (
       <div className="mx-auto w-full max-w-3xl p-4 pb-16 sm:p-8">
         <Link
-          href={`/course/${course.id}`}
+          href={backHref}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Back to course
+          {backLabel}
         </Link>
         <Card className="mt-4 overflow-hidden">
           <div className="flex flex-col items-center gap-4 border-b bg-muted/30 px-6 py-10 text-center">
@@ -93,8 +187,8 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
               </h1>
               <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
                 Complete every lesson in{" "}
-                <span className="font-medium text-foreground">{course.title}</span>{" "}
-                to generate your completion certificate.
+                <span className="font-medium text-foreground">{title}</span> to
+                generate your completion certificate.
               </p>
             </div>
           </div>
@@ -111,11 +205,8 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
               <Progress value={certificate.percent} />
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/course/${course.id}`}
-                className={buttonVariants()}
-              >
-                Continue course
+              <Link href={backHref} className={buttonVariants()}>
+                {live?.continueLabel ?? "Continue"}
               </Link>
               <Link
                 href="/library"
@@ -130,12 +221,8 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
     );
   }
 
-  // New completions have an analytics timestamp; older ones fall back to the
-  // last saved progress time so the certificate still has a useful date.
-  const completedAt =
-    analytics.completedCourses[course.id] ??
-    (progress?.updatedAt && progress.updatedAt > 0 ? progress.updatedAt : null);
-  const reference = certificateReference(course.id, completedAt);
+  // New completions have an analytics timestamp for courses; playlists and
+  // older completions fall back to the last saved progress time.
   const displayName = name.trim() || "Your name";
   const completedLabel = completedAt
     ? formatCertificateDate(completedAt)
@@ -148,8 +235,8 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
       const format = await downloadCertificateImage(
         {
           name: displayName,
-          courseTitle: course.title,
-          channelTitle: course.channelTitle,
+          courseTitle: title,
+          channelTitle,
           completedLabel,
           issuedLabel,
           reference,
@@ -176,11 +263,11 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
     <div className="mx-auto w-full max-w-5xl p-4 pb-16 sm:p-8 print:max-w-none print:p-0">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
-          href={`/course/${course.id}`}
+          href={backHref}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Back to course
+          {backLabel}
         </Link>
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -293,14 +380,14 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
             </p>
             <div className="mx-auto mt-3 h-px w-56 bg-linear-to-r from-transparent via-slate-300 to-transparent" />
             <p className="mt-5 text-sm text-slate-600">
-              has successfully completed the course
+              has successfully completed the {kind}
             </p>
             <h1 className="mt-2 text-balance text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-              {course.title}
+              {title}
             </h1>
-            {course.channelTitle && (
+            {channelTitle && (
               <p className="mt-2 text-sm text-slate-500">
-                Created by {course.channelTitle}
+                Created by {channelTitle}
               </p>
             )}
           </div>
@@ -355,7 +442,7 @@ export function CourseCertificateView({ courseId }: { courseId: string }) {
 
           <p className="mx-auto mt-8 max-w-2xl text-center text-[10px] leading-relaxed text-slate-400">
             This personal completion record was generated in this browser from
-            saved course progress. It is not an accredited credential or a
+            saved {kind} progress. It is not an accredited credential or a
             public verification.
           </p>
         </div>

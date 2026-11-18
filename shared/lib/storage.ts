@@ -4,6 +4,9 @@ import type { CourseProgress } from "./types";
 // keep their saved key and progress after the merge.
 const API_KEY = "yt-course:api-key";
 const PROGRESS_PREFIX = "yt-course:progress:";
+const PLAYLIST_PROGRESS_PREFIX = "focustube:progress:";
+const LEGACY_PLAYLIST_PROGRESS_PREFIX = "clean-youtube:progress:";
+const PLAYLIST_COMPLETED_PREFIX = "focustube:playlist-completed:";
 
 function safeParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
@@ -57,4 +60,79 @@ export function setProgress(courseId: string, progress: CourseProgress): void {
 export function clearProgress(courseId: string): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(PROGRESS_PREFIX + courseId);
+}
+
+export interface PlaylistProgress {
+  watched: string[];
+  lastWatched: string | null;
+  completedChapters: string[];
+  /** Last playback position per video (seconds). */
+  positions: Record<string, number>;
+}
+
+const EMPTY_PLAYLIST_PROGRESS: PlaylistProgress = {
+  watched: [],
+  lastWatched: null,
+  completedChapters: [],
+  positions: {},
+};
+
+/** Read a playlist's watch progress without migrating or writing anything. */
+export function getPlaylistProgress(playlistId: string): PlaylistProgress {
+  if (typeof window === "undefined" || !playlistId) {
+    return { ...EMPTY_PLAYLIST_PROGRESS };
+  }
+
+  const raw = safeParse<Record<string, unknown> | null>(
+    localStorage.getItem(PLAYLIST_PROGRESS_PREFIX + playlistId) ??
+      localStorage.getItem(LEGACY_PLAYLIST_PROGRESS_PREFIX + playlistId),
+    null,
+  );
+  if (!raw) return { ...EMPTY_PLAYLIST_PROGRESS };
+
+  const positions: Record<string, number> = {};
+  if (raw.positions && typeof raw.positions === "object") {
+    for (const [videoId, value] of Object.entries(
+      raw.positions as Record<string, unknown>,
+    )) {
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        positions[videoId] = Math.floor(value);
+      }
+    }
+  }
+
+  return {
+    watched: Array.isArray(raw.watched)
+      ? raw.watched.filter((id): id is string => typeof id === "string")
+      : [],
+    lastWatched: typeof raw.lastWatched === "string" ? raw.lastWatched : null,
+    completedChapters: Array.isArray(raw.completedChapters)
+      ? raw.completedChapters.filter(
+          (key): key is string => typeof key === "string",
+        )
+      : [],
+    positions,
+  };
+}
+
+/** When this playlist first became fully watched, or null if never. */
+export function getPlaylistCompletedAt(playlistId: string): number | null {
+  if (typeof window === "undefined" || !playlistId) return null;
+  const value = Number(localStorage.getItem(PLAYLIST_COMPLETED_PREFIX + playlistId));
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** Remember the first time a playlist became fully watched (idempotent). */
+export function setPlaylistCompletedAt(playlistId: string): void {
+  if (typeof window === "undefined" || !playlistId) return;
+  if (getPlaylistCompletedAt(playlistId) !== null) return;
+  localStorage.setItem(PLAYLIST_COMPLETED_PREFIX + playlistId, String(Date.now()));
+}
+
+/** Drop a playlist's saved progress (called when the playlist is deleted). */
+export function clearPlaylistProgress(playlistId: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(PLAYLIST_PROGRESS_PREFIX + playlistId);
+  localStorage.removeItem(LEGACY_PLAYLIST_PROGRESS_PREFIX + playlistId);
+  localStorage.removeItem(PLAYLIST_COMPLETED_PREFIX + playlistId);
 }

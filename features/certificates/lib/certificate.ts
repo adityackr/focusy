@@ -1,4 +1,5 @@
-import type { Course, CourseProgress } from "@/shared/lib/types";
+import type { Course, CourseProgress, Playlist } from "@/shared/lib/types";
+import type { PlaylistProgress } from "@/shared/lib/storage";
 
 /** Locally saved name shown on generated certificates. */
 export const CERTIFICATE_NAME_KEY = "focusy-certificate:name:v1";
@@ -22,6 +23,28 @@ export function certificateProgress(
   const completedIds = new Set(progress?.completedIds ?? []);
   const completed = course.chapters.reduce(
     (count, chapter) => count + (completedIds.has(chapter.id) ? 1 : 0),
+    0
+  );
+  return {
+    total,
+    completed,
+    percent: total === 0 ? 0 : Math.round((completed / total) * 100),
+    complete: total > 0 && completed >= total,
+  };
+}
+
+/**
+ * Playlist certificates count only lessons that still belong to the playlist,
+ * so removed videos can never leave a stale all-watched state behind.
+ */
+export function playlistCertificateProgress(
+  playlist: Pick<Playlist, "videos">,
+  progress: Pick<PlaylistProgress, "watched"> | null | undefined
+): CertificateProgress {
+  const total = playlist.videos.length;
+  const watched = new Set(progress?.watched ?? []);
+  const completed = playlist.videos.reduce(
+    (count, video) => count + (watched.has(video.videoId) ? 1 : 0),
     0
   );
   return {

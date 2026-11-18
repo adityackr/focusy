@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Separator } from "@/shared/ui/separator";
 import { cn } from "@/shared/lib/utils";
 import { useLibrary } from "@/shared/store/library";
+import { setPlaylistCompletedAt } from "@/shared/lib/storage";
 import {
   StudioLessonPanel,
   studioSourceForPlaylistVideo,
@@ -55,6 +56,18 @@ export function WatchView({
   const [studioOpen, setStudioOpen] = useState(false);
   usePresenceActivity("studio", studioOpen);
 
+  const certificateReady = Boolean(
+    playlist &&
+      playlist.videos.length > 0 &&
+      playlist.videos.every((video) => watched.includes(video.videoId))
+  );
+
+  // Remember when the playlist was first finished so its certificate keeps a
+  // stable completion date (and can be archived on deletion).
+  useEffect(() => {
+    if (certificateReady) setPlaylistCompletedAt(playlistId);
+  }, [certificateReady, playlistId]);
+
   if (!playlist) {
     if (!hydrated || loading) return <WatchSkeleton />;
     return <PlaylistNotFound />;
@@ -69,6 +82,7 @@ export function WatchView({
       <WatchTopbar
         playlistId={playlistId}
         playlistTitle={playlist.playlistTitle}
+        certificateReady={certificateReady}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={toggleSidebar}
       />

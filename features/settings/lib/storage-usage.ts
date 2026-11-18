@@ -113,6 +113,7 @@ const PREFERENCE_KEYS = new Set([
   "yt-course:sidebar",
   "focusy-reminders:v1",
   "focusy-certificate:name:v1",
+  "focusy-certificates:v1",
 ]);
 
 const BACKUP_KEYS = new Set([
@@ -131,6 +132,7 @@ export function storageGroupFor(key: string): StorageGroupId {
   if (LIBRARY_KEYS.has(key)) return "library";
   if (
     key.startsWith("focustube:progress:") ||
+    key.startsWith("focustube:playlist-completed:") ||
     key.startsWith("yt-course:progress:")
   ) {
     return "progress";

@@ -14,8 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
-import { useLibrary } from "@/shared/store/library";
 import { cn } from "@/shared/lib/utils";
+import { deletePlaylistData } from "../lib/delete-playlist";
 
 export function DeletePlaylistButton({
   playlistId,
@@ -52,8 +52,10 @@ export function DeletePlaylistButton({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this playlist?</AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{playlistTitle}&rdquo; will be removed from your library, recents
-              and favorites. You can re-import it anytime with the playlist link.
+              &ldquo;{playlistTitle}&rdquo; and its lessons&apos; notes, bookmarks,
+              Studio projects and progress will be permanently removed from this
+              browser. A completed certificate is kept. You can re-import it
+              anytime with the playlist link.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -75,11 +77,10 @@ function useDeletePlaylistDialog({
   onDeleted?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const removePlaylist = useLibrary((s) => s.removePlaylist);
 
-  function handleDelete() {
-    removePlaylist(playlistId);
-    toast.success("Playlist removed.");
+  async function handleDelete() {
+    await deletePlaylistData(playlistId);
+    toast.success("Playlist and its saved notes and bookmarks removed.");
     onDeleted?.();
   }
 

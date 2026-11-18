@@ -300,6 +300,55 @@ export async function deleteWorkspace(
   return { ok: true, value: undefined };
 }
 
+/**
+ * Delete every Studio project linked to one source key. Deletion is
+ * best-effort per project so one damaged record can't strand the rest.
+ * Returns how many projects were removed.
+ */
+export async function deleteWorkspacesForSourceKey(
+  sourceKey: string
+): Promise<number> {
+  if (!sourceKey) return 0;
+  const projects = selectWorkspaceMetasBySourceKey(
+    useStudioWorkspaces.getState(),
+    sourceKey
+  );
+  let deleted = 0;
+  for (const project of projects) {
+    const result = await deleteWorkspace(project.id);
+    if (result.ok) deleted += 1;
+  }
+  return deleted;
+}
+
+async function deleteWorkspacesMatching(
+  matches: (sourceKey: string) => boolean
+): Promise<number> {
+  const projects = selectWorkspaceMetaList(useStudioWorkspaces.getState()).filter(
+    (project) => Boolean(project.sourceKey) && matches(project.sourceKey!)
+  );
+  let deleted = 0;
+  for (const project of projects) {
+    const result = await deleteWorkspace(project.id);
+    if (result.ok) deleted += 1;
+  }
+  return deleted;
+}
+
+/** Delete every Studio project attached to a course (all chapters share one). */
+export function deleteWorkspacesForCourse(courseId: string): Promise<number> {
+  return deleteWorkspacesForSourceKey(`course:${courseId}`);
+}
+
+/** Delete every Studio project attached to a playlist's lessons. */
+export function deleteWorkspacesForPlaylist(
+  playlistId: string
+): Promise<number> {
+  return deleteWorkspacesMatching((sourceKey) =>
+    sourceKey.startsWith(`playlist:${playlistId}:`)
+  );
+}
+
 export async function renameWorkspace(
   id: string,
   name: string

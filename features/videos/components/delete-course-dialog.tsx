@@ -14,9 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
-import { useLibrary } from "@/shared/store/library";
-import { clearProgress } from "@/shared/lib/storage";
 import { cn } from "@/shared/lib/utils";
+import { deleteCourseData } from "../lib/delete-course";
 
 export function DeleteCourseButton({
   courseId,
@@ -53,8 +52,9 @@ export function DeleteCourseButton({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this course?</AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{courseTitle}&rdquo; and its progress will be permanently removed from this
-              browser. This can&apos;t be undone.
+              &ldquo;{courseTitle}&rdquo; and its notes, bookmarks, attachments,
+              Studio projects and progress will be permanently removed from this
+              browser. A completed certificate is kept. This can&apos;t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -76,12 +76,10 @@ function useDeleteCourseDialog({
   onDeleted?: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const removeCourse = useLibrary((s) => s.removeCourse);
 
-  function handleDelete() {
-    clearProgress(courseId);
-    removeCourse(courseId);
-    toast.success("Video removed.");
+  async function handleDelete() {
+    await deleteCourseData(courseId);
+    toast.success("Video and its saved notes, bookmarks and attachments removed.");
     onDeleted?.();
   }
 

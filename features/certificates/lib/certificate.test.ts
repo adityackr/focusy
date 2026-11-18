@@ -3,9 +3,15 @@ import {
   CERTIFICATE_NAME_KEY,
   certificateProgress,
   certificateReference,
+  playlistCertificateProgress,
   readCertificateName,
   saveCertificateName,
 } from "./certificate";
+import {
+  archiveCertificate,
+  getArchivedCertificate,
+  removeArchivedCertificate,
+} from "./certificate-archive";
 import {
   certificateImageFileName,
   certificateSvg,
@@ -46,6 +52,87 @@ describe("certificate completion", () => {
       percent: 0,
       complete: false,
     });
+  });
+});
+
+describe("playlist certificate completion", () => {
+  const playlist = {
+    videos: [{ videoId: "v1" }, { videoId: "v2" }, { videoId: "v3" }],
+  };
+
+  test("counts only lessons that still belong to the playlist", () => {
+    const result = playlistCertificateProgress(playlist, {
+      watched: ["v1", "v2", "removed"],
+    });
+    expect(result.completed).toBe(2);
+    expect(result.total).toBe(3);
+    expect(result.complete).toBe(false);
+  });
+
+  test("unlocks only when every playlist lesson is watched", () => {
+    expect(
+      playlistCertificateProgress(playlist, { watched: ["v1", "v2", "v3"] })
+    ).toEqual({ total: 3, completed: 3, percent: 100, complete: true });
+  });
+
+  test("an empty playlist never earns a certificate", () => {
+    expect(
+      playlistCertificateProgress({ videos: [] }, { watched: [] })
+    ).toEqual({ total: 0, completed: 0, percent: 0, complete: false });
+  });
+});
+
+describe("archived certificates", () => {
+  beforeEach(() => localStorage.clear());
+
+  test("round-trips a completed course or playlist snapshot", () => {
+    archiveCertificate({
+      kind: "playlist",
+      sourceId: "PL1",
+      title: "Frontend Course",
+      channelTitle: "Focusy Academy",
+      thumbnail: "",
+      completed: 4,
+      total: 4,
+      completedAt: 99,
+    });
+
+    expect(getArchivedCertificate("playlist", "PL1")).toMatchObject({
+      kind: "playlist",
+      sourceId: "PL1",
+      title: "Frontend Course",
+      completed: 4,
+      total: 4,
+      completedAt: 99,
+    });
+  });
+
+  test("ignores incomplete snapshots and removes one by source", () => {
+    expect(
+      archiveCertificate({
+        kind: "course",
+        sourceId: "C1",
+        title: "Unfinished",
+        channelTitle: "",
+        thumbnail: "",
+        completed: 1,
+        total: 2,
+        completedAt: 1,
+      })
+    ).toBeNull();
+
+    archiveCertificate({
+      kind: "course",
+      sourceId: "C1",
+      title: "Finished",
+      channelTitle: "",
+      thumbnail: "",
+      completed: 2,
+      total: 2,
+      completedAt: 2,
+    });
+    removeArchivedCertificate("course", "C1");
+    expect(getArchivedCertificate("course", "C1")).toBeNull();
   });
 });
 

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # bun
 bun.lockb
+
+/public/promo
+/public/social

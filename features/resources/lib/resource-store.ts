@@ -295,6 +295,28 @@ export async function removeResource(id: string): Promise<ResourceResult<true>> 
   return { ok: true, value: true };
 }
 
+/**
+ * Remove a course's attachments, including any files stored in IndexedDB.
+ * Metadata goes first so a failed file delete can never leave a visible
+ * attachment pointing at missing bytes.
+ */
+export async function removeResourcesForCourse(courseId: string): Promise<void> {
+  if (typeof window === "undefined" || !courseId) return;
+
+  const resources = readRaw();
+  const doomed = resources.filter((resource) => resource.courseId === courseId);
+  if (doomed.length === 0) return;
+  if (!persist(resources.filter((resource) => resource.courseId !== courseId))) {
+    return;
+  }
+
+  await Promise.all(
+    doomed
+      .filter((resource) => isFileResourceKind(resource.kind))
+      .map((resource) => deleteResourceFile(resource.id).catch(() => {})),
+  );
+}
+
 /** Replace every resource, e.g. when restoring a backup. */
 export function replaceResources(resources: Resource[]): void {
   if (typeof window === "undefined") return;

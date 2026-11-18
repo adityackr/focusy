@@ -7,6 +7,7 @@ export {
   addTextResource,
   addFileResource,
   removeResource,
+  removeResourcesForCourse,
   RESOURCES_STORAGE_KEY,
 } from "./lib/resource-store";
 export {
