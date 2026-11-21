@@ -70,9 +70,12 @@ function CountUp({ text }: { text: string }) {
 function HeroCopy() {
 	return (
 		<div>
+			<p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+				Focusy · YouTube, turned into a classroom
+			</p>
 			<h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
 				<span className="sr-only">
-					Learn from YouTube {HEADLINE_PHRASES[0]}
+					Focusy — learn from YouTube {HEADLINE_PHRASES[0]}
 				</span>
 				<span aria-hidden className="block">
 					Learn from YouTube
@@ -85,7 +88,8 @@ function HeroCopy() {
 				</span>
 			</h1>
 			<p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-				Paste a video or playlist link and get a calm, course-style classroom —
+				<strong className="font-semibold text-foreground">Focusy</strong> turns
+				any YouTube video or playlist into a calm, course-style classroom —
 				then take timestamped notes, bookmark exact moments, attach PDFs and
 				reference links to lessons, save links for later, track your streak and
 				practice what you learn. Nothing else competing for your attention.

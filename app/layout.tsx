@@ -9,6 +9,13 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
+/**
+ * Search Console verification token (Settings → Ownership verification → HTML
+ * tag). Optional: when unset, no meta tag is emitted at all.
+ */
+const GOOGLE_SITE_VERIFICATION =
+	process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
+
 export const metadata: Metadata = {
 	metadataBase: new URL(SITE_URL),
 	title: {
@@ -49,6 +56,9 @@ export const metadata: Metadata = {
 		// Title, description and image are auto-filled from the OpenGraph tags.
 		card: 'summary_large_image',
 	},
+	...(GOOGLE_SITE_VERIFICATION
+		? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+		: {}),
 	robots: {
 		index: true,
 		follow: true,

@@ -239,6 +239,7 @@ cd focustube
 None required — the app runs out of the box. Two optional values:
 
 - **`NEXT_PUBLIC_SITE_URL`** — the production origin used for SEO ( `metadataBase`, canonical URLs, `sitemap.xml`, `robots.txt`, OpenGraph links). Defaults to the deployed Vercel domain; set it when you attach a custom domain.
+- **`NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`** — optional. The `content` value from Search Console's HTML-tag verification; renders `google-site-verification` on every page so the property can be verified without a DNS record.
 - The YouTube Data API v3 key is entered by the user in the app under **Settings** (`/settings`) and stored only in that browser's `localStorage` — never in env vars.
 
 ### 3. Install & run
@@ -543,7 +544,7 @@ Feature-Driven Development (FDD): `app/` holds **thin routes only** (metadata + 
 The app deploys as a standard Next.js app (e.g. Vercel):
 
 1. Import the repository.
-2. No required environment variables — each user adds their own YouTube API key in the app under Settings. Set `NEXT_PUBLIC_SITE_URL` to your custom domain so canonical URLs, `sitemap.xml` and social cards point at it.
+2. No required environment variables — each user adds their own YouTube API key in the app under Settings. Set `NEXT_PUBLIC_SITE_URL` to your custom domain so canonical URLs, `sitemap.xml` and social cards point at it. Then verify the domain in [Google Search Console](https://search.google.com/search-console) (optionally via `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`) and submit `/sitemap.xml` — a fresh deployment is not indexed until it is discovered or submitted.
 3. Build command `bun run build` (or `next build`), output served with `bun start`.
 
 No database or additional services required. Studio previews use Sandpack's hosted bundler and public npm resolution, so they need network access and are not described as offline; self-hosting that runtime is outside the current scope.
