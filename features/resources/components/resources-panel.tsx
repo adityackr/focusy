@@ -201,6 +201,22 @@ export function ResourcesPanel({
         : resourcesForCourse(resources, ownerId),
     [resources, isPlaylist, ownerId],
   );
+  const groups = React.useMemo(
+    () =>
+      [
+        {
+          key: "lesson",
+          label: "Lesson resources",
+          items: sorted.filter((resource) => resource.chapterId),
+        },
+        {
+          key: "collection",
+          label: `Whole ${collectionName}`,
+          items: sorted.filter((resource) => !resource.chapterId),
+        },
+      ].filter((group) => group.items.length > 0),
+    [sorted, collectionName],
+  );
 
   const [open, setOpen] = React.useState(false);
   const [composerOpen, setComposerOpen] = React.useState(false);
@@ -564,153 +580,175 @@ export function ResourcesPanel({
                     </Button>
                   </div>
                 ) : (
-                  <ol className="space-y-1.5">
-                    {sorted.map((resource) => {
-                      const Icon = KIND_ICONS[resource.kind];
-                      const isFile = isFileResourceKind(resource.kind);
-                      const summary = summaryFor(resource);
-                      const hasDetails = Boolean(
-                        resource.url ||
-                          (resource.kind === "snippet" && resource.content),
-                      );
-                      const expanded = hasDetails && expandedId === resource.id;
-                      return (
-                        <li
-                          key={resource.id}
-                          className="overflow-hidden rounded-lg border bg-background/60"
-                        >
-                          <div className="flex items-center gap-1 pr-1.5">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                hasDetails &&
-                                setExpandedId(expanded ? null : resource.id)
-                              }
-                              aria-expanded={hasDetails ? expanded : undefined}
-                              className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-left"
-                            >
-                              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                                <Icon className="size-3.5" aria-hidden />
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="flex items-center gap-1.5">
-                                  <span
-                                    className="truncate text-sm font-medium"
-                                    title={resource.title}
-                                  >
-                                    {resource.title}
-                                  </span>
-                                  <Badge
-                                    variant="secondary"
-                                    className="shrink-0 px-1.5 text-[10px]"
-                                  >
-                                    {RESOURCE_KIND_LABELS[resource.kind]}
-                                  </Badge>
-                                  <Badge
-                                    variant="outline"
-                                    className="shrink-0 px-1.5 text-[10px]"
-                                  >
-                                    {resource.chapterId
-                                      ? "Lesson"
-                                      : isPlaylist
-                                        ? "Playlist"
-                                        : "Course"}
-                                  </Badge>
-                                </span>
-                                {summary && (
-                                  <span
-                                    className="mt-0.5 block truncate text-[11px] text-muted-foreground"
-                                    title={summary}
-                                  >
-                                    {summary}
-                                  </span>
-                                )}
-                              </span>
-                              {hasDetails && (
-                                <ChevronDown
-                                  className={cn(
-                                    "size-3.5 shrink-0 text-muted-foreground transition-transform",
-                                    expanded && "rotate-180",
-                                  )}
-                                  aria-hidden
-                                />
-                              )}
-                            </button>
-
-                            <div className="flex shrink-0 items-center">
-                              {resource.url && (
-                                <a
-                                  href={resource.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  aria-label={`Open ${resource.title}`}
-                                  className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-                                >
-                                  <ExternalLink className="size-3.5" />
-                                </a>
-                              )}
-                              {isFile && (
-                                <>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-7 text-muted-foreground"
-                                    aria-label={`Open ${resource.title}`}
-                                    onClick={() => void openAttachment(resource)}
-                                  >
-                                    <ExternalLink className="size-3.5" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-7 text-muted-foreground"
-                                    aria-label={`Download ${resource.title}`}
-                                    onClick={() =>
-                                      void downloadAttachment(resource)
-                                    }
-                                  >
-                                    <Download className="size-3.5" />
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="size-7 text-muted-foreground hover:text-destructive"
-                                aria-label={`Delete ${resource.title}`}
-                                onClick={() => setDeleteId(resource.id)}
+                  <div className="space-y-4">
+                    {groups.map((group) => (
+                      <section key={group.key} className="space-y-1.5">
+                        <div className="flex items-center justify-between px-0.5">
+                          <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                            {group.label}
+                          </h4>
+                          <span className="text-[10px] tabular-nums text-muted-foreground">
+                            {group.items.length}
+                          </span>
+                        </div>
+                        <ol className="space-y-1.5">
+                          {group.items.map((resource) => {
+                            const Icon = KIND_ICONS[resource.kind];
+                            const isFile = isFileResourceKind(resource.kind);
+                            const summary = summaryFor(resource);
+                            const hasDetails = Boolean(
+                              resource.url ||
+                              (resource.kind === "snippet" && resource.content),
+                            );
+                            const expanded =
+                              hasDetails && expandedId === resource.id;
+                            return (
+                              <li
+                                key={resource.id}
+                                className="overflow-hidden rounded-lg border bg-background/60"
                               >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            </div>
-                          </div>
+                                <div className="flex items-center gap-1 pr-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      hasDetails &&
+                                      setExpandedId(
+                                        expanded ? null : resource.id,
+                                      )
+                                    }
+                                    aria-expanded={
+                                      hasDetails ? expanded : undefined
+                                    }
+                                    className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-left"
+                                  >
+                                    <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                                      <Icon className="size-3.5" aria-hidden />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="flex items-center gap-1.5">
+                                        <span
+                                          className="truncate text-sm font-medium"
+                                          title={resource.title}
+                                        >
+                                          {resource.title}
+                                        </span>
+                                        <Badge
+                                          variant="secondary"
+                                          className="shrink-0 px-1.5 text-[10px]"
+                                        >
+                                          {RESOURCE_KIND_LABELS[resource.kind]}
+                                        </Badge>
+                                        <Badge
+                                          variant="outline"
+                                          className="shrink-0 px-1.5 text-[10px]"
+                                        >
+                                          {resource.chapterId
+                                            ? "Lesson"
+                                            : isPlaylist
+                                              ? "Playlist"
+                                              : "Course"}
+                                        </Badge>
+                                      </span>
+                                      {summary && (
+                                        <span
+                                          className="mt-0.5 block truncate text-[11px] text-muted-foreground"
+                                          title={summary}
+                                        >
+                                          {summary}
+                                        </span>
+                                      )}
+                                    </span>
+                                    {hasDetails && (
+                                      <ChevronDown
+                                        className={cn(
+                                          "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                                          expanded && "rotate-180",
+                                        )}
+                                        aria-hidden
+                                      />
+                                    )}
+                                  </button>
 
-                          {expanded && (
-                            <div className="space-y-1.5 border-t px-2.5 py-2">
-                              {resource.url && (
-                                <a
-                                  href={resource.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="block truncate text-xs font-medium text-primary hover:underline"
-                                >
-                                  {resource.url}
-                                </a>
-                              )}
-                              {resource.kind === "snippet" && resource.content && (
-                                <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed">
-                                  <code>{resource.content}</code>
-                                </pre>
-                              )}
-                            </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ol>
+                                  <div className="flex shrink-0 items-center">
+                                    {resource.url && (
+                                      <a
+                                        href={resource.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        aria-label={`Open ${resource.title}`}
+                                        className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                                      >
+                                        <ExternalLink className="size-3.5" />
+                                      </a>
+                                    )}
+                                    {isFile && (
+                                      <>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className="size-7 text-muted-foreground"
+                                          aria-label={`Open ${resource.title}`}
+                                          onClick={() =>
+                                            void openAttachment(resource)
+                                          }
+                                        >
+                                          <ExternalLink className="size-3.5" />
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className="size-7 text-muted-foreground"
+                                          aria-label={`Download ${resource.title}`}
+                                          onClick={() =>
+                                            void downloadAttachment(resource)
+                                          }
+                                        >
+                                          <Download className="size-3.5" />
+                                        </Button>
+                                      </>
+                                    )}
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-7 text-muted-foreground hover:text-destructive"
+                                      aria-label={`Delete ${resource.title}`}
+                                      onClick={() => setDeleteId(resource.id)}
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {expanded && (
+                                  <div className="space-y-1.5 border-t px-2.5 py-2">
+                                    {resource.url && (
+                                      <a
+                                        href={resource.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="block truncate text-xs font-medium text-primary hover:underline"
+                                      >
+                                        {resource.url}
+                                      </a>
+                                    )}
+                                    {resource.kind === "snippet" &&
+                                      resource.content && (
+                                        <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed">
+                                          <code>{resource.content}</code>
+                                        </pre>
+                                      )}
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      </section>
+                    ))}
+                  </div>
                 )}
               </>
             )}
