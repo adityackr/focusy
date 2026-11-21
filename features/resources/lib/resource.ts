@@ -38,8 +38,14 @@ export const MAX_RESOURCE_FILE_BYTES = 25 * 1024 * 1024;
 
 export interface Resource {
   id: string;
+  /** Owning course id. Empty for playlist resources. */
   courseId: string;
-  /** Attached lesson. Null means the resource belongs to the whole course. */
+  /** Owning playlist id. Null for course resources. */
+  playlistId: string | null;
+  /**
+   * Attached lesson — a course chapter id or a playlist video id. Null means
+   * the resource belongs to the whole course/playlist.
+   */
   chapterId: string | null;
   kind: ResourceKind;
   title: string;
@@ -59,7 +65,10 @@ export interface Resource {
 }
 
 export interface ResourceDraft {
-  courseId: string;
+  /** Owning course id. Leave empty when attaching to a playlist. */
+  courseId?: string;
+  /** Owning playlist id. Leave empty when attaching to a course. */
+  playlistId?: string | null;
   chapterId?: string | null;
   kind: ResourceKind;
   title: string;
@@ -145,9 +154,13 @@ export function normalizeResource(raw: unknown): Resource | null {
   if (!isRecord(raw)) return null;
 
   const id = str(raw.id);
-  const courseId = str(raw.courseId);
   const title = str(raw.title, MAX_RESOURCE_TITLE_LENGTH);
-  if (!id || !courseId || !title || !isResourceKind(raw.kind)) return null;
+  // A resource belongs to exactly one course or playlist.
+  const playlistId = optionalString(raw.playlistId, 200);
+  const courseId = playlistId ? "" : str(raw.courseId);
+  if (!id || (!courseId && !playlistId) || !title || !isResourceKind(raw.kind)) {
+    return null;
+  }
 
   const kind = raw.kind;
   const url = isFileResourceKind(kind)
@@ -177,6 +190,7 @@ export function normalizeResource(raw: unknown): Resource | null {
   return {
     id,
     courseId,
+    playlistId,
     chapterId: optionalString(raw.chapterId, 200),
     kind,
     title,
@@ -255,7 +269,18 @@ export function resourcesForCourse(
   courseId: string,
 ): Resource[] {
   return sortResources(
-    resources.filter((resource) => resource.courseId === courseId),
+    resources.filter(
+      (resource) => !resource.playlistId && resource.courseId === courseId,
+    ),
+  );
+}
+
+export function resourcesForPlaylist(
+  resources: Resource[],
+  playlistId: string,
+): Resource[] {
+  return sortResources(
+    resources.filter((resource) => resource.playlistId === playlistId),
   );
 }
 
@@ -267,6 +292,7 @@ export function resourcesForChapter(
   return sortResources(
     resources.filter(
       (resource) =>
+        !resource.playlistId &&
         resource.courseId === courseId &&
         (chapterId === null || resource.chapterId === chapterId),
     ),

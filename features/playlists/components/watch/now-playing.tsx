@@ -10,6 +10,7 @@ import { VideoPlayer, type SeekRequest } from "@/features/playlists/components/w
 import { chaptersForVideo } from "@/shared/lib/chapters";
 import { NotesPanel } from "@/shared/components/notes/notes-panel";
 import { BookmarksPanel } from "@/features/bookmarks";
+import { ResourcesPanel } from "@/features/resources";
 import VideoDescription from "@/shared/components/video-description";
 import type { Playlist, PlaylistVideo } from "@/shared/lib/types";
 import { usePresenceActivity } from "@/features/analytics";
@@ -110,6 +111,13 @@ export function NowPlaying({
           }}
           getCurrentTime={getCurrentTime}
           onSeek={seekTo}
+        />
+        <ResourcesPanel
+          key={activeVideo.videoId}
+          playlistId={playlist.playlistId}
+          playlistTitle={playlist.playlistTitle}
+          chapterId={activeVideo.videoId}
+          chapterTitle={activeVideo.title}
         />
         {nextVideo && (
           <Button size="sm" className="ml-auto" onClick={goNext}>

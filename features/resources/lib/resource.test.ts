@@ -14,8 +14,10 @@ import {
   allResources,
   mergeResources,
   removeResource,
+  removeResourcesForPlaylist,
   replaceResources,
 } from "./resource-store";
+import { resourcesForCourse, resourcesForPlaylist } from "./resource";
 import { clearResourceFiles, readResourceFile } from "./resource-db";
 import {
   collectResourcesBackup,
@@ -69,6 +71,27 @@ describe("resource validation and store", () => {
     expect(removed.ok).toBe(true);
     expect(allResources()).toEqual([]);
     expect(await readResourceFile(added.value.id)).toBeNull();
+  });
+
+  test("attaches resources to a playlist lesson and removes them with the playlist", async () => {
+    const added = addTextResource({
+      playlistId: "playlist-1",
+      chapterId: "video-1",
+      kind: "link",
+      title: "Playlist reference",
+      url: "https://example.com/lesson",
+    });
+    expect(added.ok).toBe(true);
+    if (!added.ok) return;
+    expect(added.value.playlistId).toBe("playlist-1");
+    expect(added.value.courseId).toBe("");
+    expect(added.value.chapterId).toBe("video-1");
+    expect(resourcesForPlaylist(allResources(), "playlist-1")).toHaveLength(1);
+    // Playlist resources never leak into a course with the same id.
+    expect(resourcesForCourse(allResources(), "playlist-1")).toEqual([]);
+
+    await removeResourcesForPlaylist("playlist-1");
+    expect(allResources()).toEqual([]);
   });
 
   test("merge keeps local resources and only adds new ids", () => {

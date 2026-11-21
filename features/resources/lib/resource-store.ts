@@ -152,13 +152,20 @@ function persist(resources: Resource[]): boolean {
 }
 
 function baseFields(input: ResourceDraft) {
+  const playlistId = input.playlistId?.trim() || null;
   return {
     id: createId(),
-    courseId: input.courseId.trim(),
+    courseId: playlistId ? "" : (input.courseId ?? "").trim(),
+    playlistId,
     chapterId: input.chapterId?.trim() || null,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
+}
+
+/** A resource needs exactly one owner: a course id or a playlist id. */
+function hasOwner(input: ResourceDraft): boolean {
+  return Boolean(input.playlistId?.trim() || input.courseId?.trim());
 }
 
 /**
@@ -169,7 +176,7 @@ export function addTextResource(input: ResourceDraft): ResourceResult<Resource> 
   if (typeof window === "undefined") return { ok: false, error: "storage" };
 
   const title = input.title.trim().slice(0, MAX_RESOURCE_TITLE_LENGTH);
-  if (!title || !input.courseId.trim()) {
+  if (!title || !hasOwner(input)) {
     return { ok: false, error: "empty" };
   }
 
@@ -223,7 +230,7 @@ export async function addFileResource(
   input: ResourceDraft & { file: File },
 ): Promise<ResourceResult<Resource>> {
   if (typeof window === "undefined") return { ok: false, error: "storage" };
-  if (!input.courseId.trim()) return { ok: false, error: "empty" };
+  if (!hasOwner(input)) return { ok: false, error: "empty" };
   if (!isFileResourceKind(input.kind)) {
     return { ok: false, error: "invalid-file" };
   }
@@ -317,6 +324,36 @@ export async function removeResourcesForCourse(courseId: string): Promise<void> 
   );
 }
 
+/**
+ * Remove a playlist's attachments, including any files stored in IndexedDB.
+ * Metadata goes first so a failed file delete can never leave a visible
+ * attachment pointing at missing bytes.
+ */
+export async function removeResourcesForPlaylist(
+  playlistId: string,
+): Promise<void> {
+  if (typeof window === "undefined" || !playlistId) return;
+
+  const resources = readRaw();
+  const doomed = resources.filter(
+    (resource) => resource.playlistId === playlistId,
+  );
+  if (doomed.length === 0) return;
+  if (
+    !persist(
+      resources.filter((resource) => resource.playlistId !== playlistId),
+    )
+  ) {
+    return;
+  }
+
+  await Promise.all(
+    doomed
+      .filter((resource) => isFileResourceKind(resource.kind))
+      .map((resource) => deleteResourceFile(resource.id).catch(() => {})),
+  );
+}
+
 /** Replace every resource, e.g. when restoring a backup. */
 export function replaceResources(resources: Resource[]): void {
   if (typeof window === "undefined") return;
@@ -352,8 +389,20 @@ export function useAllResources(): Resource[] {
 export function useCourseResources(courseId: string): Resource[] {
   const resources = useAllResources();
   return React.useMemo(
-    () => resources.filter((resource) => resource.courseId === courseId),
+    () =>
+      resources.filter(
+        (resource) => !resource.playlistId && resource.courseId === courseId,
+      ),
     [resources, courseId],
+  );
+}
+
+/** Reactive attachments for one playlist. */
+export function usePlaylistResources(playlistId: string): Resource[] {
+  const resources = useAllResources();
+  return React.useMemo(
+    () => resources.filter((resource) => resource.playlistId === playlistId),
+    [resources, playlistId],
   );
 }
 

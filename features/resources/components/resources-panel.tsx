@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   BookOpen,
+  ChevronDown,
   Code2,
   Download,
   ExternalLink,
@@ -27,6 +28,7 @@ import {
   RESOURCE_KINDS,
   RESOURCE_KIND_LABELS,
   resourcesForCourse,
+  resourcesForPlaylist,
   type Resource,
   type ResourceDraft,
   type ResourceError,
@@ -36,7 +38,7 @@ import {
   addFileResource,
   addTextResource,
   removeResource,
-  useCourseResources,
+  useAllResources,
 } from "../lib/resource-store";
 import { readResourceFile } from "../lib/resource-db";
 import {
@@ -87,6 +89,21 @@ const COMPOSER_KINDS: ResourceKind[] = [...RESOURCE_KINDS];
 
 function filenameFor(resource: Resource): string {
   return resource.fileName || resource.title;
+}
+
+/** One-line hint shown under a resource title in the compact list. */
+function summaryFor(resource: Resource): string {
+  if (resource.description) return resource.description;
+  if (resource.kind === "snippet") {
+    return resource.language ? `${resource.language} snippet` : "Code snippet";
+  }
+  if (resource.url) return resource.url;
+  if (isFileResourceKind(resource.kind)) {
+    return [resource.fileName, formatResourceSize(resource.sizeBytes)]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  return "";
 }
 
 async function openAttachment(resource: Resource): Promise<void> {
@@ -141,9 +158,13 @@ async function downloadAttachment(resource: Resource): Promise<void> {
 }
 
 export interface ResourcesPanelProps {
-  courseId: string;
+  /** Course owner. Pass instead of `playlistId`. */
+  courseId?: string;
   courseTitle?: string;
-  /** Lesson the player is showing; null hides the lesson/course scope picker. */
+  /** Playlist owner. Pass instead of `courseId`. */
+  playlistId?: string;
+  playlistTitle?: string;
+  /** Lesson the player is showing; null hides the lesson/collection scope picker. */
   chapterId?: string | null;
   chapterTitle?: string;
   /** Reports sheet visibility, so the page can track resource time. */
@@ -152,29 +173,40 @@ export interface ResourcesPanelProps {
 }
 
 /**
- * Attach and open resources for a course or a single lesson: PDFs, reference
- * links, code snippets, documentation and downloadable files. Everything stays
- * in this browser and travels with the normal Focusy backup file.
+ * Attach and open resources for a course, playlist or a single lesson: PDFs,
+ * reference links, code snippets, documentation and downloadable files.
+ * Everything stays in this browser and travels with the normal Focusy backup
+ * file.
  */
 export function ResourcesPanel({
   courseId,
   courseTitle,
+  playlistId,
+  playlistTitle,
   chapterId = null,
   chapterTitle,
   onOpenChange,
   className,
 }: ResourcesPanelProps) {
-  const resources = useCourseResources(courseId);
+  const isPlaylist = Boolean(playlistId);
+  const ownerId = (playlistId ?? courseId ?? "").trim();
+  const collectionName = isPlaylist ? "playlist" : "course";
+  const collectionTitle = isPlaylist ? playlistTitle : courseTitle;
+
+  const resources = useAllResources();
   const sorted = React.useMemo(
-    () => resourcesForCourse(resources, courseId),
-    [resources, courseId],
+    () =>
+      isPlaylist
+        ? resourcesForPlaylist(resources, ownerId)
+        : resourcesForCourse(resources, ownerId),
+    [resources, isPlaylist, ownerId],
   );
 
   const [open, setOpen] = React.useState(false);
   const [composerOpen, setComposerOpen] = React.useState(false);
   const [kind, setKind] = React.useState<ResourceKind>("link");
-  const [scope, setScope] = React.useState<"lesson" | "course">(
-    chapterId ? "lesson" : "course",
+  const [scope, setScope] = React.useState<"lesson" | "collection">(
+    chapterId ? "lesson" : "collection",
   );
   const [title, setTitle] = React.useState("");
   const [url, setUrl] = React.useState("");
@@ -184,6 +216,7 @@ export function ResourcesPanel({
   const [file, setFile] = React.useState<File | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
   const deleteTarget = sorted.find((item) => item.id === deleteId) ?? null;
 
@@ -193,7 +226,7 @@ export function ResourcesPanel({
 
   const resetComposer = () => {
     setKind("link");
-    setScope(chapterId ? "lesson" : "course");
+    setScope(chapterId ? "lesson" : "collection");
     setTitle("");
     setUrl("");
     setDescription("");
@@ -218,13 +251,15 @@ export function ResourcesPanel({
       setComposerOpen(false);
       resetComposer();
       setDeleteId(null);
+      setExpandedId(null);
     }
   };
 
   const save = async () => {
     if (saving) return;
     const draft: ResourceDraft = {
-      courseId,
+      courseId: isPlaylist ? undefined : ownerId,
+      playlistId: isPlaylist ? ownerId : undefined,
       chapterId: scope === "lesson" ? chapterId : null,
       kind,
       title,
@@ -249,7 +284,7 @@ export function ResourcesPanel({
       toast.success(
         scope === "lesson" && chapterTitle
           ? `Saved to “${chapterTitle}”`
-          : "Saved to this course",
+          : `Saved to this ${collectionName}`,
       );
       closeComposer();
     } finally {
@@ -281,7 +316,7 @@ export function ResourcesPanel({
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
-        aria-label="Open course resources"
+        aria-label={`Open ${collectionName} resources`}
         aria-haspopup="dialog"
         className={cn("gap-1.5", className)}
       >
@@ -311,7 +346,7 @@ export function ResourcesPanel({
               )}
             </SheetTitle>
             <SheetDescription className="truncate">
-              {courseTitle ? `${courseTitle} · ` : ""}
+              {collectionTitle ? `${collectionTitle} · ` : ""}
               PDFs, links, snippets and files — saved in this browser and
               included in backups.
             </SheetDescription>
@@ -381,10 +416,10 @@ export function ResourcesPanel({
                         type="radio"
                         name="resource-scope"
                         className="size-3.5"
-                        checked={scope === "course"}
-                        onChange={() => setScope("course")}
+                        checked={scope === "collection"}
+                        onChange={() => setScope("collection")}
                       />
-                      Whole course
+                      Whole {collectionName}
                     </label>
                   </fieldset>
                 )}
@@ -467,7 +502,7 @@ export function ResourcesPanel({
                   <Textarea
                     value={description}
                     onChange={(event) => setDescription(event.target.value)}
-                    placeholder="Optional note — why this matters for the course"
+                    placeholder={`Optional note — why this matters for the ${collectionName}`}
                     aria-label="Resource description"
                     rows={2}
                     maxLength={MAX_RESOURCE_DESCRIPTION_LENGTH}
@@ -499,7 +534,7 @@ export function ResourcesPanel({
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
                     {sorted.length === 0
-                      ? "Keep the course material next to the lessons"
+                      ? `Keep the ${collectionName} material next to the lessons`
                       : `${sorted.length} resource${sorted.length === 1 ? "" : "s"} attached`}
                   </p>
                   <Button type="button" size="sm" onClick={openComposer}>
@@ -515,7 +550,8 @@ export function ResourcesPanel({
                     <p className="mt-3 text-sm font-medium">No resources yet</p>
                     <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
                       Attach the official docs, a PDF cheat sheet, a reference
-                      link or a code snippet to this course or a single lesson.
+                      link or a code snippet to this {collectionName} or a
+                      single lesson.
                     </p>
                     <Button
                       type="button"
@@ -528,118 +564,149 @@ export function ResourcesPanel({
                     </Button>
                   </div>
                 ) : (
-                  <ol className="space-y-2">
+                  <ol className="space-y-1.5">
                     {sorted.map((resource) => {
                       const Icon = KIND_ICONS[resource.kind];
                       const isFile = isFileResourceKind(resource.kind);
+                      const summary = summaryFor(resource);
+                      const hasDetails = Boolean(
+                        resource.url ||
+                          (resource.kind === "snippet" && resource.content),
+                      );
+                      const expanded = hasDetails && expandedId === resource.id;
                       return (
                         <li
                           key={resource.id}
-                          className="rounded-lg border bg-background/60 p-2.5"
+                          className="overflow-hidden rounded-lg border bg-background/60"
                         >
-                          <div className="flex items-start gap-2">
-                            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                              <Icon className="size-3.5" aria-hidden />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="text-sm font-medium break-words">
-                                  {resource.title}
+                          <div className="flex items-center gap-1 pr-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                hasDetails &&
+                                setExpandedId(expanded ? null : resource.id)
+                              }
+                              aria-expanded={hasDetails ? expanded : undefined}
+                              className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-left"
+                            >
+                              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                                <Icon className="size-3.5" aria-hidden />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="truncate text-sm font-medium"
+                                    title={resource.title}
+                                  >
+                                    {resource.title}
+                                  </span>
+                                  <Badge
+                                    variant="secondary"
+                                    className="shrink-0 px-1.5 text-[10px]"
+                                  >
+                                    {RESOURCE_KIND_LABELS[resource.kind]}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className="shrink-0 px-1.5 text-[10px]"
+                                  >
+                                    {resource.chapterId
+                                      ? "Lesson"
+                                      : isPlaylist
+                                        ? "Playlist"
+                                        : "Course"}
+                                  </Badge>
                                 </span>
-                                <Badge
-                                  variant="secondary"
-                                  className="px-1.5 text-[10px]"
-                                >
-                                  {RESOURCE_KIND_LABELS[resource.kind]}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className="px-1.5 text-[10px]"
-                                >
-                                  {resource.chapterId ? "Lesson" : "Course"}
-                                </Badge>
-                                {isFile && resource.sizeBytes != null && (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {formatResourceSize(resource.sizeBytes)}
+                                {summary && (
+                                  <span
+                                    className="mt-0.5 block truncate text-[11px] text-muted-foreground"
+                                    title={summary}
+                                  >
+                                    {summary}
                                   </span>
                                 )}
-                              </div>
-
-                              {resource.description && (
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {resource.description}
-                                </p>
+                              </span>
+                              {hasDetails && (
+                                <ChevronDown
+                                  className={cn(
+                                    "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                                    expanded && "rotate-180",
+                                  )}
+                                  aria-hidden
+                                />
                               )}
+                            </button>
 
+                            <div className="flex shrink-0 items-center">
                               {resource.url && (
                                 <a
                                   href={resource.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="mt-1 inline-flex max-w-full items-center gap-1 truncate text-xs font-medium text-primary hover:underline"
+                                  aria-label={`Open ${resource.title}`}
+                                  className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
                                 >
-                                  {resource.url}
-                                  <ExternalLink className="size-3 shrink-0" />
+                                  <ExternalLink className="size-3.5" />
                                 </a>
                               )}
+                              {isFile && (
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-7 text-muted-foreground"
+                                    aria-label={`Open ${resource.title}`}
+                                    onClick={() => void openAttachment(resource)}
+                                  >
+                                    <ExternalLink className="size-3.5" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-7 text-muted-foreground"
+                                    aria-label={`Download ${resource.title}`}
+                                    onClick={() =>
+                                      void downloadAttachment(resource)
+                                    }
+                                  >
+                                    <Download className="size-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="size-7 text-muted-foreground hover:text-destructive"
+                                aria-label={`Delete ${resource.title}`}
+                                onClick={() => setDeleteId(resource.id)}
+                              >
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </div>
+                          </div>
 
+                          {expanded && (
+                            <div className="space-y-1.5 border-t px-2.5 py-2">
+                              {resource.url && (
+                                <a
+                                  href={resource.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="block truncate text-xs font-medium text-primary hover:underline"
+                                >
+                                  {resource.url}
+                                </a>
+                              )}
                               {resource.kind === "snippet" && resource.content && (
-                                <pre className="mt-1.5 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed">
+                                <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed">
                                   <code>{resource.content}</code>
                                 </pre>
                               )}
-
-                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                {resource.url && (
-                                  <a
-                                    href={resource.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className={cn(
-                                      "inline-flex h-7 items-center gap-1 rounded-lg border bg-background px-2 text-[11px] font-medium hover:bg-accent",
-                                    )}
-                                  >
-                                    Open <ExternalLink className="size-3" />
-                                  </a>
-                                )}
-                                {isFile && (
-                                  <>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 px-2 text-[11px]"
-                                      onClick={() => void openAttachment(resource)}
-                                    >
-                                      Open
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2 text-[11px]"
-                                      onClick={() =>
-                                        void downloadAttachment(resource)
-                                      }
-                                    >
-                                      <Download className="size-3" />
-                                      Download
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
-                              aria-label={`Delete ${resource.title}`}
-                              onClick={() => setDeleteId(resource.id)}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
+                          )}
                         </li>
                       );
                     })}
@@ -660,8 +727,8 @@ export function ResourcesPanel({
             <AlertDialogTitle>Delete this resource?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget
-                ? `“${deleteTarget.title}” will be removed from this course`
-                : "This resource will be removed from this course"}
+                ? `“${deleteTarget.title}” will be removed from this ${collectionName}`
+                : `This resource will be removed from this ${collectionName}`}
               {deleteTarget && isFileResourceKind(deleteTarget.kind)
                 ? ", including its stored file."
                 : "."}{" "}

@@ -10,6 +10,7 @@ import {
 } from "@/features/certificates";
 import { removeNotesForVideo } from "@/features/notes";
 import { removeBookmarksForVideo } from "@/features/bookmarks";
+import { removeResourcesForPlaylist } from "@/features/resources";
 import { deleteWorkspacesForPlaylist } from "@/features/studio";
 
 /**
@@ -49,5 +50,8 @@ export async function deletePlaylistData(playlistId: string): Promise<void> {
   clearPlaylistProgress(playlistId);
   useLibrary.getState().removePlaylist(playlistId);
 
-  await deleteWorkspacesForPlaylist(playlistId);
+  await Promise.all([
+    removeResourcesForPlaylist(playlistId),
+    deleteWorkspacesForPlaylist(playlistId),
+  ]);
 }

@@ -4,10 +4,12 @@ export {
   resourceCount,
   useAllResources,
   useCourseResources,
+  usePlaylistResources,
   addTextResource,
   addFileResource,
   removeResource,
   removeResourcesForCourse,
+  removeResourcesForPlaylist,
   RESOURCES_STORAGE_KEY,
 } from "./lib/resource-store";
 export {
