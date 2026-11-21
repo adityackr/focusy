@@ -52,6 +52,7 @@ function input(overrides: Partial<GlobalSearchInput> = {}): GlobalSearchInput {
         timeSeconds: 42,
       },
     ],
+    resources: [],
     projects: [
       {
         id: "project-1",
@@ -120,6 +121,35 @@ describe("buildGlobalSearchResults", () => {
       href: "/watch/course-1",
     });
     expect(items.length).toBe(results.total);
+  });
+
+  test("matches resources by title, owner, notes and file name", () => {
+    const results = buildGlobalSearchResults(
+      input({
+        query: "memo pdf",
+        resources: [
+          {
+            id: "resource-1",
+            title: "Hooks cheatsheet",
+            kindLabel: "PDF",
+            ownerTitle: "React fundamentals",
+            description: "Memo reference for effects",
+            url: null,
+            content: null,
+            fileName: "react-hooks.pdf",
+            href: "/watch/course-1",
+          },
+        ],
+      }),
+    );
+
+    const resources = results.groups.find((group) => group.id === "resources")!;
+    expect(resources.items).toHaveLength(1);
+    expect(resources.items[0]).toMatchObject({
+      title: "Hooks cheatsheet",
+      subtitle: "PDF · React fundamentals",
+      href: "/watch/course-1",
+    });
   });
 
   test("requires every query word to match", () => {

@@ -14,6 +14,7 @@ export type GlobalSearchGroupId =
   | "lessons"
   | "notes"
   | "bookmarks"
+  | "resources"
   | "projects";
 
 export const GLOBAL_SEARCH_GROUP_ORDER: GlobalSearchGroupId[] = [
@@ -22,6 +23,7 @@ export const GLOBAL_SEARCH_GROUP_ORDER: GlobalSearchGroupId[] = [
   "lessons",
   "notes",
   "bookmarks",
+  "resources",
   "projects",
 ];
 
@@ -31,6 +33,7 @@ export const GLOBAL_SEARCH_GROUP_LABELS: Record<GlobalSearchGroupId, string> = {
   lessons: "Lessons",
   notes: "Notes",
   bookmarks: "Bookmarks",
+  resources: "Resources",
   projects: "Projects",
 };
 
@@ -74,6 +77,19 @@ export interface GlobalSearchNoteInput {
   timeSeconds: number | null;
 }
 
+/** An attachment resolved to its owning collection by the dialog. */
+export interface GlobalSearchResourceInput {
+  id: string;
+  title: string;
+  kindLabel: string;
+  ownerTitle: string;
+  description: string;
+  url: string | null;
+  content: string | null;
+  fileName: string | null;
+  href: string | null;
+}
+
 /** A Studio project, already linked to its lesson by the dialog. */
 export interface GlobalSearchProjectInput {
   id: string;
@@ -87,6 +103,7 @@ export interface GlobalSearchInput {
   courses: Course[];
   playlists: Playlist[];
   notes: GlobalSearchNoteInput[];
+  resources: GlobalSearchResourceInput[];
   projects: GlobalSearchProjectInput[];
   courseFavorites: string[];
   playlistFavorites: string[];
@@ -350,6 +367,29 @@ function bookmarkCandidates(
   return candidates;
 }
 
+function resourceCandidates(resources: GlobalSearchResourceInput[]): Candidate[] {
+  return resources.map((resource, index) => ({
+    index,
+    supporting: [
+      resource.kindLabel,
+      resource.ownerTitle,
+      resource.description,
+      resource.url ?? "",
+      resource.content ?? "",
+      resource.fileName ?? "",
+    ].join("\n"),
+    item: {
+      id: resource.id,
+      group: "resources",
+      title: resource.title,
+      subtitle: `${resource.kindLabel} · ${resource.ownerTitle}`,
+      snippet: resource.description || resource.fileName || null,
+      href: resource.href,
+      thumbnail: null,
+    },
+  }));
+}
+
 function projectCandidates(projects: GlobalSearchProjectInput[]): Candidate[] {
   return projects.map((project, index) => ({
     index,
@@ -389,6 +429,7 @@ export function buildGlobalSearchResults(
     playlists: input.playlists.map(playlistCandidate),
     lessons: lessonCandidates(input.courses, input.playlists),
     notes: noteCandidates(input.notes),
+    resources: resourceCandidates(input.resources),
     bookmarks: bookmarkCandidates(
       input.playlists,
       input.courses,

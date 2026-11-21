@@ -14,6 +14,7 @@ import {
   CornerDownLeft,
   ListVideo,
   NotebookPen,
+  Paperclip,
   PlayCircle,
   Search,
   Star,
@@ -30,6 +31,7 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { resolveNoteContext } from "@/features/notes";
+import { RESOURCE_KIND_LABELS, useAllResources } from "@/features/resources";
 import {
   STUDIO_TEMPLATES,
   selectWorkspaceMetaList,
@@ -41,6 +43,7 @@ import {
   type GlobalSearchGroupId,
   type GlobalSearchNoteInput,
   type GlobalSearchProjectInput,
+  type GlobalSearchResourceInput,
 } from "../lib/global-search";
 import { OPEN_GLOBAL_SEARCH_EVENT } from "../lib/search-events";
 
@@ -50,6 +53,7 @@ const GROUP_ICONS: Record<GlobalSearchGroupId, LucideIcon> = {
   lessons: BookOpen,
   notes: NotebookPen,
   bookmarks: Star,
+  resources: Paperclip,
   projects: Code2,
 };
 
@@ -83,6 +87,7 @@ export function GlobalSearchDialog() {
   const courseFavorites = useLibrary((state) => state.courseFavorites);
   const playlistFavorites = useLibrary((state) => state.favorites);
   const notes = useAllNotes();
+  const resources = useAllResources();
   const projects = useStudioWorkspaces(useShallow(selectWorkspaceMetaList));
 
   const [open, setOpen] = useState(false);
@@ -105,6 +110,52 @@ export function GlobalSearchDialog() {
     [notes, playlistsById, coursesById],
   );
 
+  const resourceInputs = useMemo<GlobalSearchResourceInput[]>(
+    () =>
+      resources.map((resource) => {
+        const playlist = resource.playlistId
+          ? playlistsById[resource.playlistId]
+          : undefined;
+        const course = resource.playlistId
+          ? undefined
+          : coursesById[resource.courseId];
+
+        let href: string | null = null;
+        if (playlist) {
+          href = resource.chapterId
+            ? `/watch/${encodeURIComponent(
+                playlist.playlistId,
+              )}/${encodeURIComponent(resource.chapterId)}`
+            : `/watch/${encodeURIComponent(playlist.playlistId)}`;
+        } else if (course) {
+          const chapter = resource.chapterId
+            ? course.chapters.find((item) => item.id === resource.chapterId)
+            : undefined;
+          const time =
+            chapter && chapter.startSeconds > 0
+              ? `?t=${Math.floor(chapter.startSeconds)}`
+              : "";
+          href = `/watch/${encodeURIComponent(course.id)}${time}`;
+        }
+
+        return {
+          id: resource.id,
+          title: resource.title,
+          kindLabel: RESOURCE_KIND_LABELS[resource.kind],
+          ownerTitle:
+            playlist?.playlistTitle ??
+            course?.title ??
+            (resource.playlistId ? "Deleted playlist" : "Deleted video"),
+          description: resource.description,
+          url: resource.url,
+          content: resource.content,
+          fileName: resource.fileName,
+          href,
+        };
+      }),
+    [resources, playlistsById, coursesById],
+  );
+
   const projectInputs = useMemo<GlobalSearchProjectInput[]>(
     () =>
       projects.map((project) => ({
@@ -123,6 +174,7 @@ export function GlobalSearchDialog() {
         courses,
         playlists,
         notes: noteInputs,
+        resources: resourceInputs,
         projects: projectInputs,
         courseFavorites,
         playlistFavorites,
@@ -132,6 +184,7 @@ export function GlobalSearchDialog() {
       courses,
       playlists,
       noteInputs,
+      resourceInputs,
       projectInputs,
       courseFavorites,
       playlistFavorites,
@@ -246,7 +299,7 @@ export function GlobalSearchDialog() {
               setActive(0);
             }}
             onFocus={(event) => event.currentTarget.select()}
-            placeholder="Search videos, playlists, lessons, notes, bookmarks, projects…"
+            placeholder="Search videos, lessons, notes, resources…"
             aria-label="Search everything"
             role="combobox"
             aria-expanded
@@ -269,8 +322,8 @@ export function GlobalSearchDialog() {
         >
           {trimmed.length === 0 ? (
             <p className="px-3 py-10 text-center text-sm text-muted-foreground">
-              Search across your whole library — videos, playlists, lessons,
-              notes, bookmarks and Studio projects.
+              Search across your whole library — videos, lessons, notes,
+              resources, bookmarks and Studio projects.
             </p>
           ) : flatItems.length === 0 ? (
             <p className="px-3 py-10 text-center text-sm text-muted-foreground">

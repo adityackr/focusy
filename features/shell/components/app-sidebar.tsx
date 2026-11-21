@@ -3,6 +3,7 @@
 import { useAllBookmarks } from '@/features/bookmarks';
 import { selectQueuedInboxCount, useInbox } from '@/features/inbox';
 import { AddPlaylistDialog } from '@/features/playlists';
+import { useAllResources } from '@/features/resources';
 import { openGlobalSearch } from '@/features/search';
 import { LogoMark } from '@/features/shell/components/logo';
 import { ThemeToggle } from '@/features/shell/components/theme-toggle';
@@ -21,6 +22,7 @@ import {
 	Inbox,
 	LayoutGrid,
 	NotebookPen,
+	Paperclip,
 	Plus,
 	Search,
 	Settings,
@@ -35,6 +37,7 @@ const NAV = [
 	{ href: '/recent', label: 'Recent', icon: History },
 	{ href: '/notes', label: 'Notes', icon: NotebookPen },
 	{ href: '/bookmarks', label: 'Bookmarks', icon: Bookmark },
+	{ href: '/resources', label: 'Resources', icon: Paperclip },
 	{ href: '/analytics', label: 'Analytics', icon: BarChart3 },
 	{ href: '/certificates', label: 'Certificates', icon: Award },
 	{ href: '/categories', label: 'Categories', icon: Folder },
@@ -51,8 +54,14 @@ export function AppSidebar({
 	onToggle: () => void;
 	onNavigate?: () => void;
 }) {
-	const { pathname, favCount, notesCount, inboxCount, bookmarkCount } =
-		useAppSidebar();
+	const {
+		pathname,
+		favCount,
+		notesCount,
+		inboxCount,
+		bookmarkCount,
+		resourceCount,
+	} = useAppSidebar();
 	const [dialogOpen, setDialogOpen] = useState(false);
 
 	const counts: Record<string, number> = {
@@ -60,6 +69,7 @@ export function AppSidebar({
 		'/notes': notesCount,
 		'/inbox': inboxCount,
 		'/bookmarks': bookmarkCount,
+		'/resources': resourceCount,
 	};
 
 	const searchButton = (
@@ -227,6 +237,14 @@ function useAppSidebar() {
 	const notesCount = useAllNotes().length;
 	const inboxCount = useInbox(selectQueuedInboxCount);
 	const bookmarkCount = useAllBookmarks().length;
+	const resourceCount = useAllResources().length;
 
-	return { pathname, favCount, notesCount, inboxCount, bookmarkCount };
+	return {
+		pathname,
+		favCount,
+		notesCount,
+		inboxCount,
+		bookmarkCount,
+		resourceCount,
+	};
 }

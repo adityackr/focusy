@@ -3,16 +3,13 @@
 import * as React from "react";
 import {
   BookOpen,
-  ChevronDown,
   Code2,
   Download,
-  ExternalLink,
   FileText,
   Link2,
   Loader2,
   Paperclip,
   Plus,
-  Trash2,
   Upload,
   X,
 } from "lucide-react";
@@ -40,7 +37,6 @@ import {
   removeResource,
   useAllResources,
 } from "../lib/resource-store";
-import { readResourceFile } from "../lib/resource-db";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
 import { Badge } from "@/shared/ui/badge";
+import { ResourceRow } from "./resource-row";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import {
@@ -86,76 +83,6 @@ const KIND_ICONS: Record<ResourceKind, React.ComponentType<{ className?: string 
 };
 
 const COMPOSER_KINDS: ResourceKind[] = [...RESOURCE_KINDS];
-
-function filenameFor(resource: Resource): string {
-  return resource.fileName || resource.title;
-}
-
-/** One-line hint shown under a resource title in the compact list. */
-function summaryFor(resource: Resource): string {
-  if (resource.description) return resource.description;
-  if (resource.kind === "snippet") {
-    return resource.language ? `${resource.language} snippet` : "Code snippet";
-  }
-  if (resource.url) return resource.url;
-  if (isFileResourceKind(resource.kind)) {
-    return [resource.fileName, formatResourceSize(resource.sizeBytes)]
-      .filter(Boolean)
-      .join(" · ");
-  }
-  return "";
-}
-
-async function openAttachment(resource: Resource): Promise<void> {
-  if (resource.url) {
-    window.open(resource.url, "_blank", "noopener,noreferrer");
-    return;
-  }
-  if (!isFileResourceKind(resource.kind)) return;
-
-  // Open the tab up front so the async IndexedDB read doesn't get popup-blocked.
-  const win = window.open("", "_blank");
-  try {
-    const file = await readResourceFile(resource.id);
-    if (!file) {
-      win?.close();
-      toast.error("That file isn't saved in this browser anymore.");
-      return;
-    }
-    const url = URL.createObjectURL(
-      new Blob([file.data], { type: file.mimeType }),
-    );
-    if (win) win.location.href = url;
-    else window.open(url, "_blank", "noopener,noreferrer");
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } catch {
-    win?.close();
-    toast.error("Couldn't open that attachment.");
-  }
-}
-
-async function downloadAttachment(resource: Resource): Promise<void> {
-  if (!isFileResourceKind(resource.kind)) return;
-  try {
-    const file = await readResourceFile(resource.id);
-    if (!file) {
-      toast.error("That file isn't saved in this browser anymore.");
-      return;
-    }
-    const url = URL.createObjectURL(
-      new Blob([file.data], { type: file.mimeType }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filenameFor(resource);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  } catch {
-    toast.error("Couldn't download that attachment.");
-  }
-}
 
 export interface ResourcesPanelProps {
   /** Course owner. Pass instead of `playlistId`. */
@@ -232,7 +159,6 @@ export function ResourcesPanel({
   const [file, setFile] = React.useState<File | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
-  const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
   const deleteTarget = sorted.find((item) => item.id === deleteId) ?? null;
 
@@ -267,7 +193,6 @@ export function ResourcesPanel({
       setComposerOpen(false);
       resetComposer();
       setDeleteId(null);
-      setExpandedId(null);
     }
   };
 
@@ -592,159 +517,20 @@ export function ResourcesPanel({
                           </span>
                         </div>
                         <ol className="space-y-1.5">
-                          {group.items.map((resource) => {
-                            const Icon = KIND_ICONS[resource.kind];
-                            const isFile = isFileResourceKind(resource.kind);
-                            const summary = summaryFor(resource);
-                            const hasDetails = Boolean(
-                              resource.url ||
-                              (resource.kind === "snippet" && resource.content),
-                            );
-                            const expanded =
-                              hasDetails && expandedId === resource.id;
-                            return (
-                              <li
-                                key={resource.id}
-                                className="overflow-hidden rounded-lg border bg-background/60"
-                              >
-                                <div className="flex items-center gap-1 pr-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      hasDetails &&
-                                      setExpandedId(
-                                        expanded ? null : resource.id,
-                                      )
-                                    }
-                                    aria-expanded={
-                                      hasDetails ? expanded : undefined
-                                    }
-                                    className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-left"
-                                  >
-                                    <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                                      <Icon className="size-3.5" aria-hidden />
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                      <span className="flex items-center gap-1.5">
-                                        <span
-                                          className="truncate text-sm font-medium"
-                                          title={resource.title}
-                                        >
-                                          {resource.title}
-                                        </span>
-                                        <Badge
-                                          variant="secondary"
-                                          className="shrink-0 px-1.5 text-[10px]"
-                                        >
-                                          {RESOURCE_KIND_LABELS[resource.kind]}
-                                        </Badge>
-                                        <Badge
-                                          variant="outline"
-                                          className="shrink-0 px-1.5 text-[10px]"
-                                        >
-                                          {resource.chapterId
-                                            ? "Lesson"
-                                            : isPlaylist
-                                              ? "Playlist"
-                                              : "Course"}
-                                        </Badge>
-                                      </span>
-                                      {summary && (
-                                        <span
-                                          className="mt-0.5 block truncate text-[11px] text-muted-foreground"
-                                          title={summary}
-                                        >
-                                          {summary}
-                                        </span>
-                                      )}
-                                    </span>
-                                    {hasDetails && (
-                                      <ChevronDown
-                                        className={cn(
-                                          "size-3.5 shrink-0 text-muted-foreground transition-transform",
-                                          expanded && "rotate-180",
-                                        )}
-                                        aria-hidden
-                                      />
-                                    )}
-                                  </button>
-
-                                  <div className="flex shrink-0 items-center">
-                                    {resource.url && (
-                                      <a
-                                        href={resource.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        aria-label={`Open ${resource.title}`}
-                                        className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-                                      >
-                                        <ExternalLink className="size-3.5" />
-                                      </a>
-                                    )}
-                                    {isFile && (
-                                      <>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
-                                          className="size-7 text-muted-foreground"
-                                          aria-label={`Open ${resource.title}`}
-                                          onClick={() =>
-                                            void openAttachment(resource)
-                                          }
-                                        >
-                                          <ExternalLink className="size-3.5" />
-                                        </Button>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
-                                          className="size-7 text-muted-foreground"
-                                          aria-label={`Download ${resource.title}`}
-                                          onClick={() =>
-                                            void downloadAttachment(resource)
-                                          }
-                                        >
-                                          <Download className="size-3.5" />
-                                        </Button>
-                                      </>
-                                    )}
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="size-7 text-muted-foreground hover:text-destructive"
-                                      aria-label={`Delete ${resource.title}`}
-                                      onClick={() => setDeleteId(resource.id)}
-                                    >
-                                      <Trash2 className="size-3.5" />
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                {expanded && (
-                                  <div className="space-y-1.5 border-t px-2.5 py-2">
-                                    {resource.url && (
-                                      <a
-                                        href={resource.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="block truncate text-xs font-medium text-primary hover:underline"
-                                      >
-                                        {resource.url}
-                                      </a>
-                                    )}
-                                    {resource.kind === "snippet" &&
-                                      resource.content && (
-                                        <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-md border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed">
-                                          <code>{resource.content}</code>
-                                        </pre>
-                                      )}
-                                  </div>
-                                )}
-                              </li>
-                            );
-                          })}
+                          {group.items.map((resource) => (
+                            <ResourceRow
+                              key={resource.id}
+                              resource={resource}
+                              badge={
+                                resource.chapterId
+                                  ? "Lesson"
+                                  : isPlaylist
+                                    ? "Playlist"
+                                    : "Course"
+                              }
+                              onDelete={setDeleteId}
+                            />
+                          ))}
                         </ol>
                       </section>
                     ))}

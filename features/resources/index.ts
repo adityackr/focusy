@@ -1,4 +1,6 @@
 export { ResourcesPanel } from "./components/resources-panel";
+export { ResourcesView } from "./components/resources-view";
+export { ResourceRow } from "./components/resource-row";
 export {
   allResources,
   resourceCount,
@@ -24,6 +26,7 @@ export type {
   ResourceBackupFile,
   ResourcesRestoreReport,
 } from "./lib/resource-backup";
+export { RESOURCE_KIND_LABELS } from "./lib/resource";
 export type {
   Resource,
   ResourceKind,
