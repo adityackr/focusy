@@ -23,9 +23,20 @@ export function getApiKey(): string {
   return (localStorage.getItem(API_KEY) ?? "").trim();
 }
 
+/**
+ * Fired on `window` after the key changes, so UI showing the key (like the
+ * Settings input) picks up writes made elsewhere, such as a backup restore.
+ */
+export const API_KEY_CHANGED_EVENT = "focusy:api-key-changed";
+
 export function setApiKey(key: string): void {
   if (key.trim()) localStorage.setItem(API_KEY, key.trim());
   else localStorage.removeItem(API_KEY);
+  if (typeof window !== "undefined") {
+    // Construct through `window` so the event matches the window's EventTarget
+    // (and test environments that stub a separate global `Event`).
+    window.dispatchEvent(new window.Event(API_KEY_CHANGED_EVENT));
+  }
 }
 
 export function getProgress(courseId: string): CourseProgress {
@@ -123,10 +134,13 @@ export function getPlaylistCompletedAt(playlistId: string): number | null {
 }
 
 /** Remember the first time a playlist became fully watched (idempotent). */
-export function setPlaylistCompletedAt(playlistId: string): void {
+export function setPlaylistCompletedAt(
+  playlistId: string,
+  at = Date.now(),
+): void {
   if (typeof window === "undefined" || !playlistId) return;
   if (getPlaylistCompletedAt(playlistId) !== null) return;
-  localStorage.setItem(PLAYLIST_COMPLETED_PREFIX + playlistId, String(Date.now()));
+  localStorage.setItem(PLAYLIST_COMPLETED_PREFIX + playlistId, String(at));
 }
 
 /** Drop a playlist's saved progress (called when the playlist is deleted). */

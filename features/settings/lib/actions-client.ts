@@ -12,4 +12,8 @@ export async function fetchTest(key: string): Promise<string> {
   }
 }
 
-export { getApiKey, setApiKey } from "@/shared/lib/storage";
+export {
+  API_KEY_CHANGED_EVENT,
+  getApiKey,
+  setApiKey,
+} from "@/shared/lib/storage";

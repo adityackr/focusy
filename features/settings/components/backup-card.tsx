@@ -24,6 +24,10 @@ import {
 } from '@/features/resources';
 import { useLibrary } from '@/shared/store/library';
 import {
+	collectSettingsBackup,
+	restoreSettingsBackup,
+} from '../lib/settings-backup';
+import {
 	applyBackup,
 	backupPreview,
 	backupSummary,
@@ -74,6 +78,7 @@ export function BackupCard() {
 	);
 	const [busy, setBusy] = useState(false);
 	const [exporting, setExporting] = useState(false);
+	const [includeApiKey, setIncludeApiKey] = useState(false);
 	const preview = pending ? backupPreview(pending) : null;
 
 	async function handleDownload() {
@@ -96,6 +101,7 @@ export function BackupCard() {
 				collectInboxBackup(),
 				collectBookmarksBackup(),
 				await collectResourcesBackup(),
+				collectSettingsBackup(includeApiKey),
 			);
 			setMessage({ text: `Saved ${name}`, error: false });
 		} catch {
@@ -188,6 +194,11 @@ export function BackupCard() {
 				return;
 			}
 
+			const apiKeyRestored = restoreSettingsBackup(
+				pending.settings,
+				mode,
+			);
+
 			if (mode === 'merge') {
 				setMessage({
 					text: `${mergeMessage(
@@ -201,7 +212,7 @@ export function BackupCard() {
 					)}${resourceMessage(
 						resources.value.resourcesAdded,
 						'added',
-					)}`,
+					)}${apiKeyMessage(apiKeyRestored)}`,
 					error: false,
 				});
 			} else {
@@ -218,7 +229,7 @@ export function BackupCard() {
 					)}${resourceMessage(
 						resources.value.resourcesRestored,
 						'restored',
-					)}`,
+					)}${apiKeyMessage(apiKeyRestored)}`,
 					error: false,
 				});
 			}
@@ -238,11 +249,12 @@ export function BackupCard() {
 						<HardDriveDownload className="size-4" /> Backup &amp; restore
 					</CardTitle>
 					<CardDescription>
-						Move your playlists, videos, folders, progress, timestamped Markdown
-						notes, Studio projects, learning history, saved inbox links,
-						bookmarks, course attachments, saved certificates and your
-						certificate name to another browser or device with one JSON file.
-						Your API key and player settings stay on this device.
+						Move your playlists, videos, folders, progress, playlist completion
+						dates, timestamped Markdown notes, Studio projects, learning history,
+						saved inbox links, bookmarks, course attachments, saved certificates
+						and your certificate name to another browser or device with one JSON
+						file. Player and reminder settings stay on this device; your API key
+						is only included when you tick the option below.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -301,6 +313,20 @@ export function BackupCard() {
 							}}
 						/>
 					</div>
+
+					<label className="flex cursor-pointer items-start gap-2 text-xs text-muted-foreground">
+						<input
+							type="checkbox"
+							className="mt-0.5 size-3.5"
+							checked={includeApiKey}
+							onChange={(e) => setIncludeApiKey(e.target.checked)}
+						/>
+						<span>
+							Include my YouTube API key in the backup file. Off by default —
+							the key is stored as plain text, so only do this if you trust where
+							the file will be kept.
+						</span>
+					</label>
 
 					<p className="text-xs text-muted-foreground">
 						<strong>Replace</strong> overwrites what&apos;s saved in this browser.{' '}
@@ -391,6 +417,10 @@ function BackupContents({ preview }: { preview: BackupPreview }) {
 				<PreviewStat value={preview.videos.length} label="videos" />
 				<PreviewStat value={preview.folders.length} label="folders" />
 				<PreviewStat value={preview.playlistProgress} label="with progress" />
+				<PreviewStat
+					value={preview.playlistCompletions}
+					label="completion dates"
+				/>
 				<PreviewStat value={preview.courseProgress} label="chapter states" />
 				<PreviewStat value={preview.notes} label="notes" />
 				{preview.studioProjects !== null && (
@@ -414,6 +444,16 @@ function BackupContents({ preview }: { preview: BackupPreview }) {
 					<span className="font-medium text-foreground">
 						{preview.certificateName}
 					</span>
+				</p>
+			)}
+
+			{preview.apiKeyIncluded && (
+				<p className="text-xs text-muted-foreground">
+					This file includes your{' '}
+					<span className="font-medium text-foreground">
+						YouTube API key
+					</span>
+					{' '}— restoring it will update the key saved here.
 				</p>
 			)}
 
@@ -490,6 +530,11 @@ function inboxMessage(count: number, verb: 'added' | 'restored'): string {
 function bookmarkMessage(count: number, verb: 'added' | 'restored'): string {
 	if (count <= 0) return '';
 	return ` ${count} bookmark${count === 1 ? '' : 's'} ${verb}.`;
+}
+
+/** ` Your API key was restored.` — nothing when the file had no key. */
+function apiKeyMessage(restored: boolean): string {
+	return restored ? ' Your API key was restored.' : '';
 }
 
 /** ` 3 attachments restored.` — nothing when the file had no attachments. */

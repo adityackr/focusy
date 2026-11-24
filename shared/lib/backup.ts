@@ -28,8 +28,9 @@ import type {
  * Studio projects. Studio project contents live in IndexedDB, so callers pass
  * that section in after collecting it asynchronously.
  *
- * Deliberately excluded: the YouTube API key and player/sidebar preferences —
- * those are per-device settings, not data worth carrying around.
+ * Deliberately excluded: player/sidebar and reminder preferences — those are
+ * per-device settings, not data worth carrying around. The YouTube API key is
+ * included only when the caller opts in (see `settings`).
  */
 
 export const BACKUP_APP = "focusy";
@@ -41,6 +42,7 @@ export const LEGACY_BACKUP_VERSION = 1;
 export const STUDIO_BACKUP_SECTION_VERSION = 1;
 
 const PLAYLIST_PROGRESS_PREFIX = "focustube:progress:";
+const PLAYLIST_COMPLETED_PREFIX = "focustube:playlist-completed:";
 const COURSE_PROGRESS_PREFIX = "yt-course:progress:";
 const NOTE_PREFIX = "focustube:note:";
 
@@ -75,6 +77,12 @@ export interface Backup {
   library: LibrarySnapshot;
   /** playlistId → watch progress */
   playlistProgress: Record<string, WatchProgress>;
+  /**
+   * playlistId → epoch ms of the first full watch. Certificates use it as the
+   * completion date, so it travels with the library even though it is stored
+   * under its own localStorage prefix.
+   */
+  playlistCompletions: Record<string, number>;
   /** courseId → chapter progress */
   courseProgress: Record<string, CourseProgress>;
   /** videoId → legacy note, retained for reading v1/v2 backup files. */
@@ -110,6 +118,11 @@ export interface Backup {
    * feature validates and restores it.
    */
   resources?: unknown | null;
+  /**
+   * Opt-in device settings. Null (the default) keeps the YouTube API key out
+   * of the file; when the user asks for it, it carries the key in plain text.
+   */
+  settings?: unknown | null;
 }
 
 export type BackupParseResult =
@@ -132,6 +145,15 @@ function stringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((v): v is string => typeof v === "string")
     : [];
+}
+
+function timestampsOf(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [id, at] of Object.entries(value)) {
+    if (typeof at === "number" && Number.isFinite(at) && at > 0) out[id] = at;
+  }
+  return out;
 }
 
 function positionsOf(value: unknown): Record<string, number> {
@@ -370,6 +392,18 @@ function readStored<T>(
 /* export                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/** Read plain number entries stored as strings under `prefix`. */
+function storedTimestamps(prefix: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(prefix)) continue;
+    const at = Number(localStorage.getItem(key));
+    if (Number.isFinite(at) && at > 0) out[key.slice(prefix.length)] = at;
+  }
+  return out;
+}
+
 function storedValues<T>(
   prefix: string,
   normalize: (raw: unknown) => T | null,
@@ -391,7 +425,8 @@ function storedValues<T>(
 /**
  * Snapshot everything currently saved in this browser. Pass the Studio section
  * from `collectStudioBackup()` to include projects; omitting it produces a
- * library-only backup that leaves Studio untouched when restored.
+ * library-only backup that leaves Studio untouched when restored. The settings
+ * section is null unless the caller opted into exporting the API key.
  */
 export function collectBackup(
   studio: StudioBackupSection | null = null,
@@ -400,6 +435,7 @@ export function collectBackup(
   inbox: unknown | null = null,
   bookmarks: unknown | null = null,
   resources: unknown | null = null,
+  settings: unknown | null = null,
 ): Backup {
   const notes = storedValues(NOTE_PREFIX, normalizeNote);
   return {
@@ -411,6 +447,7 @@ export function collectBackup(
       PLAYLIST_PROGRESS_PREFIX,
       normalizeWatchProgress,
     ),
+    playlistCompletions: storedTimestamps(PLAYLIST_COMPLETED_PREFIX),
     courseProgress: storedValues(
       COURSE_PROGRESS_PREFIX,
       normalizeCourseProgress,
@@ -423,6 +460,7 @@ export function collectBackup(
     inbox,
     bookmarks,
     resources,
+    settings,
   };
 }
 
@@ -612,6 +650,7 @@ export function downloadBackup(
   inbox: unknown | null = null,
   bookmarks: unknown | null = null,
   resources: unknown | null = null,
+  settings: unknown | null = null,
 ): string {
   const fileName = backupFileName();
   const backup = collectBackup(
@@ -621,6 +660,7 @@ export function downloadBackup(
     inbox,
     bookmarks,
     resources,
+    settings,
   );
   const blob = new Blob([serializeBackup(backup)], {
     type: "application/json",
@@ -700,6 +740,7 @@ export function parseBackup(text: string): BackupParseResult {
       playlistProgress: mapRecord(raw.playlistProgress, (r) =>
         normalizeWatchProgress(r),
       ),
+      playlistCompletions: timestampsOf(raw.playlistCompletions),
       courseProgress: mapRecord(raw.courseProgress, (r) =>
         normalizeCourseProgress(r),
       ),
@@ -711,6 +752,7 @@ export function parseBackup(text: string): BackupParseResult {
       inbox: raw.inbox ?? null,
       bookmarks: raw.bookmarks ?? null,
       resources: raw.resources ?? null,
+      settings: raw.settings ?? null,
     },
   };
 }
@@ -743,6 +785,7 @@ export function applyBackup(backup: Backup): void {
   restoreLibrarySnapshot(backup.library);
 
   clearPrefix(PLAYLIST_PROGRESS_PREFIX);
+  clearPrefix(PLAYLIST_COMPLETED_PREFIX);
   clearPrefix(COURSE_PROGRESS_PREFIX);
   clearPrefix(NOTE_PREFIX);
 
@@ -753,6 +796,11 @@ export function applyBackup(backup: Backup): void {
       PLAYLIST_PROGRESS_PREFIX + playlistId,
       JSON.stringify(progress),
     );
+  }
+  for (const [playlistId, at] of Object.entries(
+    backup.playlistCompletions,
+  )) {
+    localStorage.setItem(PLAYLIST_COMPLETED_PREFIX + playlistId, String(at));
   }
   for (const [courseId, progress] of Object.entries(backup.courseProgress)) {
     localStorage.setItem(
@@ -839,6 +887,18 @@ export function mergeBackup(backup: Backup): MergeReport {
     categoryOrder,
   });
 
+  // Completion dates are a first-completed record: keep the earlier one so a
+  // certificate's date doesn't drift when devices disagree.
+  for (const [playlistId, at] of Object.entries(
+    backup.playlistCompletions,
+  )) {
+    const key = PLAYLIST_COMPLETED_PREFIX + playlistId;
+    const local = Number(localStorage.getItem(key));
+    if (!Number.isFinite(local) || local <= 0 || at < local) {
+      localStorage.setItem(key, String(at));
+    }
+  }
+
   // Playlist progress has no timestamp, so union what was watched and keep this
   // browser"s resume points, filling in only what"s missing here.
   for (const [playlistId, incoming] of Object.entries(
@@ -898,6 +958,8 @@ export interface BackupPreview {
   videos: string[];
   folders: string[];
   playlistProgress: number;
+  /** Playlists with a recorded first-completion date. */
+  playlistCompletions: number;
   courseProgress: number;
   notes: number;
   /** Null when the file has no Studio section (version 1 backups). */
@@ -912,6 +974,8 @@ export interface BackupPreview {
   bookmarks: number | null;
   /** Null when the file has no resources section (older backups). */
   resources: number | null;
+  /** Whether the file carries the YouTube API key (opt-in on export). */
+  apiKeyIncluded: boolean;
 }
 
 /**
@@ -937,6 +1001,7 @@ export function backupPreview(backup: Backup): BackupPreview {
       (c) => c.name,
     ),
     playlistProgress: Object.keys(backup.playlistProgress).length,
+    playlistCompletions: Object.keys(backup.playlistCompletions).length,
     courseProgress: Object.keys(backup.courseProgress).length,
     notes: learningNoteCount(backup.learningNotes),
     studioProjects: backup.studio
@@ -947,7 +1012,14 @@ export function backupPreview(backup: Backup): BackupPreview {
     inboxLinks: optionalInboxCount(backup.inbox),
     bookmarks: optionalBookmarkCount(backup.bookmarks),
     resources: optionalResourceCount(backup.resources),
+    apiKeyIncluded: hasApiKeySection(backup.settings),
   };
+}
+
+function hasApiKeySection(raw: unknown): boolean {
+  return (
+    isRecord(raw) && typeof raw.apiKey === "string" && raw.apiKey.trim() !== ""
+  );
 }
 
 function optionalInboxCount(raw: unknown): number | null {

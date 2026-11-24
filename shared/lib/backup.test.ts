@@ -1,5 +1,9 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 import { useLibrary, LIBRARY_STORAGE_KEY } from "../store/library";
+import {
+  collectSettingsBackup,
+  restoreSettingsBackup,
+} from "@/features/settings/lib/settings-backup";
 import { getApiKey, setApiKey } from "./storage";
 import {
   addNote,
@@ -239,6 +243,52 @@ describe("backup export", () => {
     const backup = collectBackup();
     expect(backupPreview(backup).notes).toBe(2);
     expect(backupSummary(backup)).toContain("2 notes");
+  });
+
+  test("round-trips playlist completion dates", () => {
+    seed();
+    localStorage.setItem("focustube:playlist-completed:PL1", "1700000000000");
+
+    const backup = collectBackup();
+    expect(backup.playlistCompletions).toEqual({ PL1: 1700000000000 });
+    expect(backupPreview(backup).playlistCompletions).toBe(1);
+
+    const json = serializeBackup(backup);
+    localStorage.clear();
+    invalidateNotesCache();
+    resetLibrary();
+
+    const parsed = parseBackup(json);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    applyBackup(parsed.backup);
+
+    expect(localStorage.getItem("focustube:playlist-completed:PL1")).toBe(
+      "1700000000000",
+    );
+  });
+
+  test("includes the API key only when the user opts in", () => {
+    seed();
+    setApiKey("AIzaSecretValue");
+
+    const plain = collectBackup();
+    expect(plain.settings).toBeNull();
+    expect(serializeBackup(plain)).not.toContain("AIzaSecretValue");
+
+    const optedIn = collectBackup(
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      collectSettingsBackup(true),
+    );
+    expect(optedIn.settings).toEqual({ version: 1, apiKey: "AIzaSecretValue" });
+    expect(serializeBackup(optedIn)).toContain("AIzaSecretValue");
+    expect(backupPreview(optedIn).apiKeyIncluded).toBe(true);
+    expect(backupPreview(plain).apiKeyIncluded).toBe(false);
   });
 
   test("never includes the API key or player settings", () => {
@@ -497,6 +547,23 @@ describe("backup merge", () => {
     expect(state.categoryOrder).toEqual([localFolderId]);
   });
 
+  test("keeps the earliest playlist completion date", () => {
+    seed();
+    localStorage.setItem("focustube:playlist-completed:PL1", "1700000000000");
+    const backup = collectBackup();
+    backup.playlistCompletions.PL1 = 1600000000000;
+    backup.playlistCompletions.PL2 = 1650000000000;
+
+    mergeBackup(backup);
+
+    expect(localStorage.getItem("focustube:playlist-completed:PL1")).toBe(
+      "1600000000000",
+    );
+    expect(localStorage.getItem("focustube:playlist-completed:PL2")).toBe(
+      "1650000000000",
+    );
+  });
+
   test("unions watch progress without moving the local resume point", () => {
     seed();
     const backup = collectBackup();
@@ -724,6 +791,35 @@ describe("backup reminder", () => {
     expect(last?.items).toBe(2);
     // A fresh backup silences the nudge.
     expect(backupReminder(Date.parse(last!.at))).toBeNull();
+  });
+});
+
+describe("optional API key backups", () => {
+  test("replace adopts the file's key and merge only fills a missing one", () => {
+    const section = { version: 1, apiKey: "AIzaFromFile" };
+
+    setApiKey("AIzaLocal");
+    expect(restoreSettingsBackup(section, "merge")).toBe(false);
+    expect(getApiKey()).toBe("AIzaLocal");
+
+    expect(restoreSettingsBackup(section, "replace")).toBe(true);
+    expect(getApiKey()).toBe("AIzaFromFile");
+
+    setApiKey("");
+    expect(restoreSettingsBackup(section, "merge")).toBe(true);
+    expect(getApiKey()).toBe("AIzaFromFile");
+  });
+
+  test("ignores an unreadable or key-less settings section", () => {
+    setApiKey("AIzaLocal");
+    expect(restoreSettingsBackup({ version: 99, apiKey: "x" }, "replace")).toBe(
+      false,
+    );
+    expect(restoreSettingsBackup(null, "replace")).toBe(false);
+    expect(restoreSettingsBackup({ version: 1, apiKey: "  " }, "replace")).toBe(
+      false,
+    );
+    expect(getApiKey()).toBe("AIzaLocal");
   });
 });
 

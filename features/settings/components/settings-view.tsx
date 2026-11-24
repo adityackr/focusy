@@ -1,6 +1,7 @@
 'use client';
 
 import {
+	API_KEY_CHANGED_EVENT,
 	fetchTest,
 	getApiKey,
 	setApiKey,
@@ -194,7 +195,11 @@ function useSettingsKey() {
 	const [testMsg, setTestMsg] = useState('');
 
 	useEffect(() => {
-		setKey(getApiKey());
+		const sync = () => setKey(getApiKey());
+		sync();
+		// A backup restore (or any other write) updates the field in place.
+		window.addEventListener(API_KEY_CHANGED_EVENT, sync);
+		return () => window.removeEventListener(API_KEY_CHANGED_EVENT, sync);
 	}, []);
 
 	function handleSave() {
